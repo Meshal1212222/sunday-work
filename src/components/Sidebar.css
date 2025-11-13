@@ -131,12 +131,19 @@
   color: var(--gray-600);
 }
 
-/* Workspace Card - Monday Style */
-.workspace-card {
+/* Workspace Card Container */
+.workspace-card-container {
   margin: var(--spacing-lg);
   margin-top: 0;
+  position: relative;
+}
+
+/* Workspace Card - Monday Style */
+.workspace-card {
+  width: 100%;
   padding: var(--spacing-md);
   background: linear-gradient(135deg, var(--primary) 0%, #7B68EE 100%);
+  border: none;
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
@@ -145,6 +152,8 @@
   transition: all var(--transition-fast);
   position: relative;
   overflow: hidden;
+  cursor: pointer;
+  text-align: right;
 }
 
 .workspace-card::before {
@@ -204,6 +213,96 @@
 
 .workspace-menu-btn:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Workspace Dropdown */
+.workspace-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: var(--spacing-xs);
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15),
+              0 0 0 1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  z-index: 100;
+  animation: slideDown 0.2s ease-out;
+}
+
+.workspace-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: right;
+}
+
+.workspace-dropdown-item:hover {
+  background: var(--gray-50);
+}
+
+.workspace-dropdown-item.active {
+  background: var(--primary-bg);
+}
+
+.workspace-dropdown-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.workspace-dropdown-info {
+  flex: 1;
+}
+
+.workspace-dropdown-name {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: 2px;
+}
+
+.workspace-dropdown-members {
+  font-size: var(--font-size-xs);
+  color: var(--gray-600);
+}
+
+.workspace-dropdown-check {
+  color: var(--primary);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.workspace-dropdown-divider {
+  height: 1px;
+  background: var(--gray-200);
+  margin: var(--spacing-xs) 0;
+}
+
+.workspace-dropdown-create {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.workspace-dropdown-create:hover {
+  background: var(--primary-bg);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Boards Section - Monday Style */

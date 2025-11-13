@@ -2,6 +2,8 @@ import { Outlet } from 'react-router-dom'
 import { useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
+import CommandPalette from '../components/CommandPalette'
+import QuickActions from '../components/QuickActions'
 import './MainLayout.css'
 
 export default function MainLayout({ setAuth }) {
@@ -21,6 +23,12 @@ export default function MainLayout({ setAuth }) {
           <Outlet />
         </main>
       </div>
+
+      {/* Command Palette - Press Cmd+K / Ctrl+K */}
+      <CommandPalette />
+
+      {/* Quick Actions - Floating Button */}
+      <QuickActions />
     </div>
   )
 }

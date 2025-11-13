@@ -10,28 +10,32 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
-  MoreHorizontal
+  MoreHorizontal,
+  ChevronRight
 } from 'lucide-react'
+import { useWorkspace } from '../context/WorkspaceContext'
 import './Sidebar.css'
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const [boardsExpanded, setBoardsExpanded] = useState(true)
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
+
+  const {
+    getCurrentWorkspace,
+    getCurrentBoards,
+    getAllWorkspaces,
+    switchWorkspace
+  } = useWorkspace()
+
+  const currentWorkspace = getCurrentWorkspace()
+  const boards = getCurrentBoards()
+  const allWorkspaces = getAllWorkspaces()
 
   const navItems = [
     { icon: LayoutDashboard, label: 'لوحة التحكم', path: '/dashboard' },
     { icon: Users, label: 'الفريق', path: '/team' },
     { icon: Settings, label: 'الإعدادات', path: '/settings' },
     { icon: HelpCircle, label: 'المساعدة', path: '/help' },
-  ]
-
-  // Monday-style Boards
-  const boards = [
-    { id: 1, name: 'مشروع التطبيق الجديد', icon: '📱', color: '#6161FF', tasks: 24 },
-    { id: 2, name: 'التسويق الرقمي', icon: '📊', color: '#00CA72', tasks: 18 },
-    { id: 3, name: 'تطوير Backend', icon: '⚙️', color: '#FDAB3D', tasks: 31 },
-    { id: 4, name: 'إدارة المحتوى', icon: '✍️', color: '#E44258', tasks: 12 },
-    { id: 5, name: 'خدمة العملاء', icon: '💬', color: '#0073EA', tasks: 8 },
-    { id: 6, name: 'الموارد البشرية', icon: '👥', color: '#FF158A', tasks: 15 }
   ]
 
   return (
@@ -59,16 +63,57 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           </button>
         </div>
 
-        {/* Workspace Info */}
-        <div className="workspace-card">
-          <div className="workspace-icon-large">🏢</div>
-          <div className="workspace-info">
-            <div className="workspace-name">مساحة العمل الرئيسية</div>
-            <div className="workspace-role">مدير • 24 عضو</div>
-          </div>
-          <button className="workspace-menu-btn">
-            <MoreHorizontal size={18} />
+        {/* Workspace Selector */}
+        <div className="workspace-card-container">
+          <button
+            className="workspace-card"
+            onClick={() => setWorkspaceMenuOpen(!workspaceMenuOpen)}
+          >
+            <div className="workspace-icon-large">{currentWorkspace.icon}</div>
+            <div className="workspace-info">
+              <div className="workspace-name">{currentWorkspace.name}</div>
+              <div className="workspace-role">مدير • {currentWorkspace.members} عضو</div>
+            </div>
+            <div className="workspace-menu-btn">
+              <ChevronDown
+                size={18}
+                style={{
+                  transform: workspaceMenuOpen ? 'rotate(180deg)' : 'rotate(0)',
+                  transition: 'transform 0.2s'
+                }}
+              />
+            </div>
           </button>
+
+          {/* Workspace Dropdown */}
+          {workspaceMenuOpen && (
+            <div className="workspace-dropdown">
+              {allWorkspaces.map(workspace => (
+                <button
+                  key={workspace.id}
+                  className={`workspace-dropdown-item ${workspace.id === currentWorkspace.id ? 'active' : ''}`}
+                  onClick={() => {
+                    switchWorkspace(workspace.id)
+                    setWorkspaceMenuOpen(false)
+                  }}
+                >
+                  <span className="workspace-dropdown-icon">{workspace.icon}</span>
+                  <div className="workspace-dropdown-info">
+                    <div className="workspace-dropdown-name">{workspace.name}</div>
+                    <div className="workspace-dropdown-members">{workspace.members} أعضاء</div>
+                  </div>
+                  {workspace.id === currentWorkspace.id && (
+                    <div className="workspace-dropdown-check">✓</div>
+                  )}
+                </button>
+              ))}
+              <div className="workspace-dropdown-divider" />
+              <button className="workspace-dropdown-item workspace-dropdown-create">
+                <Plus size={18} />
+                <span>إنشاء مساحة عمل جديدة</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Main Navigation */}

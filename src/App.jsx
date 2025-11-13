@@ -12,32 +12,37 @@ import Board from './pages/Board'
 import MainLayout from './layouts/MainLayout'
 import AuthLayout from './layouts/AuthLayout'
 
+// Context
+import { WorkspaceProvider } from './context/WorkspaceContext'
+
 function App() {
   // Temporary auth state (will be replaced with proper auth later)
   const [isAuthenticated, setIsAuthenticated] = useState(true)
 
   return (
-    <Router basename="/sunday-work">
-      <Routes>
-        {/* Auth Routes */}
-        {!isAuthenticated ? (
-          <Route element={<AuthLayout />}>
-            <Route path="/login" element={<Login setAuth={setIsAuthenticated} />} />
-            <Route path="/register" element={<Register setAuth={setIsAuthenticated} />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Route>
-        ) : (
-          /* Protected Routes */
-          <Route element={<MainLayout setAuth={setIsAuthenticated} />}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/workspaces" element={<Workspaces />} />
-            <Route path="/board/:id" element={<Board />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Route>
-        )}
-      </Routes>
-    </Router>
+    <WorkspaceProvider>
+      <Router basename="/sunday-work">
+        <Routes>
+          {/* Auth Routes */}
+          {!isAuthenticated ? (
+            <Route element={<AuthLayout />}>
+              <Route path="/login" element={<Login setAuth={setIsAuthenticated} />} />
+              <Route path="/register" element={<Register setAuth={setIsAuthenticated} />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Route>
+          ) : (
+            /* Protected Routes */
+            <Route element={<MainLayout setAuth={setIsAuthenticated} />}>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/workspaces" element={<Workspaces />} />
+              <Route path="/board/:id" element={<Board />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Route>
+          )}
+        </Routes>
+      </Router>
+    </WorkspaceProvider>
   )
 }
 
