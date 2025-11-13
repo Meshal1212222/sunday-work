@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   LayoutDashboard,
   FolderKanban,
@@ -10,47 +10,30 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
-  MoreHorizontal
+  MoreHorizontal,
+  Loader2
 } from 'lucide-react'
+import { useMondayData } from '../hooks/useMondayData'
 import './Sidebar.css'
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const [boardsExpanded, setBoardsExpanded] = useState(true)
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
-  const [currentWorkspaceId, setCurrentWorkspaceId] = useState('1')
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState(null)
 
-  // Workspaces data
-  const allWorkspaces = [
-    { id: '1', name: 'مساحة العمل الرئيسية', icon: '🏢', members: 24 },
-    { id: '2', name: 'التسويق الرقمي', icon: '📊', members: 12 },
-    { id: '3', name: 'تطوير المنتج', icon: '💻', members: 18 }
-  ]
+  // Get live Monday.com data
+  const { workspaces: allWorkspaces, boards: allBoards, loading, error } = useMondayData()
 
-  // Boards by workspace
-  const allBoards = {
-    '1': [
-      { id: 'b1', name: 'مشروع التطبيق الجديد', icon: '📱', color: '#6161FF', tasks: 24 },
-      { id: 'b2', name: 'التسويق الرقمي', icon: '📊', color: '#00CA72', tasks: 18 },
-      { id: 'b3', name: 'تطوير Backend', icon: '⚙️', color: '#FDAB3D', tasks: 31 },
-      { id: 'b4', name: 'إدارة المحتوى', icon: '✍️', color: '#E44258', tasks: 12 },
-      { id: 'b5', name: 'خدمة العملاء', icon: '💬', color: '#0073EA', tasks: 8 },
-      { id: 'b6', name: 'الموارد البشرية', icon: '👥', color: '#FF158A', tasks: 15 }
-    ],
-    '2': [
-      { id: 'b7', name: 'حملة وسائل التواصل', icon: '📱', color: '#00CA72', tasks: 14 },
-      { id: 'b8', name: 'إنشاء المحتوى', icon: '✨', color: '#6161FF', tasks: 22 },
-      { id: 'b9', name: 'تحليل البيانات', icon: '📈', color: '#0073EA', tasks: 9 }
-    ],
-    '3': [
-      { id: 'b10', name: 'تصميم UI/UX', icon: '🎨', color: '#FF158A', tasks: 16 },
-      { id: 'b11', name: 'Frontend Development', icon: '💻', color: '#6161FF', tasks: 28 },
-      { id: 'b12', name: 'Backend Development', icon: '⚙️', color: '#FDAB3D', tasks: 19 },
-      { id: 'b13', name: 'Testing & QA', icon: '🔍', color: '#00CA72', tasks: 11 }
-    ]
-  }
+  // Set default workspace when data loads
+  useEffect(() => {
+    if (allWorkspaces.length > 0 && !currentWorkspaceId) {
+      setCurrentWorkspaceId(allWorkspaces[0].id)
+    }
+  }, [allWorkspaces, currentWorkspaceId])
 
+  // Get current workspace and boards
   const currentWorkspace = allWorkspaces.find(w => w.id === currentWorkspaceId) || allWorkspaces[0]
-  const boards = allBoards[currentWorkspaceId] || []
+  const boards = currentWorkspaceId ? (allBoards[currentWorkspaceId] || []) : []
 
   const switchWorkspace = (id) => {
     setCurrentWorkspaceId(id)
@@ -63,6 +46,46 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     { icon: Settings, label: 'الإعدادات', path: '/settings' },
     { icon: HelpCircle, label: 'المساعدة', path: '/help' },
   ]
+
+  // Show loading state
+  if (loading) {
+    return (
+      <>
+        {isOpen && (
+          <div
+            className="sidebar-overlay"
+            onClick={() => setIsOpen(false)}
+          />
+        )}
+        <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+          <div className="sidebar-header">
+            <div className="sidebar-logo">
+              <span className="logo-icon">📅</span>
+              <span className="logo-text">Sunday</span>
+            </div>
+            <button
+              className="sidebar-close"
+              onClick={() => setIsOpen(false)}
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '40px 20px',
+            gap: '12px',
+            color: 'var(--gray-500)'
+          }}>
+            <Loader2 size={32} className="spin" />
+            <div style={{ fontSize: '14px' }}>جاري تحميل البيانات...</div>
+          </div>
+        </aside>
+      </>
+    )
+  }
 
   return (
     <>
