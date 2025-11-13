@@ -1,5 +1,5 @@
-import { NavLink } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import {
   LayoutDashboard,
   FolderKanban,
@@ -10,34 +10,35 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
-  MoreHorizontal,
-  Loader2
+  MoreHorizontal
 } from 'lucide-react'
-import { useMondayData } from '../hooks/useMondayData'
+import { mockWorkspaces, mockBoards } from '../data/mockData'
 import './Sidebar.css'
 
 export default function Sidebar({ isOpen, setIsOpen }) {
+  const navigate = useNavigate()
   const [boardsExpanded, setBoardsExpanded] = useState(true)
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
-  const [currentWorkspaceId, setCurrentWorkspaceId] = useState(null)
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState('1')
+  const [showCreateWorkspace, setShowCreateWorkspace] = useState(false)
 
-  // Get live Monday.com data
-  const { workspaces: allWorkspaces, boards: allBoards, loading, error } = useMondayData()
-
-  // Set default workspace when data loads
-  useEffect(() => {
-    if (allWorkspaces.length > 0 && !currentWorkspaceId) {
-      setCurrentWorkspaceId(allWorkspaces[0].id)
-    }
-  }, [allWorkspaces, currentWorkspaceId])
+  // Use mock data
+  const allWorkspaces = mockWorkspaces
+  const allBoards = mockBoards
 
   // Get current workspace and boards
   const currentWorkspace = allWorkspaces.find(w => w.id === currentWorkspaceId) || allWorkspaces[0]
-  const boards = currentWorkspaceId ? (allBoards[currentWorkspaceId] || []) : []
+  const boards = allBoards[currentWorkspaceId] || []
 
   const switchWorkspace = (id) => {
     setCurrentWorkspaceId(id)
     setWorkspaceMenuOpen(false)
+    navigate('/workspaces')
+  }
+
+  const handleCreateWorkspace = () => {
+    setWorkspaceMenuOpen(false)
+    setShowCreateWorkspace(true)
   }
 
   const navItems = [
@@ -46,46 +47,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     { icon: Settings, label: 'الإعدادات', path: '/settings' },
     { icon: HelpCircle, label: 'المساعدة', path: '/help' },
   ]
-
-  // Show loading state
-  if (loading) {
-    return (
-      <>
-        {isOpen && (
-          <div
-            className="sidebar-overlay"
-            onClick={() => setIsOpen(false)}
-          />
-        )}
-        <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
-          <div className="sidebar-header">
-            <div className="sidebar-logo">
-              <span className="logo-icon">📅</span>
-              <span className="logo-text">Sunday</span>
-            </div>
-            <button
-              className="sidebar-close"
-              onClick={() => setIsOpen(false)}
-            >
-              <X size={20} />
-            </button>
-          </div>
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '40px 20px',
-            gap: '12px',
-            color: 'var(--gray-500)'
-          }}>
-            <Loader2 size={32} className="spin" />
-            <div style={{ fontSize: '14px' }}>جاري تحميل البيانات...</div>
-          </div>
-        </aside>
-      </>
-    )
-  }
 
   return (
     <>
@@ -157,7 +118,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 </button>
               ))}
               <div className="workspace-dropdown-divider" />
-              <button className="workspace-dropdown-item workspace-dropdown-create">
+              <button
+                className="workspace-dropdown-item workspace-dropdown-create"
+                onClick={handleCreateWorkspace}
+              >
                 <Plus size={18} />
                 <span>إنشاء مساحة عمل جديدة</span>
               </button>
@@ -231,6 +195,29 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           <span>إضافة لوحة جديدة</span>
         </button>
       </aside>
+
+      {/* Create Workspace Modal */}
+      {showCreateWorkspace && (
+        <div className="modal-overlay" onClick={() => setShowCreateWorkspace(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>إنشاء مساحة عمل جديدة</h2>
+              <button onClick={() => setShowCreateWorkspace(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>سيتم إضافة وظيفة إنشاء مساحة عمل جديدة قريباً.</p>
+              <p>حالياً يمكنك التنقل بين مساحات العمل الموجودة.</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-cancel" onClick={() => setShowCreateWorkspace(false)}>
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
