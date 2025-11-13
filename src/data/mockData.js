@@ -1,116 +1,397 @@
 /**
- * Mock Data - Structured like Monday.com
- * Used for development and testing
+ * Real Data from Monday.com
+ * Fetched from actual Monday.com workspace
  */
 
 export const mockWorkspaces = [
   {
-    id: '1',
-    name: 'مساحة العمل الرئيسية',
+    id: '4163103',
+    name: 'الإدارة العليا',
     icon: '🏢',
     color: '#6161FF',
-    members: 24,
-    boards: 6
+    members: 29,
+    boards: 20
   },
   {
-    id: '2',
-    name: 'التسويق الرقمي',
-    icon: '📊',
-    color: '#00CA72',
-    members: 12,
-    boards: 3
-  },
-  {
-    id: '3',
-    name: 'تطوير المنتج',
+    id: '3823324',
+    name: 'IT Management Solution',
     icon: '💻',
+    color: '#0073EA',
+    members: 29,
+    boards: 0
+  },
+  {
+    id: '3597255',
+    name: 'Level Up',
+    icon: '📈',
+    color: '#00CA72',
+    members: 29,
+    boards: 0
+  },
+  {
+    id: '2965387',
+    name: 'CRM',
+    icon: '👥',
     color: '#FDAB3D',
-    members: 18,
-    boards: 4
+    members: 29,
+    boards: 0
+  },
+  {
+    id: '2678373',
+    name: 'Main workspace',
+    icon: '📊',
+    color: '#FF158A',
+    members: 29,
+    boards: 0
   }
 ]
 
 export const mockBoards = {
-  '1': [
-    { id: 'b1', name: 'مشروع التطبيق الجديد', icon: '📱', color: '#6161FF', tasks: 24 },
-    { id: 'b2', name: 'التسويق الرقمي', icon: '📊', color: '#00CA72', tasks: 18 },
-    { id: 'b3', name: 'تطوير Backend', icon: '⚙️', color: '#FDAB3D', tasks: 31 },
-    { id: 'b4', name: 'إدارة المحتوى', icon: '✍️', color: '#E44258', tasks: 12 },
-    { id: 'b5', name: 'خدمة العملاء', icon: '💬', color: '#0073EA', tasks: 8 },
-    { id: 'b6', name: 'الموارد البشرية', icon: '👥', color: '#FF158A', tasks: 15 }
+  '4163103': [
+    { id: '2082909220', name: 'Brandizzer clients', icon: '👥', color: '#6161FF', tasks: 117 },
+    { id: '5004046796', name: 'العملاء - المنجزين', icon: '✅', color: '#00CA72', tasks: 114 },
+    { id: '2080809360', name: 'Golden Ticket-Managemnt', icon: '🎫', color: '#FDAB3D', tasks: 55 },
+    { id: '2080807883', name: 'Golden Host - Managemnt', icon: '🏨', color: '#E44258', tasks: 41 },
+    { id: '2080808005', name: 'Golden Host -Social Media', icon: '📱', color: '#0073EA', tasks: 23 },
+    { id: '5004064987', name: 'العملاء الجدد', icon: '🆕', color: '#FF158A', tasks: 21 },
+    { id: '2080807098', name: 'Brandizr - Social Media', icon: '📲', color: '#00D1CD', tasks: 17 },
+    { id: '5054566034', name: 'الجودة والتطوير', icon: '⚙️', color: '#9B59B6', tasks: 9 },
+    { id: '5079968085', name: 'New Form', icon: '📋', color: '#3498DB', tasks: 1 },
   ],
-  '2': [
-    { id: 'b7', name: 'حملة وسائل التواصل', icon: '📱', color: '#00CA72', tasks: 14 },
-    { id: 'b8', name: 'إنشاء المحتوى', icon: '✨', color: '#6161FF', tasks: 22 },
-    { id: 'b9', name: 'تحليل البيانات', icon: '📈', color: '#0073EA', tasks: 9 }
-  ],
-  '3': [
-    { id: 'b10', name: 'تصميم UI/UX', icon: '🎨', color: '#FF158A', tasks: 16 },
-    { id: 'b11', name: 'Frontend Development', icon: '💻', color: '#6161FF', tasks: 28 },
-    { id: 'b12', name: 'Backend Development', icon: '⚙️', color: '#FDAB3D', tasks: 19 },
-    { id: 'b13', name: 'Testing & QA', icon: '🔍', color: '#00CA72', tasks: 11 }
-  ]
+  '3823324': [],
+  '3597255': [],
+  '2965387': [],
+  '2678373': []
 }
 
 export const mockTeamMembers = [
   {
     id: '1',
-    name: 'أحمد محمد',
-    email: 'ahmed@company.com',
-    phone: '+966501234567',
+    name: 'meshal',
+    email: 'meshal.hgz@gmail.com',
+    phone: '',
     photo: null,
-    title: 'مدير المشروع',
+    title: 'المدير التنفيذي',
     role: 'Admin',
-    status: 'active'
+    status: 'active',
+    enabled: true
   },
   {
     id: '2',
-    name: 'فاطمة علي',
-    email: 'fatima@company.com',
-    phone: '+966507654321',
+    name: 'Majed',
+    email: 'majedam12@hotmail.com',
+    phone: '',
     photo: null,
-    title: 'مطورة Frontend',
-    role: 'Member',
-    status: 'active'
+    title: 'مدير المشروع',
+    role: 'Admin',
+    status: 'active',
+    enabled: true
   },
   {
     id: '3',
-    name: 'خالد سعيد',
-    email: 'khaled@company.com',
-    phone: '+966509876543',
+    name: 'رشا العتيبي',
+    email: 'rasha.qk@gmail.com',
+    phone: '',
     photo: null,
-    title: 'مطور Backend',
+    title: 'موظفة',
     role: 'Member',
-    status: 'active'
+    status: 'active',
+    enabled: true
   },
   {
     id: '4',
-    name: 'نورة حسن',
-    email: 'noura@company.com',
-    phone: '+966502468135',
+    name: 'محمد مهنا',
+    email: 'muhanna_mm@hotmail.com',
+    phone: '',
     photo: null,
-    title: 'مصممة UI/UX',
+    title: 'موظف',
     role: 'Member',
-    status: 'active'
+    status: 'active',
+    enabled: true
   },
   {
     id: '5',
-    name: 'محمد عبدالله',
-    email: 'mohammed@company.com',
-    phone: '+966503691472',
+    name: 'yazeed almutairi',
+    email: 'yzo.mut33@gmail.com',
+    phone: '',
     photo: null,
-    title: 'مختص تسويق',
+    title: 'موظف',
     role: 'Member',
-    status: 'active'
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '6',
+    name: 'Salma alz',
+    email: 'salma.hr@goldenhost.co',
+    phone: '538669473',
+    photo: null,
+    title: 'موارد بشرية',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '7',
+    name: 'Abdulaziz',
+    email: 'abdulazizfadil70@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظف',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '8',
+    name: 'محمد سالم',
+    email: 'ma1600969@gmail.com',
+    phone: '966552389264',
+    photo: null,
+    title: 'موظف',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '9',
+    name: 'أمل القرني',
+    email: 'amlalqrny691@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظفة',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '10',
+    name: 'رغد العتيبي',
+    email: 'raqmohamed1996@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظفة',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '11',
+    name: 'Badr Anaam',
+    email: 'mediabuyer.adz1@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'Media Buyer',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '12',
+    name: 'مصعب نور',
+    email: 'mussabnoor88@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظف',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '13',
+    name: 'sami alnajjar',
+    email: 'samialnjjar1975@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظف',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '14',
+    name: 'سليمان احمد',
+    email: 'deesd6060@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظف',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '15',
+    name: 'Siham Abdou',
+    email: 'abdousiham222@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظفة',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '16',
+    name: 'fouad ae',
+    email: 'aitelhajfouad@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظف',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '17',
+    name: 'Amal',
+    email: 'amal4ti@goldenhost.co',
+    phone: '',
+    photo: null,
+    title: 'موظفة',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '18',
+    name: 'yasser mohanna',
+    email: 'yassser.1323@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظف',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '19',
+    name: 'Anwar',
+    email: 'anwar8t8@hotmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظف',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '20',
+    name: 'Amani A',
+    email: 'amanialrizqi@goldenhost.co',
+    phone: '',
+    photo: null,
+    title: 'موظفة',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '21',
+    name: 'mohammad.hr',
+    email: 'mohammad.hr@goldenhost.co',
+    phone: '0537805895',
+    photo: null,
+    title: 'موارد بشرية',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '22',
+    name: 'Abdullah',
+    email: 'abdullah.alruhimi@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظف',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '23',
+    name: 'منيرة القحطاني',
+    email: 'monirh94m@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظفة',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '24',
+    name: 'Mohamed Yasser',
+    email: 'moh.yasser.co@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظف',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '25',
+    name: 'MOHAMMED JAMAL',
+    email: 'mohdesign92@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'مصمم',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '26',
+    name: 'Abdulmajeed Yahya Alqahtani',
+    email: 'abdulmajeed.alqahtani7@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظف',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '27',
+    name: 'RokiaMeryem',
+    email: 'rokiagadire@gmail.com',
+    phone: '+212675971509',
+    photo: null,
+    title: 'موظفة',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '28',
+    name: 'الهنوف',
+    email: 'alhanouf7y@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظفة',
+    role: 'Member',
+    status: 'active',
+    enabled: true
+  },
+  {
+    id: '29',
+    name: 'Saja aljallal',
+    email: 'saj1995.za@gmail.com',
+    phone: '',
+    photo: null,
+    title: 'موظفة',
+    role: 'Member',
+    status: 'active',
+    enabled: true
   }
 ]
 
 export const mockCurrentUser = {
   id: '1',
-  name: 'أحمد محمد',
-  email: 'ahmed@company.com',
-  phone: '+966501234567',
+  name: 'meshal',
+  email: 'meshal.hgz@gmail.com',
+  phone: '',
   photo: null,
-  title: 'مدير المشروع',
+  title: 'المدير التنفيذي',
   role: 'Admin'
 }

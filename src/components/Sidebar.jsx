@@ -19,7 +19,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   const navigate = useNavigate()
   const [boardsExpanded, setBoardsExpanded] = useState(true)
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
-  const [currentWorkspaceId, setCurrentWorkspaceId] = useState('1')
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState('4163103')
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false)
 
   // Use mock data
