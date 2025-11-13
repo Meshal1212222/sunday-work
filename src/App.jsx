@@ -14,7 +14,7 @@ import AuthLayout from './layouts/AuthLayout'
 
 function App() {
   // Temporary auth state (will be replaced with proper auth later)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(true)
 
   return (
     <Router basename="/sunday-work">
