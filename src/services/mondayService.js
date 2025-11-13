@@ -43,12 +43,12 @@ async function mondayQuery(query, variables = {}) {
 }
 
 /**
- * Get all boards
+ * Get all boards with full details
  */
 export async function getBoards() {
   const query = `
     query {
-      boards(limit: 50) {
+      boards(limit: 100) {
         id
         name
         description
@@ -59,6 +59,22 @@ export async function getBoards() {
         workspace {
           id
           name
+        }
+        owners {
+          id
+          name
+          email
+        }
+        columns {
+          id
+          title
+          type
+          settings_str
+        }
+        groups {
+          id
+          title
+          color
         }
       }
     }
@@ -74,25 +90,41 @@ export async function getBoards() {
 }
 
 /**
- * Get board items (tasks)
+ * Get board items from this month only
  */
 export async function getBoardItems(boardId) {
+  // Get first day of current month
+  const now = new Date()
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const firstDayISO = firstDayOfMonth.toISOString()
+
   const query = `
     query ($boardId: ID!) {
       boards(ids: [$boardId]) {
         id
         name
-        items_page(limit: 100) {
+        items_page(limit: 500) {
           items {
             id
             name
             state
             created_at
             updated_at
+            creator {
+              id
+              name
+              email
+            }
+            subscribers {
+              id
+              name
+              email
+            }
             column_values {
               id
               text
               type
+              value
             }
           }
         }
@@ -103,7 +135,16 @@ export async function getBoardItems(boardId) {
   try {
     const data = await mondayQuery(query, { boardId: String(boardId) })
     if (data.boards && data.boards[0]) {
-      return data.boards[0].items_page?.items || []
+      const allItems = data.boards[0].items_page?.items || []
+
+      // Filter for this month's items
+      const thisMonthItems = allItems.filter(item => {
+        const updatedDate = new Date(item.updated_at)
+        return updatedDate >= firstDayOfMonth
+      })
+
+      console.log(`Board ${boardId}: ${allItems.length} total items, ${thisMonthItems.length} from this month`)
+      return thisMonthItems
     }
     return []
   } catch (error) {
@@ -147,6 +188,13 @@ export async function getCurrentUser() {
         name
         email
         photo_original
+        phone
+        mobile_phone
+        title
+        birthday
+        country_code
+        location
+        time_zone_identifier
         created_at
         account {
           id
@@ -162,6 +210,65 @@ export async function getCurrentUser() {
   } catch (error) {
     console.error('Failed to fetch user:', error)
     return null
+  }
+}
+
+/**
+ * Get all team members (users)
+ */
+export async function getTeamMembers() {
+  const query = `
+    query {
+      users {
+        id
+        name
+        email
+        phone
+        mobile_phone
+        photo_original
+        title
+        birthday
+        location
+        created_at
+        enabled
+        is_guest
+        is_pending
+      }
+    }
+  `
+
+  try {
+    const data = await mondayQuery(query)
+    console.log('Team members:', data.users)
+    return data.users || []
+  } catch (error) {
+    console.error('Failed to fetch team members:', error)
+    return []
+  }
+}
+
+/**
+ * Get board automations
+ */
+export async function getBoardAutomations(boardId) {
+  const query = `
+    query ($boardId: ID!) {
+      boards(ids: [$boardId]) {
+        id
+        name
+      }
+    }
+  `
+
+  try {
+    const data = await mondayQuery(query, { boardId: String(boardId) })
+    // Note: Monday API doesn't directly expose automations via GraphQL
+    // We'll need to use the REST API or handle this differently
+    console.log('Board automations need REST API access')
+    return []
+  } catch (error) {
+    console.error(`Failed to fetch automations for board ${boardId}:`, error)
+    return []
   }
 }
 
