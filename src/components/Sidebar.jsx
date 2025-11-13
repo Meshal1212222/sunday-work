@@ -10,26 +10,52 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
-  MoreHorizontal,
-  ChevronRight
+  MoreHorizontal
 } from 'lucide-react'
-import { useWorkspace } from '../context/WorkspaceContext'
 import './Sidebar.css'
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const [boardsExpanded, setBoardsExpanded] = useState(true)
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState('1')
 
-  const {
-    getCurrentWorkspace,
-    getCurrentBoards,
-    getAllWorkspaces,
-    switchWorkspace
-  } = useWorkspace()
+  // Workspaces data
+  const allWorkspaces = [
+    { id: '1', name: 'مساحة العمل الرئيسية', icon: '🏢', members: 24 },
+    { id: '2', name: 'التسويق الرقمي', icon: '📊', members: 12 },
+    { id: '3', name: 'تطوير المنتج', icon: '💻', members: 18 }
+  ]
 
-  const currentWorkspace = getCurrentWorkspace()
-  const boards = getCurrentBoards()
-  const allWorkspaces = getAllWorkspaces()
+  // Boards by workspace
+  const allBoards = {
+    '1': [
+      { id: 'b1', name: 'مشروع التطبيق الجديد', icon: '📱', color: '#6161FF', tasks: 24 },
+      { id: 'b2', name: 'التسويق الرقمي', icon: '📊', color: '#00CA72', tasks: 18 },
+      { id: 'b3', name: 'تطوير Backend', icon: '⚙️', color: '#FDAB3D', tasks: 31 },
+      { id: 'b4', name: 'إدارة المحتوى', icon: '✍️', color: '#E44258', tasks: 12 },
+      { id: 'b5', name: 'خدمة العملاء', icon: '💬', color: '#0073EA', tasks: 8 },
+      { id: 'b6', name: 'الموارد البشرية', icon: '👥', color: '#FF158A', tasks: 15 }
+    ],
+    '2': [
+      { id: 'b7', name: 'حملة وسائل التواصل', icon: '📱', color: '#00CA72', tasks: 14 },
+      { id: 'b8', name: 'إنشاء المحتوى', icon: '✨', color: '#6161FF', tasks: 22 },
+      { id: 'b9', name: 'تحليل البيانات', icon: '📈', color: '#0073EA', tasks: 9 }
+    ],
+    '3': [
+      { id: 'b10', name: 'تصميم UI/UX', icon: '🎨', color: '#FF158A', tasks: 16 },
+      { id: 'b11', name: 'Frontend Development', icon: '💻', color: '#6161FF', tasks: 28 },
+      { id: 'b12', name: 'Backend Development', icon: '⚙️', color: '#FDAB3D', tasks: 19 },
+      { id: 'b13', name: 'Testing & QA', icon: '🔍', color: '#00CA72', tasks: 11 }
+    ]
+  }
+
+  const currentWorkspace = allWorkspaces.find(w => w.id === currentWorkspaceId) || allWorkspaces[0]
+  const boards = allBoards[currentWorkspaceId] || []
+
+  const switchWorkspace = (id) => {
+    setCurrentWorkspaceId(id)
+    setWorkspaceMenuOpen(false)
+  }
 
   const navItems = [
     { icon: LayoutDashboard, label: 'لوحة التحكم', path: '/dashboard' },
