@@ -24,7 +24,7 @@ function App() {
 
   return (
     <WorkspaceProvider>
-      <Router>
+      <Router basename="/sunday-work">
         <Routes>
           {/* Auth Routes */}
           {!isAuthenticated ? (
