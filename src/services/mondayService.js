@@ -248,26 +248,28 @@ export async function getTeamMembers() {
 }
 
 /**
- * Get board automations
+ * Get board automations using REST API
  */
 export async function getBoardAutomations(boardId) {
-  const query = `
-    query ($boardId: ID!) {
-      boards(ids: [$boardId]) {
-        id
-        name
-      }
-    }
-  `
-
   try {
-    const data = await mondayQuery(query, { boardId: String(boardId) })
-    // Note: Monday API doesn't directly expose automations via GraphQL
-    // We'll need to use the REST API or handle this differently
-    console.log('Board automations need REST API access')
-    return []
+    const response = await fetch(`https://api.monday.com/v2/boards/${boardId}/automations`, {
+      method: 'GET',
+      headers: {
+        'Authorization': MONDAY_API_TOKEN,
+        'API-Version': '2024-01'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch automations: ${response.status}`)
+    }
+
+    const data = await response.json()
+    console.log(`Board ${boardId} automations:`, data)
+    return data.automations || []
   } catch (error) {
     console.error(`Failed to fetch automations for board ${boardId}:`, error)
+    // Return empty array if automations can't be fetched
     return []
   }
 }

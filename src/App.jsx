@@ -7,6 +7,9 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Workspaces from './pages/Workspaces'
 import Board from './pages/Board'
+import Team from './pages/Team'
+import Settings from './pages/Settings'
+import Help from './pages/Help'
 
 // Layouts
 import MainLayout from './layouts/MainLayout'
@@ -37,6 +40,9 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/workspaces" element={<Workspaces />} />
               <Route path="/board/:id" element={<Board />} />
+              <Route path="/team" element={<Team />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/help" element={<Help />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           )}
