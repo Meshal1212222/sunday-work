@@ -488,6 +488,60 @@
   transform: scale(1.2);
 }
 
+/* Small arrows and buttons for nested subtasks */
+.expand-arrow-small {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: #676879;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  transition: all 0.3s;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+.expand-arrow-small:hover {
+  background: #E6F4FF;
+  color: #0073EA;
+}
+
+.expand-arrow-small svg {
+  transition: transform 0.3s;
+}
+
+.expand-arrow-small svg.expanded {
+  transform: rotate(180deg);
+}
+
+.add-subtask-inline-btn-small {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: #00CA72;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  transition: all 0.3s;
+  opacity: 0;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.subtask-row-inline:hover .add-subtask-inline-btn-small {
+  opacity: 1;
+}
+
+.add-subtask-inline-btn-small:hover {
+  background: #E8F9F1;
+  transform: scale(1.3);
+}
+
 .col-task {
   display: flex;
   align-items: center;
