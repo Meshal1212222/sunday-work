@@ -308,7 +308,7 @@
 /* Item Row - LEGENDARY DESIGN WITH BORDERS */
 .item-row {
   display: grid;
-  grid-template-columns: 2fr 1.2fr 1fr 1fr;
+  grid-template-columns: var(--grid-cols, 2fr 1.2fr 1fr 1fr);
   gap: 0;
   border: 1px solid var(--border-color);
   border-top: none;
@@ -688,7 +688,7 @@
 /* Subtask Row Inline */
 .subtask-row-inline {
   display: grid;
-  grid-template-columns: 2fr 1.2fr 1fr 1fr;
+  grid-template-columns: var(--grid-cols, 2fr 1.2fr 1fr 1fr);
   gap: 0;
   border-bottom: 1px solid var(--border-light);
   background: var(--bg-subtask);

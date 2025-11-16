@@ -84,6 +84,7 @@ export default function Board() {
   const [draggedTask, setDraggedTask] = useState(null)
   const [dragOverGroup, setDragOverGroup] = useState(null)
   const [dragOverTask, setDragOverTask] = useState(null) // For reordering within same group
+  const [taskOrder, setTaskOrder] = useState({}) // Store custom task order per group
 
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState({
@@ -124,6 +125,22 @@ export default function Board() {
       document.body.classList.remove('dark-mode')
     }
   }, [darkMode])
+
+  // Initialize task order when board loads
+  useEffect(() => {
+    if (board && Object.keys(taskOrder).length === 0) {
+      const initialOrder = {}
+      board.groups.forEach(group => {
+        const groupItems = board.items_page.items
+          .filter(item => (item.group?.id || 'other') === group.id)
+          .map(item => item.id)
+        if (groupItems.length > 0) {
+          initialOrder[group.id] = groupItems
+        }
+      })
+      setTaskOrder(initialOrder)
+    }
+  }, [board])
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode)
@@ -180,19 +197,77 @@ export default function Board() {
     if (dragOverTask && dragOverTask.groupId === targetGroupId) {
       const targetIndex = dragOverTask.taskIndex
 
-      if (sourceGroupId === targetGroupId) {
+      if (sourceGroupId === targetGroupId && sourceIndex !== targetIndex) {
         // Reordering within same group
+        setTaskOrder(prev => {
+          const currentOrder = prev[sourceGroupId] || []
+          const newOrder = [...currentOrder]
+
+          // Remove from source position
+          newOrder.splice(sourceIndex, 1)
+          // Insert at target position
+          newOrder.splice(targetIndex, 0, task.id)
+
+          return {
+            ...prev,
+            [sourceGroupId]: newOrder
+          }
+        })
+
         console.log(`Reordering "${task.name}" from position ${sourceIndex} to ${targetIndex}`)
-        alert(`تم إعادة ترتيب المهمة "${task.name}"! 🎯`)
-      } else {
+      } else if (sourceGroupId !== targetGroupId) {
         // Moving to different group at specific position
+        setTaskOrder(prev => {
+          const sourceOrder = (prev[sourceGroupId] || []).filter(id => id !== task.id)
+          const targetOrder = prev[targetGroupId] || []
+          const newTargetOrder = [...targetOrder]
+          newTargetOrder.splice(targetIndex, 0, task.id)
+
+          return {
+            ...prev,
+            [sourceGroupId]: sourceOrder,
+            [targetGroupId]: newTargetOrder
+          }
+        })
+
+        // Update task's group in board data
+        setBoard(prevBoard => {
+          const updatedItems = prevBoard.items_page.items.map(item =>
+            item.id === task.id ? { ...item, group: { id: targetGroupId } } : item
+          )
+          return {
+            ...prevBoard,
+            items_page: { items: updatedItems }
+          }
+        })
+
         console.log(`Moving "${task.name}" from ${sourceGroupId} to ${targetGroupId} at position ${targetIndex}`)
-        alert(`تم نقل المهمة "${task.name}" إلى مجموعة جديدة في الموضع ${targetIndex + 1}! 🎉`)
       }
     } else if (sourceGroupId !== targetGroupId) {
       // Moving to different group (at end)
+      setTaskOrder(prev => {
+        const sourceOrder = (prev[sourceGroupId] || []).filter(id => id !== task.id)
+        const targetOrder = [...(prev[targetGroupId] || []), task.id]
+
+        return {
+          ...prev,
+          [sourceGroupId]: sourceOrder,
+          [targetGroupId]: targetOrder
+        }
+      })
+
+      // Update task's group in board data
+      setBoard(prevBoard => {
+        const updatedItems = prevBoard.items_page.items.map(item =>
+          item.id === task.id ? { ...item, group: { id: targetGroupId } } : item
+        )
+        return {
+          ...prevBoard,
+          items_page: { items: updatedItems }
+        }
+      })
+
       console.log(`Moving task "${task.name}" from ${sourceGroupId} to ${targetGroupId}`)
-      alert(`تم نقل المهمة "${task.name}" إلى مجموعة جديدة! 🎉`)
     }
 
     setDraggedTask(null)
@@ -422,6 +497,38 @@ export default function Board() {
     if (!itemsByGroup[gid]) itemsByGroup[gid] = []
     itemsByGroup[gid].push(item)
   })
+
+  // Sort items based on custom order
+  const getSortedItems = (groupId) => {
+    const items = itemsByGroup[groupId] || []
+    const customOrder = taskOrder[groupId]
+
+    if (!customOrder || customOrder.length === 0) {
+      return items
+    }
+
+    // Create a map of existing items
+    const itemsMap = {}
+    items.forEach(item => {
+      itemsMap[item.id] = item
+    })
+
+    // Sort based on custom order, then append any new items
+    const sortedItems = []
+    customOrder.forEach(itemId => {
+      if (itemsMap[itemId]) {
+        sortedItems.push(itemsMap[itemId])
+        delete itemsMap[itemId]
+      }
+    })
+
+    // Add any remaining items that weren't in the custom order
+    Object.values(itemsMap).forEach(item => {
+      sortedItems.push(item)
+    })
+
+    return sortedItems
+  }
 
   // Get all unique column types
   const allColumnTypes = new Set()
@@ -780,7 +887,7 @@ export default function Board() {
 
           {/* Groups */}
           {board.groups.map(group => {
-            const items = itemsByGroup[group.id] || []
+            const items = getSortedItems(group.id)
             const isGroupCollapsed = collapsedGroups[group.id]
 
             return (
