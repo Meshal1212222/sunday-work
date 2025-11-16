@@ -10,7 +10,8 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
-  MoreHorizontal
+  MoreHorizontal,
+  Zap
 } from 'lucide-react'
 import { mockWorkspaces, mockBoards } from '../data/mockData'
 import './Sidebar.css'
@@ -43,6 +44,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   const navItems = [
     { icon: LayoutDashboard, label: 'لوحة التحكم', path: '/dashboard' },
+    { icon: Zap, label: 'الأتمتة', path: '/automations' },
     { icon: Users, label: 'الفريق', path: '/team' },
     { icon: Settings, label: 'الإعدادات', path: '/settings' },
     { icon: HelpCircle, label: 'المساعدة', path: '/help' },

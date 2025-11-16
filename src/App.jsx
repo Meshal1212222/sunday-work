@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import Workspaces from './pages/Workspaces'
 import WorkspaceView from './pages/WorkspaceView'
 import Board from './pages/Board'
+import Automations from './pages/Automations'
 import Team from './pages/Team'
 import Settings from './pages/Settings'
 import Help from './pages/Help'
@@ -42,6 +43,7 @@ function App() {
               <Route path="/workspaces" element={<Workspaces />} />
               <Route path="/workspace/:id" element={<WorkspaceView />} />
               <Route path="/board/:id" element={<Board />} />
+              <Route path="/automations" element={<Automations />} />
               <Route path="/team" element={<Team />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/help" element={<Help />} />
