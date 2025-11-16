@@ -80,6 +80,8 @@ export default function Board() {
     return saved ? JSON.parse(saved) : false
   })
   const [collapsedGroups, setCollapsedGroups] = useState({})
+  const [draggedTask, setDraggedTask] = useState(null)
+  const [dragOverGroup, setDragOverGroup] = useState(null)
 
   useEffect(() => {
     async function loadData() {
@@ -115,6 +117,41 @@ export default function Board() {
       ...prev,
       [groupId]: !prev[groupId]
     }))
+  }
+
+  const handleDragStart = (e, task, groupId) => {
+    setDraggedTask({ task, groupId })
+    e.dataTransfer.effectAllowed = 'move'
+    e.target.style.opacity = '0.4'
+  }
+
+  const handleDragEnd = (e) => {
+    e.target.style.opacity = '1'
+    setDraggedTask(null)
+    setDragOverGroup(null)
+  }
+
+  const handleDragOver = (e, groupId) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverGroup(groupId)
+  }
+
+  const handleDrop = (e, targetGroupId) => {
+    e.preventDefault()
+    if (!draggedTask) return
+
+    const { task, groupId: sourceGroupId } = draggedTask
+
+    if (sourceGroupId !== targetGroupId) {
+      // Update task's group
+      console.log(`Moving task "${task.name}" from ${sourceGroupId} to ${targetGroupId}`)
+      // In real implementation, this would call Monday API to update the task
+      alert(`تم نقل المهمة "${task.name}" إلى مجموعة جديدة! 🎉`)
+    }
+
+    setDraggedTask(null)
+    setDragOverGroup(null)
   }
 
   const handleTaskClick = (item) => {
@@ -521,7 +558,12 @@ export default function Board() {
             const isGroupCollapsed = collapsedGroups[group.id]
 
             return (
-              <div key={group.id} className="table-group">
+              <div
+                key={group.id}
+                className={`table-group ${dragOverGroup === group.id ? 'drag-over' : ''}`}
+                onDragOver={(e) => handleDragOver(e, group.id)}
+                onDrop={(e) => handleDrop(e, group.id)}
+              >
                 {/* Group Header */}
                 <div
                   className={`group-row ${isGroupCollapsed ? 'collapsed' : ''}`}
@@ -542,7 +584,12 @@ export default function Board() {
 
                   return (
                     <React.Fragment key={item.id}>
-                      <div className="item-row">
+                      <div
+                        className="item-row"
+                        draggable="true"
+                        onDragStart={(e) => handleDragStart(e, item, group.id)}
+                        onDragEnd={handleDragEnd}
+                      >
                         <div className="item-cell col-task">
                           <button
                             className="expand-arrow"
