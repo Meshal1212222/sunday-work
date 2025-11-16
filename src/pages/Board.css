@@ -213,6 +213,38 @@
   font-size: 13px;
 }
 
+/* Add Item Row */
+.add-item-row {
+  padding: 8px 16px;
+  border-bottom: 1px solid #E6E9EF;
+}
+
+.add-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: #676879;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.add-item-btn:hover {
+  background: #F6F7FB;
+  color: #0073EA;
+}
+
+.add-item-btn:hover svg {
+  color: #0073EA;
+}
+
 /* Loading & Error */
 .board-loading,
 .board-error {

@@ -383,6 +383,24 @@ export default function Board() {
                     </div>
                   )
                 })}
+
+                {/* Add Item Row */}
+                <div className="add-item-row">
+                  <button
+                    className="add-item-btn"
+                    onClick={() => {
+                      const name = prompt('أدخل اسم المهمة الجديدة:')
+                      if (name) {
+                        console.log('Adding task:', name, 'to group:', group.id)
+                        // In real implementation, this would call Monday API to create item
+                        alert('إضافة المهام الجديدة قادمة قريباً!')
+                      }
+                    }}
+                  >
+                    <Plus size={18} />
+                    <span>إضافة مهمة</span>
+                  </button>
+                </div>
               </div>
             )
           })}
