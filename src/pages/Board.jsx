@@ -27,19 +27,8 @@ async function fetchBoardData(boardId) {
             }
             column_values {
               id
-              title
               text
               type
-              ... on StatusValue {
-                label
-                index
-              }
-              ... on PeopleValue {
-                persons_and_teams {
-                  id
-                  kind
-                }
-              }
             }
           }
         }
@@ -237,7 +226,7 @@ export default function Board() {
 
                         // Extract status column
                         const statusCol = item.column_values.find(col => col.type === 'color' || col.type === 'status')
-                        const statusLabel = statusCol?.text || statusCol?.label || '-'
+                        const statusLabel = statusCol?.text || '-'
 
                         return (
                           <div key={item.id} className="table-row">
