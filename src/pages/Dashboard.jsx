@@ -14,46 +14,47 @@ import {
 import './Dashboard.css'
 
 export default function Dashboard() {
+  // Real stats from Monday.com
   const stats = [
     {
-      icon: CheckCircle2,
-      label: 'مهام مكتملة',
-      value: '127',
-      subtitle: 'من أصل 150 مهمة',
-      progress: 85,
+      icon: FolderKanban,
+      label: 'إجمالي اللوحات',
+      value: '26',
+      subtitle: 'في 6 مساحات عمل',
+      progress: 100,
+      color: '#6161FF',
+      bgColor: '#F0EFFF',
+      trend: ''
+    },
+    {
+      icon: Users,
+      label: 'أعضاء الفريق',
+      value: '29',
+      subtitle: 'عضو نشط',
+      progress: 100,
       color: '#00CA72',
       bgColor: '#E5FFF1',
-      trend: '+12%'
+      trend: ''
     },
     {
-      icon: Clock,
-      label: 'قيد التنفيذ',
-      value: '23',
-      subtitle: 'مهمة نشطة حالياً',
-      progress: 60,
+      icon: Activity,
+      label: 'المهام النشطة',
+      value: '800+',
+      subtitle: 'مهمة في التقدم',
+      progress: 75,
       color: '#FDAB3D',
       bgColor: '#FFF4E5',
-      trend: '+5%'
+      trend: ''
     },
     {
-      icon: AlertCircle,
-      label: 'متأخرة',
-      value: '5',
-      subtitle: 'تحتاج متابعة عاجلة',
-      progress: 20,
-      color: '#E44258',
-      bgColor: '#FFEBEE',
-      trend: '-2%'
-    },
-    {
-      icon: Target,
-      label: 'معدل الإنجاز',
-      value: '87%',
-      subtitle: 'أداء ممتاز هذا الشهر',
-      progress: 87,
+      icon: TrendingUp,
+      label: 'مساحات العمل',
+      value: '6',
+      subtitle: 'مساحة نشطة',
+      progress: 100,
       color: '#0073EA',
       bgColor: '#E3F2FF',
-      trend: '+15%'
+      trend: ''
     }
   ]
 

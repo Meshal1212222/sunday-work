@@ -322,3 +322,136 @@
     width: 100%;
   }
 }
+
+/* Monday.com Table View */
+.items-table {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+  padding: 12px 20px;
+  background: #F6F7FB;
+  font-weight: 600;
+  font-size: 14px;
+  color: #323338;
+  border-bottom: 1px solid #E6E9EF;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #E6E9EF;
+  transition: background 0.2s;
+  align-items: center;
+}
+
+.table-row:hover {
+  background: #F6F7FB;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.col-task {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.task-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #C4C4C4;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  color: #C4C4C4;
+}
+
+.task-checkbox:hover {
+  border-color: #0073EA;
+  color: #0073EA;
+}
+
+.task-name {
+  font-size: 14px;
+  color: #323338;
+  font-weight: 400;
+}
+
+.col-person {
+  display: flex;
+  align-items: center;
+}
+
+.person-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  background: #E6E9EF;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #323338;
+}
+
+.person-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #0073EA;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.col-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-badge {
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: white;
+  display: inline-block;
+  text-align: center;
+  min-width: 80px;
+}
+
+.empty-cell {
+  color: #C4C4C4;
+  font-size: 13px;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+  .table-header,
+  .table-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .col-person,
+  .col-status {
+    padding-right: 36px;
+  }
+}

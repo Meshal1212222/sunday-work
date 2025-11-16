@@ -7,7 +7,7 @@ const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxM
 const MONDAY_API_URL = 'https://api.monday.com/v2'
 
 async function fetchBoardData(boardId) {
-  // Simplified query - only fetch tasks and names
+  // Fetch tasks with status and person columns
   const query = `
     query ($boardId: ID!) {
       boards(ids: [$boardId]) {
@@ -24,6 +24,22 @@ async function fetchBoardData(boardId) {
             name
             group {
               id
+            }
+            column_values {
+              id
+              title
+              text
+              type
+              ... on StatusValue {
+                label
+                index
+              }
+              ... on PeopleValue {
+                persons_and_teams {
+                  id
+                  kind
+                }
+              }
             }
           }
         }
@@ -97,6 +113,15 @@ export default function Board() {
       ...prev,
       [groupId]: !prev[groupId]
     }))
+  }
+
+  const getStatusColor = (status) => {
+    const statusLower = status.toLowerCase()
+    if (statusLower.includes('done') || statusLower.includes('مكتمل') || statusLower.includes('منتهي')) return '#00CA72'
+    if (statusLower.includes('working') || statusLower.includes('قيد') || statusLower.includes('جاري')) return '#FDAB3D'
+    if (statusLower.includes('stuck') || statusLower.includes('معلق') || statusLower.includes('متأخر')) return '#E44258'
+    if (statusLower.includes('pending') || statusLower.includes('انتظار')) return '#C4C4C4'
+    return '#0073EA' // default blue
   }
 
   if (loading) {
@@ -199,18 +224,52 @@ export default function Board() {
                       <p>لا توجد مهام في هذه المجموعة</p>
                     </div>
                   ) : (
-                    groupItems.map(item => (
-                      <div key={item.id} className="board-item">
-                        <div className="item-row">
-                          <div className="item-main">
-                            <div className="item-name">
-                              <span>✓</span>
-                              <span>{item.name}</span>
+                    <div className="items-table">
+                      <div className="table-header">
+                        <div className="col-task">المهمة</div>
+                        <div className="col-person">الشخص</div>
+                        <div className="col-status">الحالة</div>
+                      </div>
+                      {groupItems.map(item => {
+                        // Extract person column
+                        const personCol = item.column_values.find(col => col.type === 'multiple-person' || col.type === 'people')
+                        const personName = personCol?.text || '-'
+
+                        // Extract status column
+                        const statusCol = item.column_values.find(col => col.type === 'color' || col.type === 'status')
+                        const statusLabel = statusCol?.text || statusCol?.label || '-'
+
+                        return (
+                          <div key={item.id} className="table-row">
+                            <div className="col-task">
+                              <span className="task-checkbox">☐</span>
+                              <span className="task-name">{item.name}</span>
+                            </div>
+                            <div className="col-person">
+                              {personName !== '-' ? (
+                                <div className="person-tag">
+                                  <span className="person-avatar">{personName.charAt(0)}</span>
+                                  <span>{personName}</span>
+                                </div>
+                              ) : (
+                                <span className="empty-cell">-</span>
+                              )}
+                            </div>
+                            <div className="col-status">
+                              {statusLabel !== '-' ? (
+                                <span className="status-badge" style={{
+                                  backgroundColor: getStatusColor(statusLabel)
+                                }}>
+                                  {statusLabel}
+                                </span>
+                              ) : (
+                                <span className="empty-cell">-</span>
+                              )}
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    ))
+                        )
+                      })}
+                    </div>
                   )}
                 </div>
               )}
