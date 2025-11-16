@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X } from 'lucide-react'
+import React from 'react'
+import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2 } from 'lucide-react'
 import TaskModal from '../components/TaskModal'
 import './Board.css'
 
@@ -72,6 +73,8 @@ export default function Board() {
   const [hoveredCell, setHoveredCell] = useState(null)
   const [showAddColumn, setShowAddColumn] = useState(false)
   const [activeCellMenu, setActiveCellMenu] = useState(null)
+  const [expandedTasks, setExpandedTasks] = useState({})
+  const [taskSubtasks, setTaskSubtasks] = useState({})
 
   useEffect(() => {
     async function loadData() {
@@ -109,6 +112,45 @@ export default function Board() {
   const handleCellClick = (e, itemId, columnType) => {
     e.stopPropagation()
     setActiveCellMenu({ itemId, columnType, x: e.clientX, y: e.clientY })
+  }
+
+  const toggleTaskExpand = (taskId) => {
+    setExpandedTasks(prev => ({
+      ...prev,
+      [taskId]: !prev[taskId]
+    }))
+  }
+
+  const addSubtask = (taskId) => {
+    const newSubtask = {
+      id: Date.now().toString(),
+      name: '',
+      person: '',
+      status: 'جديد',
+      date: '',
+      isNew: true
+    }
+    setTaskSubtasks(prev => ({
+      ...prev,
+      [taskId]: [...(prev[taskId] || []), newSubtask]
+    }))
+    setExpandedTasks(prev => ({ ...prev, [taskId]: true }))
+  }
+
+  const updateSubtask = (taskId, subtaskId, field, value) => {
+    setTaskSubtasks(prev => ({
+      ...prev,
+      [taskId]: prev[taskId].map(sub =>
+        sub.id === subtaskId ? { ...sub, [field]: value, isNew: false } : sub
+      )
+    }))
+  }
+
+  const deleteSubtask = (taskId, subtaskId) => {
+    setTaskSubtasks(prev => ({
+      ...prev,
+      [taskId]: prev[taskId].filter(sub => sub.id !== subtaskId)
+    }))
   }
 
   const mondayColumnTypes = [
@@ -266,17 +308,38 @@ export default function Board() {
                   const person = getColumnValue(item, 'person') || getColumnValue(item, 'people')
                   const status = getColumnValue(item, 'status') || getColumnValue(item, 'color')
                   const date = getColumnValue(item, 'date')
+                  const subtasks = taskSubtasks[item.id] || []
+                  const isExpanded = expandedTasks[item.id]
 
                   return (
-                    <div
-                      key={item.id}
-                      className="item-row"
-                      onClick={() => handleTaskClick(item)}
-                    >
-                      <div className="item-cell col-task">
-                        <div className="task-check"></div>
-                        <span className="task-text">{item.name}</span>
-                      </div>
+                    <React.Fragment key={item.id}>
+                      <div className="item-row">
+                        <div className="item-cell col-task">
+                          <button
+                            className="expand-arrow"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleTaskExpand(item.id)
+                            }}
+                          >
+                            <ChevronDown
+                              size={16}
+                              className={isExpanded ? 'expanded' : ''}
+                            />
+                          </button>
+                          <div className="task-check"></div>
+                          <span className="task-text" onClick={() => handleTaskClick(item)}>{item.name}</span>
+                          <button
+                            className="add-subtask-inline-btn"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              addSubtask(item.id)
+                            }}
+                            title="إضافة مهمة فرعية"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
 
                       {showAllColumns ? (
                         Array.from(allColumnTypes).map(type => {
@@ -381,6 +444,101 @@ export default function Board() {
                         </>
                       )}
                     </div>
+
+                    {/* Subtasks Rows */}
+                    {isExpanded && subtasks.length > 0 && subtasks.map((subtask, subIndex) => (
+                      <div key={subtask.id} className="subtask-row-inline">
+                        <div className="item-cell col-task">
+                          <div className="subtask-indent"></div>
+                          <div className="task-check-small"></div>
+                          <input
+                            type="text"
+                            className="subtask-name-inline-input"
+                            value={subtask.name}
+                            onChange={(e) => updateSubtask(item.id, subtask.id, 'name', e.target.value)}
+                            placeholder="اسم المهمة الفرعية..."
+                            autoFocus={subtask.isNew}
+                          />
+                          <button
+                            className="delete-subtask-inline-btn"
+                            onClick={() => deleteSubtask(item.id, subtask.id)}
+                            title="حذف"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+
+                        {showAllColumns ? (
+                          Array.from(allColumnTypes).map(type => (
+                            <div key={type} className="item-cell">
+                              {type === 'status' || type === 'color' ? (
+                                <select
+                                  className="subtask-select-inline"
+                                  value={subtask.status || 'جديد'}
+                                  onChange={(e) => updateSubtask(item.id, subtask.id, 'status', e.target.value)}
+                                >
+                                  <option value="جديد">جديد</option>
+                                  <option value="قيد العمل">قيد العمل</option>
+                                  <option value="مكتمل">مكتمل</option>
+                                  <option value="معلق">معلق</option>
+                                </select>
+                              ) : type === 'person' || type === 'people' || type === 'multiple-person' ? (
+                                <input
+                                  type="text"
+                                  className="subtask-input-inline"
+                                  value={subtask.person || ''}
+                                  onChange={(e) => updateSubtask(item.id, subtask.id, 'person', e.target.value)}
+                                  placeholder="المسؤول"
+                                />
+                              ) : type === 'date' ? (
+                                <input
+                                  type="date"
+                                  className="subtask-input-inline"
+                                  value={subtask.date || ''}
+                                  onChange={(e) => updateSubtask(item.id, subtask.id, 'date', e.target.value)}
+                                />
+                              ) : (
+                                <span className="empty">-</span>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <>
+                            <div className="item-cell col-person">
+                              <input
+                                type="text"
+                                className="subtask-input-inline"
+                                value={subtask.person || ''}
+                                onChange={(e) => updateSubtask(item.id, subtask.id, 'person', e.target.value)}
+                                placeholder="المسؤول"
+                              />
+                            </div>
+                            <div className="item-cell col-status">
+                              <select
+                                className="subtask-select-inline"
+                                value={subtask.status || 'جديد'}
+                                onChange={(e) => updateSubtask(item.id, subtask.id, 'status', e.target.value)}
+                                style={{ backgroundColor: getStatusColor(subtask.status || 'جديد') }}
+                              >
+                                <option value="جديد">جديد</option>
+                                <option value="قيد العمل">قيد العمل</option>
+                                <option value="مكتمل">مكتمل</option>
+                                <option value="معلق">معلق</option>
+                              </select>
+                            </div>
+                            <div className="item-cell col-date">
+                              <input
+                                type="date"
+                                className="subtask-input-inline"
+                                value={subtask.date || ''}
+                                onChange={(e) => updateSubtask(item.id, subtask.id, 'date', e.target.value)}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </React.Fragment>
                   )
                 })}
 
