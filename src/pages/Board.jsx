@@ -1,8 +1,9 @@
 import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import React from 'react'
-import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun } from 'lucide-react'
+import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun, User } from 'lucide-react'
 import TaskModal from '../components/TaskModal'
+import { mockTeamMembers } from '../data/mockData'
 import './Board.css'
 
 const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
@@ -83,6 +84,21 @@ export default function Board() {
   const [draggedTask, setDraggedTask] = useState(null)
   const [dragOverGroup, setDragOverGroup] = useState(null)
 
+  // Column resizing state
+  const [columnWidths, setColumnWidths] = useState({
+    task: 400,
+    person: 200,
+    status: 150,
+    date: 150
+  })
+  const [resizingColumn, setResizingColumn] = useState(null)
+  const [resizeStartX, setResizeStartX] = useState(0)
+  const [resizeStartWidth, setResizeStartWidth] = useState(0)
+
+  // Person dropdown state
+  const [personDropdownOpen, setPersonDropdownOpen] = useState(null) // stores itemId or subtaskId
+  const [personSearchTerm, setPersonSearchTerm] = useState('')
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -153,6 +169,61 @@ export default function Board() {
     setDraggedTask(null)
     setDragOverGroup(null)
   }
+
+  // Column resize handlers
+  const handleResizeStart = (e, columnName) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setResizingColumn(columnName)
+    setResizeStartX(e.clientX)
+    setResizeStartWidth(columnWidths[columnName])
+  }
+
+  const handleResizeMove = (e) => {
+    if (!resizingColumn) return
+
+    const deltaX = resizeStartX - e.clientX // RTL: reversed delta
+    const newWidth = Math.max(100, resizeStartWidth + deltaX)
+
+    setColumnWidths(prev => ({
+      ...prev,
+      [resizingColumn]: newWidth
+    }))
+  }
+
+  const handleResizeEnd = () => {
+    setResizingColumn(null)
+  }
+
+  // Add event listeners for resize
+  useEffect(() => {
+    if (resizingColumn) {
+      document.addEventListener('mousemove', handleResizeMove)
+      document.addEventListener('mouseup', handleResizeEnd)
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove)
+        document.removeEventListener('mouseup', handleResizeEnd)
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+      }
+    }
+  }, [resizingColumn, resizeStartX, resizeStartWidth, columnWidths])
+
+  // Close person dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (personDropdownOpen && !e.target.closest('.person-cell-wrapper')) {
+        setPersonDropdownOpen(null)
+        setPersonSearchTerm('')
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [personDropdownOpen])
 
   const handleTaskClick = (item) => {
     setSelectedTask(item)
@@ -344,9 +415,118 @@ export default function Board() {
     return col?.text || ''
   }
 
+  // Get person initials for avatar
+  const getPersonInitials = (name) => {
+    if (!name) return '?'
+    const words = name.trim().split(' ')
+    if (words.length === 1) return words[0][0].toUpperCase()
+    return (words[0][0] + words[words.length - 1][0]).toUpperCase()
+  }
+
+  // Find team member by name
+  const findTeamMember = (name) => {
+    return mockTeamMembers.find(m => m.name.toLowerCase() === name?.toLowerCase())
+  }
+
+  // Filter team members by search term
+  const getFilteredTeamMembers = () => {
+    if (!personSearchTerm) return mockTeamMembers
+    const term = personSearchTerm.toLowerCase()
+    return mockTeamMembers.filter(m =>
+      m.name.toLowerCase().includes(term) ||
+      m.email.toLowerCase().includes(term) ||
+      m.title?.toLowerCase().includes(term)
+    )
+  }
+
+  // Render person dropdown cell
+  const renderPersonCell = (itemId, currentPerson, onSelect) => {
+    const cellId = `person-${itemId}`
+    const isOpen = personDropdownOpen === cellId
+    const selectedMember = findTeamMember(currentPerson)
+    const filteredMembers = getFilteredTeamMembers()
+
+    return (
+      <div className="person-cell-wrapper">
+        <div
+          className={`person-display ${!currentPerson ? 'empty' : ''}`}
+          onClick={() => {
+            setPersonDropdownOpen(isOpen ? null : cellId)
+            setPersonSearchTerm('')
+          }}
+        >
+          {selectedMember ? (
+            <>
+              <div className="person-avatar">
+                {getPersonInitials(selectedMember.name)}
+              </div>
+              <span className="person-name">{selectedMember.name}</span>
+            </>
+          ) : currentPerson ? (
+            <>
+              <div className="person-avatar">
+                {getPersonInitials(currentPerson)}
+              </div>
+              <span className="person-name">{currentPerson}</span>
+            </>
+          ) : (
+            <>
+              <User size={16} />
+              <span>اختر مسؤول</span>
+            </>
+          )}
+        </div>
+
+        {isOpen && (
+          <div className="person-dropdown-menu">
+            <div className="person-dropdown-search">
+              <input
+                type="text"
+                className="person-search-input"
+                placeholder="ابحث عن موظف..."
+                value={personSearchTerm}
+                onChange={(e) => setPersonSearchTerm(e.target.value)}
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+            <div className="person-dropdown-list">
+              {filteredMembers.length > 0 ? (
+                filteredMembers.map(member => (
+                  <button
+                    key={member.id}
+                    className={`person-dropdown-item ${selectedMember?.id === member.id ? 'selected' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onSelect(member.name)
+                      setPersonDropdownOpen(null)
+                      setPersonSearchTerm('')
+                    }}
+                  >
+                    <div className="person-avatar">
+                      {getPersonInitials(member.name)}
+                    </div>
+                    <div className="person-item-info">
+                      <div className="person-item-name">{member.name}</div>
+                      <div className="person-item-title">{member.title || member.email}</div>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="person-dropdown-empty">
+                  لا توجد نتائج
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const gridColumns = showAllColumns
-    ? `2fr repeat(${allColumnTypes.size}, 1fr) 150px`
-    : `2fr repeat(${visibleColumns.length}, 1fr) 150px`
+    ? `${columnWidths.task}px repeat(${allColumnTypes.size}, 1fr) 150px`
+    : `${columnWidths.task}px ${columnWidths.person}px ${columnWidths.status}px ${columnWidths.date}px`
 
   const renderSubtasksRecursive = (taskId, subtasks, level = 0) => {
     return subtasks.map(subtask => {
@@ -422,13 +602,9 @@ export default function Board() {
                       <option value="معلق">معلق</option>
                     </select>
                   ) : type === 'person' || type === 'people' || type === 'multiple-person' ? (
-                    <input
-                      type="text"
-                      className="subtask-input-inline"
-                      value={subtask.person || ''}
-                      onChange={(e) => updateSubtask(taskId, subtask.id, 'person', e.target.value)}
-                      placeholder="المسؤول"
-                    />
+                    renderPersonCell(`${taskId}-${subtask.id}`, subtask.person || '', (newPerson) => {
+                      updateSubtask(taskId, subtask.id, 'person', newPerson)
+                    })
                   ) : type === 'date' ? (
                     <input
                       type="date"
@@ -444,13 +620,9 @@ export default function Board() {
             ) : (
               <>
                 <div className="item-cell col-person">
-                  <input
-                    type="text"
-                    className="subtask-input-inline"
-                    value={subtask.person || ''}
-                    onChange={(e) => updateSubtask(taskId, subtask.id, 'person', e.target.value)}
-                    placeholder="المسؤول"
-                  />
+                  {renderPersonCell(`${taskId}-${subtask.id}`, subtask.person || '', (newPerson) => {
+                    updateSubtask(taskId, subtask.id, 'person', newPerson)
+                  })}
                 </div>
                 <div className="item-cell col-status">
                   <select
@@ -529,16 +701,40 @@ export default function Board() {
         <div className="board-table" style={{ '--grid-cols': gridColumns }}>
           {/* Table Header */}
           <div className="table-header-row">
-            <div className="header-cell col-task">المهمة</div>
+            <div className="header-cell col-task">
+              المهمة
+              <div
+                className={`column-resize-handle ${resizingColumn === 'task' ? 'resizing' : ''}`}
+                onMouseDown={(e) => handleResizeStart(e, 'task')}
+              />
+            </div>
             {showAllColumns ? (
               Array.from(allColumnTypes).map(type => (
                 <div key={type} className="header-cell">{type}</div>
               ))
             ) : (
               <>
-                <div className="header-cell">المسؤول</div>
-                <div className="header-cell">الحالة</div>
-                <div className="header-cell">التاريخ</div>
+                <div className="header-cell">
+                  المسؤول
+                  <div
+                    className={`column-resize-handle ${resizingColumn === 'person' ? 'resizing' : ''}`}
+                    onMouseDown={(e) => handleResizeStart(e, 'person')}
+                  />
+                </div>
+                <div className="header-cell">
+                  الحالة
+                  <div
+                    className={`column-resize-handle ${resizingColumn === 'status' ? 'resizing' : ''}`}
+                    onMouseDown={(e) => handleResizeStart(e, 'status')}
+                  />
+                </div>
+                <div className="header-cell">
+                  التاريخ
+                  <div
+                    className={`column-resize-handle ${resizingColumn === 'date' ? 'resizing' : ''}`}
+                    onMouseDown={(e) => handleResizeStart(e, 'date')}
+                  />
+                </div>
               </>
             )}
             <div className="header-cell add-column-cell">
@@ -662,25 +858,12 @@ export default function Board() {
                         })
                       ) : (
                         <>
-                          <div
-                            className={`item-cell col-person interactive-cell ${hoveredCell === `${item.id}-person` ? 'cell-hovered' : ''}`}
-                            onMouseEnter={() => setHoveredCell(`${item.id}-person`)}
-                            onMouseLeave={() => setHoveredCell(null)}
-                            onClick={(e) => handleCellClick(e, item.id, 'person')}
-                          >
-                            {person ? (
-                              <div className="person-pill">
-                                <div className="person-avatar">{person[0]}</div>
-                                <span>{person}</span>
-                              </div>
-                            ) : (
-                              <span className="empty">-</span>
-                            )}
-                            {hoveredCell === `${item.id}-person` && (
-                              <button className="cell-action-btn">
-                                <ChevronDown size={14} />
-                              </button>
-                            )}
+                          <div className="item-cell col-person">
+                            {renderPersonCell(item.id, person, (newPerson) => {
+                              // In real implementation, would update via Monday API
+                              console.log(`Updated person for ${item.id} to ${newPerson}`)
+                              alert(`تم تعيين ${newPerson} كمسؤول عن المهمة!`)
+                            })}
                           </div>
                           <div
                             className={`item-cell col-status interactive-cell ${hoveredCell === `${item.id}-status` ? 'cell-hovered' : ''}`}
