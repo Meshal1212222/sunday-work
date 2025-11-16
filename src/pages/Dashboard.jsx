@@ -58,93 +58,6 @@ export default function Dashboard() {
     }
   ]
 
-  const recentTasks = [
-    {
-      id: 1,
-      title: 'تصميم واجهة المستخدم الرئيسية',
-      workspace: 'مشروع التطبيق',
-      status: 'done',
-      priority: 'high',
-      assignee: 'أحمد محمد',
-      avatar: 'أ',
-      dueDate: 'منذ ساعتين',
-      progress: 100
-    },
-    {
-      id: 2,
-      title: 'تطوير API للمصادقة',
-      workspace: 'Backend Development',
-      status: 'working',
-      priority: 'high',
-      assignee: 'سارة أحمد',
-      avatar: 'س',
-      dueDate: 'غداً',
-      progress: 65
-    },
-    {
-      id: 3,
-      title: 'اختبار الأداء والجودة',
-      workspace: 'Quality Assurance',
-      status: 'working',
-      priority: 'medium',
-      assignee: 'محمد علي',
-      avatar: 'م',
-      dueDate: 'خلال 3 أيام',
-      progress: 40
-    },
-    {
-      id: 4,
-      title: 'كتابة الوثائق التقنية',
-      workspace: 'Documentation',
-      status: 'stuck',
-      priority: 'low',
-      assignee: 'فاطمة حسن',
-      avatar: 'ف',
-      dueDate: 'متأخر بيومين',
-      progress: 30
-    },
-    {
-      id: 5,
-      title: 'مراجعة الكود وتحسين الأداء',
-      workspace: 'Code Review',
-      status: 'pending',
-      priority: 'medium',
-      assignee: 'خالد أحمد',
-      avatar: 'خ',
-      dueDate: 'الأسبوع القادم',
-      progress: 0
-    }
-  ]
-
-  const upcomingDeadlines = [
-    { task: 'إطلاق النسخة التجريبية', date: 'خلال يومين', color: '#E44258' },
-    { task: 'اجتماع مع العميل', date: 'غداً 2:00 م', color: '#FDAB3D' },
-    { task: 'مراجعة السبرنت', date: 'الجمعة 10:00 ص', color: '#0073EA' }
-  ]
-
-  const teamMembers = [
-    { name: 'أحمد محمد', tasks: 8, avatar: 'أ', status: 'نشط' },
-    { name: 'سارة أحمد', tasks: 12, avatar: 'س', status: 'نشط' },
-    { name: 'محمد علي', tasks: 6, avatar: 'م', status: 'مشغول' },
-    { name: 'فاطمة حسن', tasks: 9, avatar: 'ف', status: 'نشط' },
-    { name: 'خالد أحمد', tasks: 7, avatar: 'خ', status: 'متاح' }
-  ]
-
-  const getStatusConfig = (status) => {
-    const configs = {
-      done: { label: 'مكتملة', color: '#00CA72', bgColor: '#E5FFF1' },
-      working: { label: 'قيد العمل', color: '#FDAB3D', bgColor: '#FFF4E5' },
-      stuck: { label: 'معلقة', color: '#E44258', bgColor: '#FFEBEE' },
-      pending: { label: 'معلقة', color: '#C4C4C4', bgColor: '#F5F5F5' }
-    }
-    return configs[status] || configs.pending
-  }
-
-  const getPriorityIcon = (priority) => {
-    if (priority === 'high') return '🔴'
-    if (priority === 'medium') return '🟡'
-    return '🟢'
-  }
 
   return (
     <div className="dashboard">
@@ -198,130 +111,21 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <div className="dashboard-content">
-        {/* Recent Tasks - Larger Card */}
-        <div className="dashboard-card tasks-card">
-          <div className="card-header">
-            <div className="card-title">
-              <Activity size={20} />
-              <h3>المهام النشطة</h3>
-              <span className="badge-count">{recentTasks.length}</span>
-            </div>
-            <button className="btn btn-sm btn-outline">عرض الكل</button>
-          </div>
-          <div className="tasks-table">
-            <div className="task-table-header">
-              <div className="task-col-name">المهمة</div>
-              <div className="task-col-status">الحالة</div>
-              <div className="task-col-assignee">المسؤول</div>
-              <div className="task-col-progress">التقدم</div>
-              <div className="task-col-date">الموعد</div>
-            </div>
-            {recentTasks.map((task) => {
-              const statusConfig = getStatusConfig(task.status)
-              return (
-                <div key={task.id} className="task-table-row">
-                  <div className="task-col-name">
-                    <span className="priority-icon">{getPriorityIcon(task.priority)}</span>
-                    <div>
-                      <div className="task-title">{task.title}</div>
-                      <div className="task-workspace">{task.workspace}</div>
-                    </div>
-                  </div>
-                  <div className="task-col-status">
-                    <span
-                      className="status-badge"
-                      style={{
-                        backgroundColor: statusConfig.bgColor,
-                        color: statusConfig.color
-                      }}
-                    >
-                      {statusConfig.label}
-                    </span>
-                  </div>
-                  <div className="task-col-assignee">
-                    <div className="assignee-avatar">{task.avatar}</div>
-                    <span>{task.assignee}</span>
-                  </div>
-                  <div className="task-col-progress">
-                    <div className="progress-container">
-                      <div className="progress-bar-small">
-                        <div
-                          className="progress-fill"
-                          style={{
-                            width: `${task.progress}%`,
-                            backgroundColor: statusConfig.color
-                          }}
-                        />
-                      </div>
-                      <span className="progress-text">{task.progress}%</span>
-                    </div>
-                  </div>
-                  <div className="task-col-date">
-                    <Calendar size={14} />
-                    <span>{task.dueDate}</span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Side Panel */}
-        <div className="dashboard-sidebar">
-          {/* Upcoming Deadlines */}
-          <div className="dashboard-card">
-            <div className="card-header">
-              <div className="card-title">
-                <Zap size={18} />
-                <h3>مواعيد قادمة</h3>
-              </div>
-            </div>
-            <div className="deadlines-list">
-              {upcomingDeadlines.map((item, index) => (
-                <div key={index} className="deadline-item">
-                  <div
-                    className="deadline-indicator"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <div className="deadline-content">
-                    <div className="deadline-task">{item.task}</div>
-                    <div className="deadline-date">{item.date}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Team Members */}
-          <div className="dashboard-card">
-            <div className="card-header">
-              <div className="card-title">
-                <Users size={18} />
-                <h3>أعضاء الفريق</h3>
-              </div>
-            </div>
-            <div className="team-list">
-              {teamMembers.map((member, index) => (
-                <div key={index} className="team-member">
-                  <div className="team-member-info">
-                    <div className="team-avatar">{member.avatar}</div>
-                    <div>
-                      <div className="team-name">{member.name}</div>
-                      <div className="team-tasks">{member.tasks} مهام</div>
-                    </div>
-                  </div>
-                  <span
-                    className="team-status"
-                    style={{
-                      color: member.status === 'نشط' ? '#00CA72' :
-                             member.status === 'مشغول' ? '#FDAB3D' : '#0073EA'
-                    }}
-                  >
-                    {member.status}
-                  </span>
-                </div>
-              ))}
-            </div>
+        <div className="dashboard-card" style={{flex: 1, textAlign: 'center', padding: '60px 20px'}}>
+          <FolderKanban size={64} style={{color: '#C4C4C4', margin: '0 auto 20px'}} />
+          <h3 style={{color: '#323338', marginBottom: '10px'}}>مرحباً بك في Sunday</h3>
+          <p style={{color: '#676879', marginBottom: '30px'}}>
+            جميع بياناتك من Monday.com متصلة ومتزامنة
+          </p>
+          <div style={{display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap'}}>
+            <a href="/sunday-work/workspaces" className="btn btn-primary" style={{textDecoration: 'none'}}>
+              <FolderKanban size={18} />
+              <span>عرض مساحات العمل</span>
+            </a>
+            <a href="/sunday-work/team" className="btn btn-secondary" style={{textDecoration: 'none'}}>
+              <Users size={18} />
+              <span>عرض الفريق</span>
+            </a>
           </div>
         </div>
       </div>

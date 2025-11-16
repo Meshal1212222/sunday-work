@@ -1,13 +1,12 @@
 import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronRight, Loader2, ExternalLink } from 'lucide-react'
+import { Loader2, ExternalLink, Plus } from 'lucide-react'
 import './Board.css'
 
 const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
 const MONDAY_API_URL = 'https://api.monday.com/v2'
 
 async function fetchBoardData(boardId) {
-  // Fetch tasks with status and person columns
   const query = `
     query ($boardId: ID!) {
       boards(ids: [$boardId]) {
@@ -36,33 +35,29 @@ async function fetchBoardData(boardId) {
     }
   `
 
-  try {
-    const response = await fetch(MONDAY_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': MONDAY_API_TOKEN
-      },
-      body: JSON.stringify({
-        query,
-        variables: { boardId: String(boardId) }
-      })
+  const response = await fetch(MONDAY_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': MONDAY_API_TOKEN
+    },
+    body: JSON.stringify({
+      query,
+      variables: { boardId: String(boardId) }
     })
+  })
 
-    const data = await response.json()
+  const data = await response.json()
 
-    if (data.errors) {
-      throw new Error(data.errors[0]?.message || 'فشل تحميل البيانات من Monday.com')
-    }
-
-    if (!data.data || !data.data.boards || !data.data.boards[0]) {
-      throw new Error('البورد غير موجود')
-    }
-
-    return data.data.boards[0]
-  } catch (error) {
-    throw error
+  if (data.errors) {
+    throw new Error(data.errors[0]?.message || 'فشل تحميل البيانات')
   }
+
+  if (!data.data?.boards?.[0]) {
+    throw new Error('البورد غير موجود')
+  }
+
+  return data.data.boards[0]
 }
 
 export default function Board() {
@@ -70,201 +65,172 @@ export default function Board() {
   const [board, setBoard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [expandedGroups, setExpandedGroups] = useState({})
-  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
-    async function loadBoardData() {
+    async function loadData() {
       try {
         setLoading(true)
         setError(null)
         const data = await fetchBoardData(id)
         setBoard(data)
-
-        // Expand all groups by default
-        const groupsExpanded = {}
-        data.groups.forEach(g => {
-          groupsExpanded[g.id] = true
-        })
-        setExpandedGroups(groupsExpanded)
       } catch (err) {
-        setError(err.message || 'حدث خطأ أثناء تحميل البورد')
+        setError(err.message || 'حدث خطأ')
       } finally {
         setLoading(false)
       }
     }
-
-    loadBoardData()
-  }, [id, refreshKey])
-
-  const toggleGroup = (groupId) => {
-    setExpandedGroups(prev => ({
-      ...prev,
-      [groupId]: !prev[groupId]
-    }))
-  }
-
-  const getStatusColor = (status) => {
-    const statusLower = status.toLowerCase()
-    if (statusLower.includes('done') || statusLower.includes('مكتمل') || statusLower.includes('منتهي')) return '#00CA72'
-    if (statusLower.includes('working') || statusLower.includes('قيد') || statusLower.includes('جاري')) return '#FDAB3D'
-    if (statusLower.includes('stuck') || statusLower.includes('معلق') || statusLower.includes('متأخر')) return '#E44258'
-    if (statusLower.includes('pending') || statusLower.includes('انتظار')) return '#C4C4C4'
-    return '#0073EA' // default blue
-  }
+    loadData()
+  }, [id])
 
   if (loading) {
     return (
-      <div className="board-page">
-        <div className="loading-container">
-          <Loader2 size={48} className="spin" />
-          <p>جاري تحميل البورد...</p>
-        </div>
+      <div className="board-loading">
+        <Loader2 size={48} className="spin" />
+        <p>جاري التحميل...</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="board-page">
-        <div className="error-container">
-          <h2>❌ خطأ في التحميل</h2>
-          <p>{error}</p>
-          <button onClick={() => setRefreshKey(k => k + 1)} className="btn-primary">
-            إعادة المحاولة
-          </button>
-        </div>
+      <div className="board-error">
+        <h2>❌ خطأ</h2>
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()} className="retry-btn">
+          إعادة المحاولة
+        </button>
       </div>
     )
   }
 
-  if (!board) {
-    return (
-      <div className="board-page">
-        <div className="error-container">
-          <h2>❌ البورد غير موجود</h2>
-        </div>
-      </div>
-    )
-  }
+  if (!board) return null
 
-  // Group items by group
+  // Group items
   const itemsByGroup = {}
   board.items_page.items.forEach(item => {
-    const groupId = item.group?.id || 'no_group'
-    if (!itemsByGroup[groupId]) {
-      itemsByGroup[groupId] = []
-    }
-    itemsByGroup[groupId].push(item)
+    const gid = item.group?.id || 'other'
+    if (!itemsByGroup[gid]) itemsByGroup[gid] = []
+    itemsByGroup[gid].push(item)
   })
 
-  // Count total items
-  const totalItems = board.items_page.items.length
+  const getStatusColor = (text) => {
+    if (!text) return '#C4C4C4'
+    const t = text.toLowerCase()
+    if (t.includes('done') || t.includes('مكتمل')) return '#00CA72'
+    if (t.includes('working') || t.includes('قيد')) return '#FDAB3D'
+    if (t.includes('stuck') || t.includes('معلق')) return '#E44258'
+    return '#0073EA'
+  }
 
   return (
-    <div className="board-page">
-      <div className="board-header">
-        <div>
+    <div className="monday-board">
+      {/* Board Header */}
+      <div className="board-top-bar">
+        <div className="board-title-section">
           <h1>{board.name}</h1>
-          <div className="board-stats">
-            <span>📊 {totalItems} مهمة</span>
+          <div className="board-meta">
+            <span>{board.items_page.items.length} مهمة</span>
             <span>•</span>
-            <span>📂 {board.groups.length} مجموعة</span>
+            <span>{board.groups.length} مجموعة</span>
           </div>
         </div>
-        <a
-          href={`https://monday.com/boards/${id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-secondary"
-        >
-          <ExternalLink size={20} />
-          <span>فتح في Monday.com</span>
-        </a>
+        <div className="board-actions">
+          <a 
+            href={`https://monday.com/boards/${id}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="action-btn"
+          >
+            <ExternalLink size={16} />
+            <span>فتح في Monday</span>
+          </a>
+        </div>
       </div>
 
-      <div className="board-content">
-        {board.groups.map(group => {
-          const groupItems = itemsByGroup[group.id] || []
-          const isExpanded = expandedGroups[group.id]
+      {/* Board Table */}
+      <div className="board-table-container">
+        <div className="board-table">
+          {/* Table Header */}
+          <div className="table-header-row">
+            <div className="header-cell col-task">المهمة</div>
+            <div className="header-cell col-person">المسؤول</div>
+            <div className="header-cell col-status">الحالة</div>
+            <div className="header-cell col-date">التاريخ</div>
+          </div>
 
-          return (
-            <div key={group.id} className="board-group">
-              <div
-                className="group-header"
-                style={{ borderLeftColor: group.color }}
-                onClick={() => toggleGroup(group.id)}
-              >
-                <div className="group-title-section">
-                  {isExpanded ? (
-                    <ChevronDown size={20} />
-                  ) : (
-                    <ChevronRight size={20} />
-                  )}
-                  <h3>{group.title}</h3>
-                  <span className="group-count">{groupItems.length} مهام</span>
+          {/* Groups */}
+          {board.groups.map(group => {
+            const items = itemsByGroup[group.id] || []
+            
+            return (
+              <div key={group.id} className="table-group">
+                {/* Group Header */}
+                <div 
+                  className="group-row"
+                  style={{ borderLeftColor: group.color }}
+                >
+                  <div className="group-name">{group.title}</div>
+                  <div className="group-count">{items.length} مهام</div>
                 </div>
-              </div>
 
-              {isExpanded && (
-                <div className="group-items">
-                  {groupItems.length === 0 ? (
-                    <div className="empty-group">
-                      <p>لا توجد مهام في هذه المجموعة</p>
-                    </div>
-                  ) : (
-                    <div className="items-table">
-                      <div className="table-header">
-                        <div className="col-task">المهمة</div>
-                        <div className="col-person">الشخص</div>
-                        <div className="col-status">الحالة</div>
+                {/* Group Items */}
+                {items.map(item => {
+                  const personCol = item.column_values.find(c => 
+                    c.type === 'multiple-person' || c.type === 'people'
+                  )
+                  const statusCol = item.column_values.find(c => 
+                    c.type === 'color' || c.type === 'status'
+                  )
+                  const dateCol = item.column_values.find(c => 
+                    c.type === 'date'
+                  )
+
+                  const person = personCol?.text || ''
+                  const status = statusCol?.text || ''
+                  const date = dateCol?.text || ''
+
+                  return (
+                    <div key={item.id} className="item-row">
+                      <div className="item-cell col-task">
+                        <div className="task-check"></div>
+                        <span className="task-text">{item.name}</span>
                       </div>
-                      {groupItems.map(item => {
-                        // Extract person column
-                        const personCol = item.column_values.find(col => col.type === 'multiple-person' || col.type === 'people')
-                        const personName = personCol?.text || '-'
-
-                        // Extract status column
-                        const statusCol = item.column_values.find(col => col.type === 'color' || col.type === 'status')
-                        const statusLabel = statusCol?.text || '-'
-
-                        return (
-                          <div key={item.id} className="table-row">
-                            <div className="col-task">
-                              <span className="task-checkbox">☐</span>
-                              <span className="task-name">{item.name}</span>
-                            </div>
-                            <div className="col-person">
-                              {personName !== '-' ? (
-                                <div className="person-tag">
-                                  <span className="person-avatar">{personName.charAt(0)}</span>
-                                  <span>{personName}</span>
-                                </div>
-                              ) : (
-                                <span className="empty-cell">-</span>
-                              )}
-                            </div>
-                            <div className="col-status">
-                              {statusLabel !== '-' ? (
-                                <span className="status-badge" style={{
-                                  backgroundColor: getStatusColor(statusLabel)
-                                }}>
-                                  {statusLabel}
-                                </span>
-                              ) : (
-                                <span className="empty-cell">-</span>
-                              )}
-                            </div>
+                      <div className="item-cell col-person">
+                        {person ? (
+                          <div className="person-pill">
+                            <div className="person-avatar">{person[0]}</div>
+                            <span>{person}</span>
                           </div>
-                        )
-                      })}
+                        ) : (
+                          <span className="empty">-</span>
+                        )}
+                      </div>
+                      <div className="item-cell col-status">
+                        {status ? (
+                          <div 
+                            className="status-pill"
+                            style={{ backgroundColor: getStatusColor(status) }}
+                          >
+                            {status}
+                          </div>
+                        ) : (
+                          <span className="empty">-</span>
+                        )}
+                      </div>
+                      <div className="item-cell col-date">
+                        {date ? (
+                          <span>{date}</span>
+                        ) : (
+                          <span className="empty">-</span>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )
-        })}
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
