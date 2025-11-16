@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { Loader2, ExternalLink, Plus } from 'lucide-react'
+import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X } from 'lucide-react'
+import TaskModal from '../components/TaskModal'
 import './Board.css'
 
 const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
@@ -65,6 +66,12 @@ export default function Board() {
   const [board, setBoard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedTask, setSelectedTask] = useState(null)
+  const [showAllColumns, setShowAllColumns] = useState(false)
+  const [visibleColumns, setVisibleColumns] = useState(['person', 'status', 'date'])
+  const [hoveredCell, setHoveredCell] = useState(null)
+  const [showAddColumn, setShowAddColumn] = useState(false)
+  const [activeCellMenu, setActiveCellMenu] = useState(null)
 
   useEffect(() => {
     async function loadData() {
@@ -81,6 +88,46 @@ export default function Board() {
     }
     loadData()
   }, [id])
+
+  const handleTaskClick = (item) => {
+    setSelectedTask(item)
+  }
+
+  const handleTaskUpdate = (updatedTask) => {
+    // Update task in board
+    const updatedItems = board.items_page.items.map(item =>
+      item.id === updatedTask.id ? updatedTask : item
+    )
+    setBoard({
+      ...board,
+      items_page: {
+        items: updatedItems
+      }
+    })
+  }
+
+  const handleCellClick = (e, itemId, columnType) => {
+    e.stopPropagation()
+    setActiveCellMenu({ itemId, columnType, x: e.clientX, y: e.clientY })
+  }
+
+  const mondayColumnTypes = [
+    { type: 'text', label: 'نص', icon: '📝' },
+    { type: 'person', label: 'شخص', icon: '👤' },
+    { type: 'status', label: 'حالة', icon: '🎯' },
+    { type: 'date', label: 'تاريخ', icon: '📅' },
+    { type: 'timeline', label: 'جدول زمني', icon: '📊' },
+    { type: 'numbers', label: 'أرقام', icon: '🔢' },
+    { type: 'email', label: 'بريد إلكتروني', icon: '✉️' },
+    { type: 'phone', label: 'هاتف', icon: '📞' },
+    { type: 'link', label: 'رابط', icon: '🔗' },
+    { type: 'dropdown', label: 'قائمة منسدلة', icon: '📋' },
+    { type: 'checkbox', label: 'مربع اختيار', icon: '☑️' },
+    { type: 'file', label: 'ملف', icon: '📎' },
+    { type: 'location', label: 'موقع', icon: '📍' },
+    { type: 'rating', label: 'تقييم', icon: '⭐' },
+    { type: 'progress', label: 'تقدم', icon: '📈' }
+  ]
 
   if (loading) {
     return (
@@ -113,6 +160,14 @@ export default function Board() {
     itemsByGroup[gid].push(item)
   })
 
+  // Get all unique column types
+  const allColumnTypes = new Set()
+  board.items_page.items.forEach(item => {
+    item.column_values.forEach(col => {
+      if (col.type) allColumnTypes.add(col.type)
+    })
+  })
+
   const getStatusColor = (text) => {
     if (!text) return '#C4C4C4'
     const t = text.toLowerCase()
@@ -121,6 +176,15 @@ export default function Board() {
     if (t.includes('stuck') || t.includes('معلق')) return '#E44258'
     return '#0073EA'
   }
+
+  const getColumnValue = (item, type) => {
+    const col = item.column_values.find(c => c.type === type || c.type.includes(type))
+    return col?.text || ''
+  }
+
+  const gridColumns = showAllColumns
+    ? `2fr repeat(${allColumnTypes.size}, 1fr) 150px`
+    : `2fr repeat(${visibleColumns.length}, 1fr) 150px`
 
   return (
     <div className="monday-board">
@@ -135,9 +199,16 @@ export default function Board() {
           </div>
         </div>
         <div className="board-actions">
-          <a 
-            href={`https://monday.com/boards/${id}`} 
-            target="_blank" 
+          <button
+            className="action-btn"
+            onClick={() => setShowAllColumns(!showAllColumns)}
+          >
+            <Settings size={16} />
+            <span>{showAllColumns ? 'إخفاء الأعمدة' : 'عرض كل الأعمدة'}</span>
+          </button>
+          <a
+            href={`https://monday.com/boards/${id}`}
+            target="_blank"
             rel="noopener noreferrer"
             className="action-btn"
           >
@@ -149,23 +220,40 @@ export default function Board() {
 
       {/* Board Table */}
       <div className="board-table-container">
-        <div className="board-table">
+        <div className="board-table" style={{ '--grid-cols': gridColumns }}>
           {/* Table Header */}
           <div className="table-header-row">
             <div className="header-cell col-task">المهمة</div>
-            <div className="header-cell col-person">المسؤول</div>
-            <div className="header-cell col-status">الحالة</div>
-            <div className="header-cell col-date">التاريخ</div>
+            {showAllColumns ? (
+              Array.from(allColumnTypes).map(type => (
+                <div key={type} className="header-cell">{type}</div>
+              ))
+            ) : (
+              <>
+                <div className="header-cell">المسؤول</div>
+                <div className="header-cell">الحالة</div>
+                <div className="header-cell">التاريخ</div>
+              </>
+            )}
+            <div className="header-cell add-column-cell">
+              <button
+                className="add-column-btn"
+                onClick={() => setShowAddColumn(!showAddColumn)}
+              >
+                <Plus size={16} />
+                <span>إضافة عمود</span>
+              </button>
+            </div>
           </div>
 
           {/* Groups */}
           {board.groups.map(group => {
             const items = itemsByGroup[group.id] || []
-            
+
             return (
               <div key={group.id} className="table-group">
                 {/* Group Header */}
-                <div 
+                <div
                   className="group-row"
                   style={{ borderLeftColor: group.color }}
                 >
@@ -175,55 +263,123 @@ export default function Board() {
 
                 {/* Group Items */}
                 {items.map(item => {
-                  const personCol = item.column_values.find(c => 
-                    c.type === 'multiple-person' || c.type === 'people'
-                  )
-                  const statusCol = item.column_values.find(c => 
-                    c.type === 'color' || c.type === 'status'
-                  )
-                  const dateCol = item.column_values.find(c => 
-                    c.type === 'date'
-                  )
-
-                  const person = personCol?.text || ''
-                  const status = statusCol?.text || ''
-                  const date = dateCol?.text || ''
+                  const person = getColumnValue(item, 'person') || getColumnValue(item, 'people')
+                  const status = getColumnValue(item, 'status') || getColumnValue(item, 'color')
+                  const date = getColumnValue(item, 'date')
 
                   return (
-                    <div key={item.id} className="item-row">
+                    <div
+                      key={item.id}
+                      className="item-row"
+                      onClick={() => handleTaskClick(item)}
+                    >
                       <div className="item-cell col-task">
                         <div className="task-check"></div>
                         <span className="task-text">{item.name}</span>
                       </div>
-                      <div className="item-cell col-person">
-                        {person ? (
-                          <div className="person-pill">
-                            <div className="person-avatar">{person[0]}</div>
-                            <span>{person}</span>
-                          </div>
-                        ) : (
-                          <span className="empty">-</span>
-                        )}
-                      </div>
-                      <div className="item-cell col-status">
-                        {status ? (
-                          <div 
-                            className="status-pill"
-                            style={{ backgroundColor: getStatusColor(status) }}
+
+                      {showAllColumns ? (
+                        Array.from(allColumnTypes).map(type => {
+                          const value = getColumnValue(item, type)
+                          const cellKey = `${item.id}-${type}`
+                          return (
+                            <div
+                              key={type}
+                              className={`item-cell interactive-cell ${hoveredCell === cellKey ? 'cell-hovered' : ''}`}
+                              onMouseEnter={() => setHoveredCell(cellKey)}
+                              onMouseLeave={() => setHoveredCell(null)}
+                              onClick={(e) => handleCellClick(e, item.id, type)}
+                            >
+                              {type === 'status' || type === 'color' ? (
+                                value ? (
+                                  <div
+                                    className="status-pill"
+                                    style={{ backgroundColor: getStatusColor(value) }}
+                                  >
+                                    {value}
+                                  </div>
+                                ) : (
+                                  <span className="empty">-</span>
+                                )
+                              ) : type === 'person' || type === 'people' || type === 'multiple-person' ? (
+                                value ? (
+                                  <div className="person-pill">
+                                    <div className="person-avatar">{value[0]}</div>
+                                    <span>{value}</span>
+                                  </div>
+                                ) : (
+                                  <span className="empty">-</span>
+                                )
+                              ) : (
+                                <span>{value || '-'}</span>
+                              )}
+                              {hoveredCell === cellKey && (
+                                <button className="cell-action-btn">
+                                  <ChevronDown size={14} />
+                                </button>
+                              )}
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <>
+                          <div
+                            className={`item-cell col-person interactive-cell ${hoveredCell === `${item.id}-person` ? 'cell-hovered' : ''}`}
+                            onMouseEnter={() => setHoveredCell(`${item.id}-person`)}
+                            onMouseLeave={() => setHoveredCell(null)}
+                            onClick={(e) => handleCellClick(e, item.id, 'person')}
                           >
-                            {status}
+                            {person ? (
+                              <div className="person-pill">
+                                <div className="person-avatar">{person[0]}</div>
+                                <span>{person}</span>
+                              </div>
+                            ) : (
+                              <span className="empty">-</span>
+                            )}
+                            {hoveredCell === `${item.id}-person` && (
+                              <button className="cell-action-btn">
+                                <ChevronDown size={14} />
+                              </button>
+                            )}
                           </div>
-                        ) : (
-                          <span className="empty">-</span>
-                        )}
-                      </div>
-                      <div className="item-cell col-date">
-                        {date ? (
-                          <span>{date}</span>
-                        ) : (
-                          <span className="empty">-</span>
-                        )}
-                      </div>
+                          <div
+                            className={`item-cell col-status interactive-cell ${hoveredCell === `${item.id}-status` ? 'cell-hovered' : ''}`}
+                            onMouseEnter={() => setHoveredCell(`${item.id}-status`)}
+                            onMouseLeave={() => setHoveredCell(null)}
+                            onClick={(e) => handleCellClick(e, item.id, 'status')}
+                          >
+                            {status ? (
+                              <div
+                                className="status-pill"
+                                style={{ backgroundColor: getStatusColor(status) }}
+                              >
+                                {status}
+                              </div>
+                            ) : (
+                              <span className="empty">-</span>
+                            )}
+                            {hoveredCell === `${item.id}-status` && (
+                              <button className="cell-action-btn">
+                                <ChevronDown size={14} />
+                              </button>
+                            )}
+                          </div>
+                          <div
+                            className={`item-cell col-date interactive-cell ${hoveredCell === `${item.id}-date` ? 'cell-hovered' : ''}`}
+                            onMouseEnter={() => setHoveredCell(`${item.id}-date`)}
+                            onMouseLeave={() => setHoveredCell(null)}
+                            onClick={(e) => handleCellClick(e, item.id, 'date')}
+                          >
+                            {date ? <span>{date}</span> : <span className="empty">-</span>}
+                            {hoveredCell === `${item.id}-date` && (
+                              <button className="cell-action-btn">
+                                <ChevronDown size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   )
                 })}
@@ -232,6 +388,101 @@ export default function Board() {
           })}
         </div>
       </div>
+
+      {/* Task Modal */}
+      {selectedTask && (
+        <TaskModal
+          task={selectedTask}
+          board={board}
+          onClose={() => setSelectedTask(null)}
+          onUpdate={handleTaskUpdate}
+        />
+      )}
+
+      {/* Add Column Menu */}
+      {showAddColumn && (
+        <div className="column-type-menu">
+          <div className="menu-header">
+            <h3>اختر نوع العمود</h3>
+            <button onClick={() => setShowAddColumn(false)} className="close-menu-btn">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="column-types-grid">
+            {mondayColumnTypes.map(colType => (
+              <div
+                key={colType.type}
+                className="column-type-item"
+                onClick={() => {
+                  // Handle add column
+                  console.log('Adding column:', colType.type)
+                  setShowAddColumn(false)
+                }}
+              >
+                <span className="column-type-icon">{colType.icon}</span>
+                <span className="column-type-label">{colType.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Cell Menu */}
+      {activeCellMenu && (
+        <div
+          className="cell-menu"
+          style={{
+            position: 'fixed',
+            left: `${activeCellMenu.x}px`,
+            top: `${activeCellMenu.y}px`,
+            zIndex: 1001
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="cell-menu-header">
+            <span>تعديل {activeCellMenu.columnType}</span>
+            <button onClick={() => setActiveCellMenu(null)} className="close-menu-btn">
+              <X size={14} />
+            </button>
+          </div>
+          <div className="cell-menu-options">
+            {activeCellMenu.columnType === 'status' || activeCellMenu.columnType === 'color' ? (
+              <>
+                <div className="menu-option status-option" style={{ background: '#00CA72' }}>مكتمل</div>
+                <div className="menu-option status-option" style={{ background: '#FDAB3D' }}>قيد العمل</div>
+                <div className="menu-option status-option" style={{ background: '#E44258' }}>معلق</div>
+                <div className="menu-option status-option" style={{ background: '#0073EA' }}>جديد</div>
+              </>
+            ) : activeCellMenu.columnType === 'person' || activeCellMenu.columnType === 'people' ? (
+              <>
+                <div className="menu-option">تعيين شخص</div>
+                <div className="menu-option">إزالة الشخص</div>
+              </>
+            ) : activeCellMenu.columnType === 'date' ? (
+              <>
+                <div className="menu-option">اختيار تاريخ</div>
+                <div className="menu-option">مسح التاريخ</div>
+              </>
+            ) : (
+              <>
+                <div className="menu-option">تعديل</div>
+                <div className="menu-option">مسح</div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Click outside to close menus */}
+      {(showAddColumn || activeCellMenu) && (
+        <div
+          className="menu-overlay"
+          onClick={() => {
+            setShowAddColumn(false)
+            setActiveCellMenu(null)
+          }}
+        />
+      )}
     </div>
   )
 }
