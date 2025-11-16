@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import React from 'react'
-import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2 } from 'lucide-react'
+import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun } from 'lucide-react'
 import TaskModal from '../components/TaskModal'
 import './Board.css'
 
@@ -75,6 +75,11 @@ export default function Board() {
   const [activeCellMenu, setActiveCellMenu] = useState(null)
   const [expandedTasks, setExpandedTasks] = useState({})
   const [taskSubtasks, setTaskSubtasks] = useState({})
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode')
+    return saved ? JSON.parse(saved) : false
+  })
+  const [collapsedGroups, setCollapsedGroups] = useState({})
 
   useEffect(() => {
     async function loadData() {
@@ -91,6 +96,26 @@ export default function Board() {
     }
     loadData()
   }, [id])
+
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(darkMode))
+    if (darkMode) {
+      document.body.classList.add('dark-mode')
+    } else {
+      document.body.classList.remove('dark-mode')
+    }
+  }, [darkMode])
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode)
+  }
+
+  const toggleGroupCollapse = (groupId) => {
+    setCollapsedGroups(prev => ({
+      ...prev,
+      [groupId]: !prev[groupId]
+    }))
+  }
 
   const handleTaskClick = (item) => {
     setSelectedTask(item)
@@ -121,35 +146,93 @@ export default function Board() {
     }))
   }
 
-  const addSubtask = (taskId) => {
+  const addSubtask = (taskId, parentSubtaskId = null) => {
     const newSubtask = {
       id: Date.now().toString(),
       name: '',
       person: '',
       status: 'جديد',
       date: '',
+      subtasks: [],
       isNew: true
     }
-    setTaskSubtasks(prev => ({
-      ...prev,
-      [taskId]: [...(prev[taskId] || []), newSubtask]
-    }))
-    setExpandedTasks(prev => ({ ...prev, [taskId]: true }))
+
+    if (parentSubtaskId) {
+      // Add nested subtask
+      setTaskSubtasks(prev => {
+        const addNested = (subs) => {
+          return subs.map(sub => {
+            if (sub.id === parentSubtaskId) {
+              return {
+                ...sub,
+                subtasks: [...(sub.subtasks || []), newSubtask]
+              }
+            }
+            if (sub.subtasks) {
+              return { ...sub, subtasks: addNested(sub.subtasks) }
+            }
+            return sub
+          })
+        }
+        return {
+          ...prev,
+          [taskId]: addNested(prev[taskId] || [])
+        }
+      })
+      setExpandedTasks(prev => ({ ...prev, [`${taskId}-${parentSubtaskId}`]: true }))
+    } else {
+      // Add top-level subtask
+      setTaskSubtasks(prev => ({
+        ...prev,
+        [taskId]: [...(prev[taskId] || []), newSubtask]
+      }))
+      setExpandedTasks(prev => ({ ...prev, [taskId]: true }))
+    }
   }
 
   const updateSubtask = (taskId, subtaskId, field, value) => {
-    setTaskSubtasks(prev => ({
-      ...prev,
-      [taskId]: prev[taskId].map(sub =>
-        sub.id === subtaskId ? { ...sub, [field]: value, isNew: false } : sub
-      )
-    }))
+    setTaskSubtasks(prev => {
+      const updateRecursive = (subs) => {
+        return subs.map(sub => {
+          if (sub.id === subtaskId) {
+            return { ...sub, [field]: value, isNew: false }
+          }
+          if (sub.subtasks) {
+            return { ...sub, subtasks: updateRecursive(sub.subtasks) }
+          }
+          return sub
+        })
+      }
+      return {
+        ...prev,
+        [taskId]: updateRecursive(prev[taskId] || [])
+      }
+    })
   }
 
   const deleteSubtask = (taskId, subtaskId) => {
-    setTaskSubtasks(prev => ({
+    setTaskSubtasks(prev => {
+      const deleteRecursive = (subs) => {
+        return subs.filter(sub => {
+          if (sub.id === subtaskId) return false
+          if (sub.subtasks) {
+            sub.subtasks = deleteRecursive(sub.subtasks)
+          }
+          return true
+        })
+      }
+      return {
+        ...prev,
+        [taskId]: deleteRecursive(prev[taskId] || [])
+      }
+    })
+  }
+
+  const toggleSubtaskExpand = (taskId, subtaskId) => {
+    const key = `${taskId}-${subtaskId}`
+    setExpandedTasks(prev => ({
       ...prev,
-      [taskId]: prev[taskId].filter(sub => sub.id !== subtaskId)
+      [key]: !prev[key]
     }))
   }
 
@@ -228,6 +311,142 @@ export default function Board() {
     ? `2fr repeat(${allColumnTypes.size}, 1fr) 150px`
     : `2fr repeat(${visibleColumns.length}, 1fr) 150px`
 
+  const renderSubtasksRecursive = (taskId, subtasks, level = 0) => {
+    return subtasks.map(subtask => {
+      const subtaskKey = `${taskId}-${subtask.id}`
+      const isSubtaskExpanded = expandedTasks[subtaskKey]
+      const hasChildren = subtask.subtasks && subtask.subtasks.length > 0
+
+      return (
+        <React.Fragment key={subtask.id}>
+          <div className="subtask-row-inline" style={{ '--indent-level': level }}>
+            <div className="item-cell col-task">
+              <div className="subtask-indent" style={{ width: `${level * 30}px` }}></div>
+
+              {/* Expand Arrow for nested subtasks */}
+              <button
+                className="expand-arrow expand-arrow-small"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleSubtaskExpand(taskId, subtask.id)
+                }}
+                style={{ opacity: hasChildren || isSubtaskExpanded ? 1 : 0.3 }}
+              >
+                <ChevronDown
+                  size={12}
+                  className={isSubtaskExpanded ? 'expanded' : ''}
+                />
+              </button>
+
+              <div className="task-check-small"></div>
+              <input
+                type="text"
+                className="subtask-name-inline-input"
+                value={subtask.name}
+                onChange={(e) => updateSubtask(taskId, subtask.id, 'name', e.target.value)}
+                placeholder="اسم المهمة الفرعية..."
+                autoFocus={subtask.isNew}
+              />
+
+              {/* Add nested subtask button */}
+              <button
+                className="add-subtask-inline-btn add-subtask-inline-btn-small"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  addSubtask(taskId, subtask.id)
+                }}
+                title="إضافة مهمة فرعية"
+              >
+                <Plus size={12} />
+              </button>
+
+              <button
+                className="delete-subtask-inline-btn"
+                onClick={() => deleteSubtask(taskId, subtask.id)}
+                title="حذف"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+
+            {showAllColumns ? (
+              Array.from(allColumnTypes).map(type => (
+                <div key={type} className="item-cell">
+                  {type === 'status' || type === 'color' ? (
+                    <select
+                      className="subtask-select-inline"
+                      value={subtask.status || 'جديد'}
+                      onChange={(e) => updateSubtask(taskId, subtask.id, 'status', e.target.value)}
+                      style={{ backgroundColor: getStatusColor(subtask.status || 'جديد') }}
+                    >
+                      <option value="جديد">جديد</option>
+                      <option value="قيد العمل">قيد العمل</option>
+                      <option value="مكتمل">مكتمل</option>
+                      <option value="معلق">معلق</option>
+                    </select>
+                  ) : type === 'person' || type === 'people' || type === 'multiple-person' ? (
+                    <input
+                      type="text"
+                      className="subtask-input-inline"
+                      value={subtask.person || ''}
+                      onChange={(e) => updateSubtask(taskId, subtask.id, 'person', e.target.value)}
+                      placeholder="المسؤول"
+                    />
+                  ) : type === 'date' ? (
+                    <input
+                      type="date"
+                      className="subtask-input-inline"
+                      value={subtask.date || ''}
+                      onChange={(e) => updateSubtask(taskId, subtask.id, 'date', e.target.value)}
+                    />
+                  ) : (
+                    <span className="empty">-</span>
+                  )}
+                </div>
+              ))
+            ) : (
+              <>
+                <div className="item-cell col-person">
+                  <input
+                    type="text"
+                    className="subtask-input-inline"
+                    value={subtask.person || ''}
+                    onChange={(e) => updateSubtask(taskId, subtask.id, 'person', e.target.value)}
+                    placeholder="المسؤول"
+                  />
+                </div>
+                <div className="item-cell col-status">
+                  <select
+                    className="subtask-select-inline"
+                    value={subtask.status || 'جديد'}
+                    onChange={(e) => updateSubtask(taskId, subtask.id, 'status', e.target.value)}
+                    style={{ backgroundColor: getStatusColor(subtask.status || 'جديد') }}
+                  >
+                    <option value="جديد">جديد</option>
+                    <option value="قيد العمل">قيد العمل</option>
+                    <option value="مكتمل">مكتمل</option>
+                    <option value="معلق">معلق</option>
+                  </select>
+                </div>
+                <div className="item-cell col-date">
+                  <input
+                    type="date"
+                    className="subtask-input-inline"
+                    value={subtask.date || ''}
+                    onChange={(e) => updateSubtask(taskId, subtask.id, 'date', e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Render nested subtasks recursively */}
+          {isSubtaskExpanded && hasChildren && renderSubtasksRecursive(taskId, subtask.subtasks, level + 1)}
+        </React.Fragment>
+      )
+    })
+  }
+
   return (
     <div className="monday-board">
       {/* Board Header */}
@@ -241,6 +460,14 @@ export default function Board() {
           </div>
         </div>
         <div className="board-actions">
+          <button
+            className="action-btn"
+            onClick={toggleDarkMode}
+            title={darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
+          >
+            {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+            <span>{darkMode ? 'وضع نهاري' : 'وضع ليلي'}</span>
+          </button>
           <button
             className="action-btn"
             onClick={() => setShowAllColumns(!showAllColumns)}
@@ -291,20 +518,22 @@ export default function Board() {
           {/* Groups */}
           {board.groups.map(group => {
             const items = itemsByGroup[group.id] || []
+            const isGroupCollapsed = collapsedGroups[group.id]
 
             return (
               <div key={group.id} className="table-group">
                 {/* Group Header */}
                 <div
-                  className="group-row"
+                  className={`group-row ${isGroupCollapsed ? 'collapsed' : ''}`}
                   style={{ borderLeftColor: group.color }}
+                  onClick={() => toggleGroupCollapse(group.id)}
                 >
                   <div className="group-name">{group.title}</div>
                   <div className="group-count">{items.length} مهام</div>
                 </div>
 
                 {/* Group Items */}
-                {items.map(item => {
+                {!isGroupCollapsed && items.map(item => {
                   const person = getColumnValue(item, 'person') || getColumnValue(item, 'people')
                   const status = getColumnValue(item, 'status') || getColumnValue(item, 'color')
                   const date = getColumnValue(item, 'date')
@@ -445,105 +674,14 @@ export default function Board() {
                       )}
                     </div>
 
-                    {/* Subtasks Rows */}
-                    {isExpanded && subtasks.length > 0 && subtasks.map((subtask, subIndex) => (
-                      <div key={subtask.id} className="subtask-row-inline">
-                        <div className="item-cell col-task">
-                          <div className="subtask-indent"></div>
-                          <div className="task-check-small"></div>
-                          <input
-                            type="text"
-                            className="subtask-name-inline-input"
-                            value={subtask.name}
-                            onChange={(e) => updateSubtask(item.id, subtask.id, 'name', e.target.value)}
-                            placeholder="اسم المهمة الفرعية..."
-                            autoFocus={subtask.isNew}
-                          />
-                          <button
-                            className="delete-subtask-inline-btn"
-                            onClick={() => deleteSubtask(item.id, subtask.id)}
-                            title="حذف"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-
-                        {showAllColumns ? (
-                          Array.from(allColumnTypes).map(type => (
-                            <div key={type} className="item-cell">
-                              {type === 'status' || type === 'color' ? (
-                                <select
-                                  className="subtask-select-inline"
-                                  value={subtask.status || 'جديد'}
-                                  onChange={(e) => updateSubtask(item.id, subtask.id, 'status', e.target.value)}
-                                >
-                                  <option value="جديد">جديد</option>
-                                  <option value="قيد العمل">قيد العمل</option>
-                                  <option value="مكتمل">مكتمل</option>
-                                  <option value="معلق">معلق</option>
-                                </select>
-                              ) : type === 'person' || type === 'people' || type === 'multiple-person' ? (
-                                <input
-                                  type="text"
-                                  className="subtask-input-inline"
-                                  value={subtask.person || ''}
-                                  onChange={(e) => updateSubtask(item.id, subtask.id, 'person', e.target.value)}
-                                  placeholder="المسؤول"
-                                />
-                              ) : type === 'date' ? (
-                                <input
-                                  type="date"
-                                  className="subtask-input-inline"
-                                  value={subtask.date || ''}
-                                  onChange={(e) => updateSubtask(item.id, subtask.id, 'date', e.target.value)}
-                                />
-                              ) : (
-                                <span className="empty">-</span>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <>
-                            <div className="item-cell col-person">
-                              <input
-                                type="text"
-                                className="subtask-input-inline"
-                                value={subtask.person || ''}
-                                onChange={(e) => updateSubtask(item.id, subtask.id, 'person', e.target.value)}
-                                placeholder="المسؤول"
-                              />
-                            </div>
-                            <div className="item-cell col-status">
-                              <select
-                                className="subtask-select-inline"
-                                value={subtask.status || 'جديد'}
-                                onChange={(e) => updateSubtask(item.id, subtask.id, 'status', e.target.value)}
-                                style={{ backgroundColor: getStatusColor(subtask.status || 'جديد') }}
-                              >
-                                <option value="جديد">جديد</option>
-                                <option value="قيد العمل">قيد العمل</option>
-                                <option value="مكتمل">مكتمل</option>
-                                <option value="معلق">معلق</option>
-                              </select>
-                            </div>
-                            <div className="item-cell col-date">
-                              <input
-                                type="date"
-                                className="subtask-input-inline"
-                                value={subtask.date || ''}
-                                onChange={(e) => updateSubtask(item.id, subtask.id, 'date', e.target.value)}
-                              />
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ))}
+                    {/* Subtasks Rows - Recursive rendering for infinite nesting */}
+                    {isExpanded && subtasks.length > 0 && renderSubtasksRecursive(item.id, subtasks, 0)}
                   </React.Fragment>
                   )
                 })}
 
                 {/* Add Item Row */}
-                <div className="add-item-row">
+                {!isGroupCollapsed && <div className="add-item-row">
                   <button
                     className="add-item-btn"
                     onClick={() => {
@@ -558,7 +696,7 @@ export default function Board() {
                     <Plus size={18} />
                     <span>إضافة مهمة</span>
                   </button>
-                </div>
+                </div>}
               </div>
             )
           })}
