@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Workspaces from './pages/Workspaces'
+import WorkspaceView from './pages/WorkspaceView'
 import Board from './pages/Board'
 import Team from './pages/Team'
 import Settings from './pages/Settings'
@@ -39,6 +40,7 @@ function App() {
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/workspaces" element={<Workspaces />} />
+              <Route path="/workspace/:id" element={<WorkspaceView />} />
               <Route path="/board/:id" element={<Board />} />
               <Route path="/team" element={<Team />} />
               <Route path="/settings" element={<Settings />} />

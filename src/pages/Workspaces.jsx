@@ -1,41 +1,27 @@
 import { Plus, FolderKanban, Users, MoreVertical } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { mockWorkspaces, mockBoards } from '../data/mockData'
 import './Workspaces.css'
 
 export default function Workspaces() {
-  const workspaces = [
-    {
-      id: 1,
-      name: 'مساحة العمل الرئيسية',
-      description: 'جميع المشاريع والمهام الرئيسية',
-      boards: 8,
-      members: 12,
-      color: '#5B4E9D'
-    },
-    {
-      id: 2,
-      name: 'التسويق الرقمي',
-      description: 'حملات التسويق والمحتوى',
-      boards: 5,
-      members: 6,
-      color: '#007AFF'
-    },
-    {
-      id: 3,
-      name: 'تطوير المنتج',
-      description: 'تطوير الميزات الجديدة',
-      boards: 12,
-      members: 15,
-      color: '#34C759'
-    },
-    {
-      id: 4,
-      name: 'خدمة العملاء',
-      description: 'دعم وخدمة العملاء',
-      boards: 3,
-      members: 8,
-      color: '#FF9500'
-    }
-  ]
+  const navigate = useNavigate()
+  const [showCreateModal, setShowCreateModal] = useState(false)
+
+  // Use real data from mockData
+  const workspaces = mockWorkspaces.map(ws => ({
+    ...ws,
+    description: `مساحة عمل تحتوي على ${ws.boards} لوحة`
+  }))
+
+  const handleEnterWorkspace = (workspaceId) => {
+    // Navigate to workspace boards view
+    navigate(`/workspace/${workspaceId}`)
+  }
+
+  const handleCreateWorkspace = () => {
+    alert('إنشاء مساحة عمل جديدة - قريباً!\n\nهذه الميزة ستتوفر قريباً. حالياً يمكنك استخدام مساحات العمل الموجودة من Monday.com')
+  }
 
   return (
     <div className="workspaces-page">
@@ -44,7 +30,7 @@ export default function Workspaces() {
           <h1>مساحات العمل</h1>
           <p>إدارة جميع مساحات العمل والمشاريع</p>
         </div>
-        <button className="btn btn-primary">
+        <button className="btn btn-primary" onClick={handleCreateWorkspace}>
           <Plus size={20} />
           <span>مساحة عمل جديدة</span>
         </button>
@@ -84,7 +70,10 @@ export default function Workspaces() {
               </div>
             </div>
 
-            <button className="workspace-enter-btn">
+            <button
+              className="workspace-enter-btn"
+              onClick={() => handleEnterWorkspace(workspace.id)}
+            >
               دخول مساحة العمل
             </button>
           </div>
@@ -98,7 +87,9 @@ export default function Workspaces() {
             </div>
             <h3>إنشاء مساحة عمل جديدة</h3>
             <p>ابدأ بإنشاء مساحة عمل لمشروع أو فريق جديد</p>
-            <button className="btn btn-outline">إنشاء الآن</button>
+            <button className="btn btn-outline" onClick={handleCreateWorkspace}>
+              إنشاء الآن
+            </button>
           </div>
         </div>
       </div>
