@@ -347,6 +347,43 @@
   }
 }
 
+/* Drag Over Task - Reordering Indicator */
+.item-row.drag-over-task {
+  border-top: 3px solid #0073EA !important;
+  margin-top: 3px;
+  animation: dragOverPulse 0.8s ease-in-out infinite;
+  position: relative;
+}
+
+.item-row.drag-over-task::after {
+  content: '⬇ إسقاط هنا';
+  position: absolute;
+  top: -20px;
+  right: 50%;
+  transform: translateX(50%);
+  background: #0073EA;
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 115, 234, 0.4);
+  z-index: 100;
+  pointer-events: none;
+}
+
+@keyframes dragOverPulse {
+  0%, 100% {
+    border-top-color: #0073EA;
+    box-shadow: 0 -4px 12px rgba(0, 115, 234, 0.3);
+  }
+  50% {
+    border-top-color: #00CA72;
+    box-shadow: 0 -4px 12px rgba(0, 202, 114, 0.3);
+  }
+}
+
 .item-row::before {
   content: '';
   position: absolute;

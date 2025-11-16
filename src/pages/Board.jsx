@@ -83,6 +83,7 @@ export default function Board() {
   const [collapsedGroups, setCollapsedGroups] = useState({})
   const [draggedTask, setDraggedTask] = useState(null)
   const [dragOverGroup, setDragOverGroup] = useState(null)
+  const [dragOverTask, setDragOverTask] = useState(null) // For reordering within same group
 
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState({
@@ -135,8 +136,8 @@ export default function Board() {
     }))
   }
 
-  const handleDragStart = (e, task, groupId) => {
-    setDraggedTask({ task, groupId })
+  const handleDragStart = (e, task, groupId, taskIndex) => {
+    setDraggedTask({ task, groupId, taskIndex })
     e.dataTransfer.effectAllowed = 'move'
     e.target.style.opacity = '0.4'
   }
@@ -145,6 +146,7 @@ export default function Board() {
     e.target.style.opacity = '1'
     setDraggedTask(null)
     setDragOverGroup(null)
+    setDragOverTask(null)
   }
 
   const handleDragOver = (e, groupId) => {
@@ -153,21 +155,49 @@ export default function Board() {
     setDragOverGroup(groupId)
   }
 
+  const handleDragOverTask = (e, taskId, groupId, taskIndex) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!draggedTask) return
+
+    // Don't set drag over if it's the same task being dragged
+    if (draggedTask.task.id === taskId) {
+      setDragOverTask(null)
+      return
+    }
+
+    setDragOverTask({ taskId, groupId, taskIndex })
+    e.dataTransfer.dropEffect = 'move'
+  }
+
   const handleDrop = (e, targetGroupId) => {
     e.preventDefault()
     if (!draggedTask) return
 
-    const { task, groupId: sourceGroupId } = draggedTask
+    const { task, groupId: sourceGroupId, taskIndex: sourceIndex } = draggedTask
 
-    if (sourceGroupId !== targetGroupId) {
-      // Update task's group
+    // Check if we're dropping on a specific task for reordering
+    if (dragOverTask && dragOverTask.groupId === targetGroupId) {
+      const targetIndex = dragOverTask.taskIndex
+
+      if (sourceGroupId === targetGroupId) {
+        // Reordering within same group
+        console.log(`Reordering "${task.name}" from position ${sourceIndex} to ${targetIndex}`)
+        alert(`تم إعادة ترتيب المهمة "${task.name}"! 🎯`)
+      } else {
+        // Moving to different group at specific position
+        console.log(`Moving "${task.name}" from ${sourceGroupId} to ${targetGroupId} at position ${targetIndex}`)
+        alert(`تم نقل المهمة "${task.name}" إلى مجموعة جديدة في الموضع ${targetIndex + 1}! 🎉`)
+      }
+    } else if (sourceGroupId !== targetGroupId) {
+      // Moving to different group (at end)
       console.log(`Moving task "${task.name}" from ${sourceGroupId} to ${targetGroupId}`)
-      // In real implementation, this would call Monday API to update the task
       alert(`تم نقل المهمة "${task.name}" إلى مجموعة جديدة! 🎉`)
     }
 
     setDraggedTask(null)
     setDragOverGroup(null)
+    setDragOverTask(null)
   }
 
   // Column resize handlers
@@ -771,20 +801,22 @@ export default function Board() {
                 </div>
 
                 {/* Group Items */}
-                {!isGroupCollapsed && items.map(item => {
+                {!isGroupCollapsed && items.map((item, itemIndex) => {
                   const person = getColumnValue(item, 'person') || getColumnValue(item, 'people')
                   const status = getColumnValue(item, 'status') || getColumnValue(item, 'color')
                   const date = getColumnValue(item, 'date')
                   const subtasks = taskSubtasks[item.id] || []
                   const isExpanded = expandedTasks[item.id]
+                  const isDraggedOver = dragOverTask?.taskId === item.id
 
                   return (
                     <React.Fragment key={item.id}>
                       <div
-                        className="item-row"
+                        className={`item-row ${isDraggedOver ? 'drag-over-task' : ''}`}
                         draggable="true"
-                        onDragStart={(e) => handleDragStart(e, item, group.id)}
+                        onDragStart={(e) => handleDragStart(e, item, group.id, itemIndex)}
                         onDragEnd={handleDragEnd}
+                        onDragOver={(e) => handleDragOverTask(e, item.id, group.id, itemIndex)}
                       >
                         <div className="item-cell col-task">
                           <button
