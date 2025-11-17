@@ -10,7 +10,7 @@ export const mockWorkspaces = [
     icon: '🏢',
     color: '#6161FF',
     members: 29,
-    boards: 21
+    boards: 22
   },
   {
     id: '4152774',
@@ -88,6 +88,9 @@ export const mockBoards = {
     // نماذج ومهام متنوعة
     { id: '5079968085', name: 'New Form', icon: '📋', color: '#3498DB', tasks: 1 },
     { id: '1937039758', name: 'new1', icon: '📝', color: '#BDC3C7', tasks: 4 },
+
+    // متابعة المتأخرات
+    { id: '9999999999', name: 'المتأخرات', icon: '⚠️', color: '#E44258', tasks: 0 },
   ],
   '4152774': [
     { id: '1923982430', name: 'مبيعات الشركات', icon: '💰', color: '#E74C3C', tasks: 27 },

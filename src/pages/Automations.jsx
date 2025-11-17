@@ -81,6 +81,60 @@ export default function Automations() {
       updated: '2 months ago',
       badge: 'Minor',
       active: true
+    },
+    {
+      id: 9,
+      trigger: 'When Status is تم الإنجاز for 30 days',
+      action: 'archive item',
+      owner: 'M',
+      updated: 'just now',
+      badge: 'Major',
+      active: true
+    },
+    {
+      id: 10,
+      trigger: 'When Date is overdue',
+      action: 'set Priority to عاجل',
+      owner: 'M',
+      updated: 'just now',
+      badge: 'Critical',
+      active: true
+    },
+    {
+      id: 11,
+      trigger: 'When stuck for 2 days',
+      action: 'set Priority to حرج',
+      owner: 'M',
+      updated: 'just now',
+      badge: 'Critical',
+      active: true
+    },
+    {
+      id: 12,
+      trigger: 'When Status is معلق',
+      action: 'move to "المشاكل" group',
+      owner: 'M',
+      updated: 'just now',
+      badge: 'Major',
+      active: true
+    },
+    {
+      id: 13,
+      trigger: 'When Status changes to متأخر',
+      action: 'notify المسؤول',
+      owner: 'M',
+      updated: 'just now',
+      badge: 'Minor',
+      active: true
+    },
+    {
+      id: 14,
+      trigger: 'When Date is 1 day away',
+      action: 'notify سلمى ومحمد',
+      owner: 'M',
+      updated: 'just now',
+      badge: 'Minor',
+      active: true
     }
   ])
 
