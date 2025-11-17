@@ -348,3 +348,239 @@ export function DonutChart({ data, size = 200, innerRadius = 60 }) {
     </div>
   )
 }
+
+// ==================== HORIZONTAL BAR CHART ====================
+export function HorizontalBarChart({ data, height = 200, showValues = true }) {
+  const maxValue = Math.max(...data.map(d => d.value))
+  const yAxisValues = [0, 5, 10, 15, 20, 25, 30, 35, 40]
+
+  return (
+    <div style={{ display: 'flex', gap: '15px' }}>
+      {/* Y-Axis */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column-reverse',
+        justifyContent: 'space-between',
+        height: `${height}px`,
+        paddingTop: '20px'
+      }}>
+        {yAxisValues.map((value, i) => (
+          <div
+            key={i}
+            style={{
+              fontSize: '11px',
+              color: 'var(--text-secondary)',
+              height: '20px',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            {value}
+          </div>
+        ))}
+      </div>
+
+      {/* الأعمدة */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'flex-end',
+        gap: '15px',
+        height: `${height + 20}px`,
+        borderLeft: '1px solid var(--border-light)',
+        paddingLeft: '15px'
+      }}>
+        {data.map((item, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              flex: 1,
+              minWidth: '50px',
+              maxWidth: '80px'
+            }}
+          >
+            {showValues && (
+              <div
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  marginBottom: '4px',
+                  color: 'var(--text-primary)'
+                }}
+              >
+                {item.value}
+              </div>
+            )}
+            <div
+              style={{
+                width: '100%',
+                height: `${(item.value / maxValue) * 180}px`,
+                background: item.color || '#0073EA',
+                borderRadius: '6px 6px 0 0',
+                transition: 'all 0.3s',
+                cursor: 'pointer',
+                position: 'relative'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)'
+                e.currentTarget.style.filter = 'brightness(1.1)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.filter = 'brightness(1)'
+              }}
+            ></div>
+            <div
+              style={{
+                fontSize: '11px',
+                color: 'var(--text-secondary)',
+                marginTop: '8px',
+                textAlign: 'center'
+              }}
+            >
+              {item.label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ==================== GROUPED BAR CHART ====================
+export function GroupedBarChart({ data, height = 200, colors = ['#0073EA', '#00CA72', '#E74C3C'] }) {
+  const maxValue = Math.max(...data.flatMap(group => group.values))
+  const yAxisValues = [0, 5, 10, 15, 20, 25, 30, 35]
+
+  // Extract series names from first group
+  const seriesNames = data[0]?.labels || []
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '15px' }}>
+        {/* Y-Axis */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column-reverse',
+          justifyContent: 'space-between',
+          height: `${height}px`,
+          paddingTop: '20px'
+        }}>
+          {yAxisValues.map((value, i) => (
+            <div
+              key={i}
+              style={{
+                fontSize: '11px',
+                color: 'var(--text-secondary)',
+                height: '20px',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              {value}
+            </div>
+          ))}
+        </div>
+
+        {/* الأعمدة المجمعة */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: '30px',
+          height: `${height + 20}px`,
+          borderLeft: '1px solid var(--border-light)',
+          paddingLeft: '15px'
+        }}>
+          {data.map((group, groupIndex) => (
+            <div
+              key={groupIndex}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                flex: 1
+              }}
+            >
+              {/* Bars Group */}
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end' }}>
+                {group.values.map((value, barIndex) => (
+                  <div
+                    key={barIndex}
+                    style={{
+                      width: '30px',
+                      height: `${(value / maxValue) * 180}px`,
+                      background: colors[barIndex] || '#0073EA',
+                      borderRadius: '4px 4px 0 0',
+                      transition: 'all 0.3s',
+                      cursor: 'pointer',
+                      position: 'relative'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-4px)'
+                      e.currentTarget.style.filter = 'brightness(1.1)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)'
+                      e.currentTarget.style.filter = 'brightness(1)'
+                    }}
+                  ></div>
+                ))}
+              </div>
+
+              {/* Group Label */}
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--text-secondary)',
+                  marginTop: '8px',
+                  textAlign: 'center'
+                }}
+              >
+                {group.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div style={{
+        display: 'flex',
+        gap: '20px',
+        justifyContent: 'center',
+        marginTop: '20px',
+        paddingTop: '15px',
+        borderTop: '1px solid var(--border-light)'
+      }}>
+        {seriesNames.map((name, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '12px'
+            }}
+          >
+            <div
+              style={{
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: colors[i] || '#0073EA',
+                flexShrink: 0
+              }}
+            ></div>
+            <span style={{ color: 'var(--text-primary)' }}>
+              {name}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
