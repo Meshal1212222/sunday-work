@@ -1601,6 +1601,68 @@
   color: var(--text-secondary);
 }
 
+/* Text Column Icon Button Styles */
+.text-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-item);
+  border: 1px solid var(--border-color);
+  color: #7F5AF0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.text-icon-btn:hover {
+  background: #7F5AF0;
+  color: white;
+  transform: scale(1.1);
+}
+
+.text-icon-btn-small {
+  width: 32px;
+  height: 32px;
+}
+
+.text-has-content-indicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  background: #00C853;
+  border-radius: 50%;
+  border: 2px solid var(--bg-primary);
+}
+
+.text-has-content-indicator-small {
+  width: 8px;
+  height: 8px;
+}
+
+.close-modal-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-modal-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .table-header-row,

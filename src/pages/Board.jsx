@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import React from 'react'
-import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun, User, Copy, Check, Mail, MessageCircle } from 'lucide-react'
+import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun, User, Copy, Check, Mail, MessageCircle, FileText } from 'lucide-react'
 import TaskModal from '../components/TaskModal'
 import { mockTeamMembers } from '../data/mockData'
 import './Board.css'
@@ -112,6 +112,7 @@ export default function Board() {
   const [copiedLinkId, setCopiedLinkId] = useState(null) // Track which link was copied
   const [updatesModalOpen, setUpdatesModalOpen] = useState(null) // stores itemId for updates modal
   const [taskUpdates, setTaskUpdates] = useState({}) // Store updates for each task
+  const [textModalOpen, setTextModalOpen] = useState(null) // stores { itemId, columnId, columnTitle, value, isSubtask }
 
   useEffect(() => {
     async function loadData() {
@@ -712,6 +713,34 @@ export default function Board() {
           </div>
         )
 
+      case 'text':
+      case 'long_text':
+        return (
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
+            <button
+              onClick={() => setTextModalOpen({
+                itemId: subtaskKey,
+                columnId: column.id,
+                columnTitle: column.title,
+                value: value,
+                isSubtask: true,
+                taskId: taskId,
+                subtaskId: subtask.id,
+                onUpdate: (newValue) => {
+                  // Store in subtask's custom field
+                  updateSubtask(taskId, subtask.id, column.id, newValue)
+                }
+              })}
+              className="text-icon-btn text-icon-btn-small"
+              title={value ? `${column.title}: ${value.substring(0, 50)}...` : `إضافة ${column.title}`}
+              style={{ position: 'relative' }}
+            >
+              <FileText size={14} />
+              {value && <span className="text-has-content-indicator text-has-content-indicator-small"></span>}
+            </button>
+          </div>
+        )
+
       default:
         return (
           <div className="subtask-input-inline" style={{ opacity: 0.6 }}>
@@ -792,13 +821,24 @@ export default function Board() {
       case 'text':
       case 'long_text':
         return (
-          <input
-            type="text"
-            className="subtask-input-inline"
-            value={value || ''}
-            onChange={(e) => onUpdate(column.id, e.target.value, column.type)}
-            placeholder={column.title}
-          />
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
+            <button
+              onClick={() => setTextModalOpen({
+                itemId: item.id,
+                columnId: column.id,
+                columnTitle: column.title,
+                value: value,
+                isSubtask: false,
+                onUpdate: (newValue) => onUpdate(column.id, newValue, column.type)
+              })}
+              className="text-icon-btn"
+              title={value ? `${column.title}: ${value.substring(0, 50)}...` : `إضافة ${column.title}`}
+              style={{ position: 'relative' }}
+            >
+              <FileText size={16} />
+              {value && <span className="text-has-content-indicator"></span>}
+            </button>
+          </div>
         )
 
       case 'numbers':
@@ -1419,6 +1459,89 @@ export default function Board() {
                 <div className="menu-option">مسح</div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Text Modal */}
+      {textModalOpen && (
+        <div className="updates-modal-overlay" onClick={() => setTextModalOpen(null)}>
+          <div className="updates-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
+            <div className="updates-modal-header">
+              <div>
+                <h3>{textModalOpen.columnTitle}</h3>
+              </div>
+              <button
+                onClick={() => setTextModalOpen(null)}
+                className="close-modal-btn"
+                title="إغلاق"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="updates-modal-body" style={{ padding: '20px' }}>
+              <textarea
+                className="text-modal-textarea"
+                value={textModalOpen.value || ''}
+                onChange={(e) => {
+                  const newValue = e.target.value
+                  setTextModalOpen(prev => ({ ...prev, value: newValue }))
+                }}
+                placeholder={`اكتب ${textModalOpen.columnTitle} هنا...`}
+                rows={10}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontFamily: 'inherit',
+                  resize: 'vertical',
+                  backgroundColor: 'var(--bg-item)',
+                  color: 'var(--text-primary)'
+                }}
+              />
+            </div>
+            <div className="updates-modal-footer" style={{
+              padding: '16px 20px',
+              borderTop: '1px solid var(--border-color)',
+              display: 'flex',
+              gap: '10px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={() => setTextModalOpen(null)}
+                className="modal-cancel-btn"
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--bg-item)',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer'
+                }}
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={() => {
+                  textModalOpen.onUpdate(textModalOpen.value)
+                  setTextModalOpen(null)
+                }}
+                className="modal-save-btn"
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: 'var(--link-color, #0073EA)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                حفظ
+              </button>
+            </div>
           </div>
         </div>
       )}
