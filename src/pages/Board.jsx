@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import React from 'react'
-import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun, User } from 'lucide-react'
+import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun, User, Copy, Check } from 'lucide-react'
 import TaskModal from '../components/TaskModal'
 import { mockTeamMembers } from '../data/mockData'
 import './Board.css'
@@ -96,7 +96,7 @@ export default function Board() {
     person: 200,
     status: 150,
     date: 150,
-    link: 200
+    link: 250
   })
   const [resizingColumn, setResizingColumn] = useState(null)
   const [resizeStartX, setResizeStartX] = useState(0)
@@ -106,6 +106,7 @@ export default function Board() {
   const [personDropdownOpen, setPersonDropdownOpen] = useState(null) // stores itemId or subtaskId
   const [personSearchTerm, setPersonSearchTerm] = useState('')
   const [editingTaskId, setEditingTaskId] = useState(null) // Track which task is being edited
+  const [copiedLinkId, setCopiedLinkId] = useState(null) // Track which link was copied
 
   useEffect(() => {
     async function loadData() {
@@ -150,6 +151,16 @@ export default function Board() {
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode)
+  }
+
+  const copyLinkToClipboard = async (link, itemId) => {
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopiedLinkId(itemId)
+      setTimeout(() => setCopiedLinkId(null), 2000) // Reset after 2 seconds
+    } catch (err) {
+      console.error('فشل نسخ الرابط:', err)
+    }
   }
 
   const toggleGroupCollapse = (groupId) => {
@@ -754,19 +765,7 @@ export default function Board() {
 
             {/* Link Column */}
             <div className="item-cell col-link">
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
-                {subtask.link && (
-                  <a
-                    href={subtask.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="link-icon-btn"
-                    title={subtask.link}
-                    style={{ flexShrink: 0 }}
-                  >
-                    <ExternalLink size={12} />
-                  </a>
-                )}
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '100%' }}>
                 <input
                   type="url"
                   className="subtask-input-inline"
@@ -775,6 +774,28 @@ export default function Board() {
                   placeholder="رابط..."
                   style={{ flex: 1, minWidth: 0 }}
                 />
+                {subtask.link && (
+                  <>
+                    <button
+                      onClick={() => copyLinkToClipboard(subtask.link, `${taskId}-${subtask.id}`)}
+                      className="link-icon-btn"
+                      title="نسخ الرابط"
+                      style={{ flexShrink: 0 }}
+                    >
+                      {copiedLinkId === `${taskId}-${subtask.id}` ? <Check size={12} /> : <Copy size={12} />}
+                    </button>
+                    <a
+                      href={subtask.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="link-icon-btn"
+                      title="فتح الرابط"
+                      style={{ flexShrink: 0 }}
+                    >
+                      <ExternalLink size={12} />
+                    </a>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -837,10 +858,26 @@ export default function Board() {
                 {/* Group Header */}
                 <div
                   className={`group-row ${isGroupCollapsed ? 'collapsed' : ''}`}
-                  style={{ borderLeftColor: group.color }}
+                  style={{
+                    borderLeftColor: group.color,
+                    borderLeftWidth: '4px',
+                    borderLeftStyle: 'solid'
+                  }}
                   onClick={() => toggleGroupCollapse(group.id)}
                 >
-                  <div className="group-name">{group.title}</div>
+                  <div
+                    className="group-name"
+                    style={{
+                      backgroundColor: group.color ? `${group.color}20` : 'transparent',
+                      color: group.color || 'inherit',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontWeight: '700',
+                      border: `2px solid ${group.color || 'transparent'}`
+                    }}
+                  >
+                    {group.title}
+                  </div>
                   <div className="group-count">{items.length} مهام</div>
                 </div>
 
@@ -1068,19 +1105,7 @@ export default function Board() {
                         />
                       </div>
                       <div className="item-cell col-link">
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
-                          {link && (
-                            <a
-                              href={link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="link-icon-btn"
-                              title={link}
-                              style={{ flexShrink: 0 }}
-                            >
-                              <ExternalLink size={14} />
-                            </a>
-                          )}
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '100%' }}>
                           <input
                             type="url"
                             className="subtask-input-inline"
@@ -1108,6 +1133,28 @@ export default function Board() {
                             placeholder="رابط..."
                             style={{ flex: 1, minWidth: 0 }}
                           />
+                          {link && (
+                            <>
+                              <button
+                                onClick={() => copyLinkToClipboard(link, item.id)}
+                                className="link-icon-btn"
+                                title="نسخ الرابط"
+                                style={{ flexShrink: 0 }}
+                              >
+                                {copiedLinkId === item.id ? <Check size={14} /> : <Copy size={14} />}
+                              </button>
+                              <a
+                                href={link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="link-icon-btn"
+                                title="فتح الرابط"
+                                style={{ flexShrink: 0 }}
+                              >
+                                <ExternalLink size={14} />
+                              </a>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
