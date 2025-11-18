@@ -29,19 +29,27 @@ function AppRoutes() {
         <Route path="/auth" element={<Auth />} />
         <Route path="/auth-debug" element={<AuthDebug />} />
 
+        {/* Root redirect based on auth */}
+        <Route path="/" element={
+          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/auth" replace />
+        } />
+
         {/* Protected Routes */}
         {isAuthenticated ? (
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/workspaces" element={<Workspaces />} />
-            <Route path="/workspace/:id" element={<WorkspaceView />} />
-            <Route path="/board/:id" element={<Board />} />
-            <Route path="/automations" element={<Automations />} />
-            <Route path="/team" element={<Team />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/help" element={<Help />} />
-          </Route>
+          <>
+            <Route element={<MainLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/workspaces" element={<Workspaces />} />
+              <Route path="/workspace/:id" element={<WorkspaceView />} />
+              <Route path="/board/:id" element={<Board />} />
+              <Route path="/automations" element={<Automations />} />
+              <Route path="/team" element={<Team />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/help" element={<Help />} />
+            </Route>
+            {/* Catch all for authenticated users */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </>
         ) : (
           /* Redirect to auth if not authenticated */
           <Route path="*" element={<Navigate to="/auth" replace />} />
