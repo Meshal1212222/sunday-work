@@ -27,6 +27,11 @@ async function fetchBoardData(boardId) {
             group {
               id
             }
+            creator {
+              id
+              name
+            }
+            created_at
             column_values {
               id
               text
@@ -90,7 +95,8 @@ export default function Board() {
     task: 400,
     person: 200,
     status: 150,
-    date: 150
+    date: 150,
+    link: 80
   })
   const [resizingColumn, setResizingColumn] = useState(null)
   const [resizeStartX, setResizeStartX] = useState(0)
@@ -652,8 +658,8 @@ export default function Board() {
     )
   }
 
-  // Basic columns only
-  const gridColumns = `${columnWidths.task}px ${columnWidths.person}px ${columnWidths.status}px ${columnWidths.date}px`
+  // Basic columns: المهمة، المسؤول، الحالة، التاريخ، الرابط
+  const gridColumns = `${columnWidths.task}px ${columnWidths.person}px ${columnWidths.status}px ${columnWidths.date}px ${columnWidths.link}px`
 
   const renderSubtasksRecursive = (taskId, subtasks, level = 0) => {
     return subtasks.map(subtask => {
@@ -743,6 +749,23 @@ export default function Board() {
                 value={subtask.date || ''}
                 onChange={(e) => updateSubtask(taskId, subtask.id, 'date', e.target.value)}
               />
+            </div>
+
+            {/* Link Column */}
+            <div className="item-cell col-link">
+              {subtask.link ? (
+                <a
+                  href={subtask.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="link-icon-btn"
+                  title={subtask.link}
+                >
+                  <ExternalLink size={14} />
+                </a>
+              ) : (
+                <span className="empty">-</span>
+              )}
             </div>
           </div>
 
@@ -842,6 +865,13 @@ export default function Board() {
                         onMouseDown={(e) => handleResizeStart(e, 'date')}
                       />
                     </div>
+                    <div className="header-cell">
+                      الرابط
+                      <div
+                        className={`column-resize-handle ${resizingColumn === 'link' ? 'resizing' : ''}`}
+                        onMouseDown={(e) => handleResizeStart(e, 'link')}
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -850,6 +880,7 @@ export default function Board() {
                   const person = getColumnValue(item, 'person') || getColumnValue(item, 'people')
                   const status = getColumnValue(item, 'status') || getColumnValue(item, 'color')
                   const date = getColumnValue(item, 'date')
+                  const link = getColumnValue(item, 'link')
                   const subtasks = taskSubtasks[item.id] || []
                   const isExpanded = expandedTasks[item.id]
                   const isDraggedOver = dragOverTask?.taskId === item.id
@@ -941,12 +972,28 @@ export default function Board() {
                         onMouseEnter={() => setHoveredCell(`${item.id}-date`)}
                         onMouseLeave={() => setHoveredCell(null)}
                         onClick={(e) => handleCellClick(e, item.id, 'date')}
+                        title={item.creator?.name ? `أُنشئت بواسطة: ${item.creator.name}${item.created_at ? '\nتاريخ الإنشاء: ' + new Date(item.created_at).toLocaleDateString('ar-EG') : ''}` : ''}
                       >
                         {date ? <span>{date}</span> : <span className="empty">-</span>}
                         {hoveredCell === `${item.id}-date` && (
                           <button className="cell-action-btn">
                             <ChevronDown size={14} />
                           </button>
+                        )}
+                      </div>
+                      <div className="item-cell col-link">
+                        {link ? (
+                          <a
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="link-icon-btn"
+                            title={link}
+                          >
+                            <ExternalLink size={16} />
+                          </a>
+                        ) : (
+                          <span className="empty">-</span>
                         )}
                       </div>
                     </div>
