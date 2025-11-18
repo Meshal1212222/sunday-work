@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 // Pages
 import Auth from './pages/Auth'
 import AuthDebug from './pages/AuthDebug'
+import AuthTest from './pages/AuthTest'
 import Dashboard from './pages/Dashboard'
 import Workspaces from './pages/Workspaces'
 import WorkspaceView from './pages/WorkspaceView'
@@ -28,6 +29,7 @@ function AppRoutes() {
         {/* Auth Routes - Always accessible (MUST be first) */}
         <Route path="/auth" element={<Auth />} />
         <Route path="/auth-debug" element={<AuthDebug />} />
+        <Route path="/test" element={<AuthTest />} />
 
         {/* Root redirect based on auth */}
         <Route path="/" element={
