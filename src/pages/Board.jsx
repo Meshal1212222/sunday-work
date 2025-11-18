@@ -836,55 +836,6 @@ export default function Board() {
       {/* Board Table */}
       <div className="board-table-container">
         <div className="board-table" style={{ '--grid-cols': gridColumns }}>
-          {/* Table Header */}
-          <div className="table-header-row">
-            <div className="header-cell col-task">
-              المهمة
-              <div
-                className={`column-resize-handle ${resizingColumn === 'task' ? 'resizing' : ''}`}
-                onMouseDown={(e) => handleResizeStart(e, 'task')}
-              />
-            </div>
-            {showAllColumns ? (
-              Array.from(allColumnTypes).map(type => (
-                <div key={type} className="header-cell">{type}</div>
-              ))
-            ) : (
-              <>
-                <div className="header-cell">
-                  المسؤول
-                  <div
-                    className={`column-resize-handle ${resizingColumn === 'person' ? 'resizing' : ''}`}
-                    onMouseDown={(e) => handleResizeStart(e, 'person')}
-                  />
-                </div>
-                <div className="header-cell">
-                  الحالة
-                  <div
-                    className={`column-resize-handle ${resizingColumn === 'status' ? 'resizing' : ''}`}
-                    onMouseDown={(e) => handleResizeStart(e, 'status')}
-                  />
-                </div>
-                <div className="header-cell">
-                  التاريخ
-                  <div
-                    className={`column-resize-handle ${resizingColumn === 'date' ? 'resizing' : ''}`}
-                    onMouseDown={(e) => handleResizeStart(e, 'date')}
-                  />
-                </div>
-              </>
-            )}
-            <div className="header-cell add-column-cell">
-              <button
-                className="add-column-btn"
-                onClick={() => setShowAddColumn(!showAddColumn)}
-              >
-                <Plus size={16} />
-                <span>إضافة عمود</span>
-              </button>
-            </div>
-          </div>
-
           {/* Groups */}
           {board.groups.map(group => {
             const items = getSortedItems(group.id)
@@ -906,6 +857,57 @@ export default function Board() {
                   <div className="group-name">{group.title}</div>
                   <div className="group-count">{items.length} مهام</div>
                 </div>
+
+                {/* Table Header - Under Each Group */}
+                {!isGroupCollapsed && (
+                  <div className="table-header-row">
+                    <div className="header-cell col-task">
+                      المهمة
+                      <div
+                        className={`column-resize-handle ${resizingColumn === 'task' ? 'resizing' : ''}`}
+                        onMouseDown={(e) => handleResizeStart(e, 'task')}
+                      />
+                    </div>
+                    {showAllColumns ? (
+                      Array.from(allColumnTypes).map(type => (
+                        <div key={type} className="header-cell">{type}</div>
+                      ))
+                    ) : (
+                      <>
+                        <div className="header-cell">
+                          المسؤول
+                          <div
+                            className={`column-resize-handle ${resizingColumn === 'person' ? 'resizing' : ''}`}
+                            onMouseDown={(e) => handleResizeStart(e, 'person')}
+                          />
+                        </div>
+                        <div className="header-cell">
+                          الحالة
+                          <div
+                            className={`column-resize-handle ${resizingColumn === 'status' ? 'resizing' : ''}`}
+                            onMouseDown={(e) => handleResizeStart(e, 'status')}
+                          />
+                        </div>
+                        <div className="header-cell">
+                          التاريخ
+                          <div
+                            className={`column-resize-handle ${resizingColumn === 'date' ? 'resizing' : ''}`}
+                            onMouseDown={(e) => handleResizeStart(e, 'date')}
+                          />
+                        </div>
+                      </>
+                    )}
+                    <div className="header-cell add-column-cell">
+                      <button
+                        className="add-column-btn"
+                        onClick={() => setShowAddColumn(!showAddColumn)}
+                      >
+                        <Plus size={16} />
+                        <span>إضافة عمود</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Group Items */}
                 {!isGroupCollapsed && items.map((item, itemIndex) => {
