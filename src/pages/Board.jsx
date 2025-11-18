@@ -69,7 +69,6 @@ export default function Board() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedTask, setSelectedTask] = useState(null)
-  const [showAllColumns, setShowAllColumns] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState(['person', 'status', 'date'])
   const [hoveredCell, setHoveredCell] = useState(null)
   const [showAddColumn, setShowAddColumn] = useState(false)
@@ -530,14 +529,6 @@ export default function Board() {
     return sortedItems
   }
 
-  // Get all unique column types
-  const allColumnTypes = new Set()
-  board.items_page.items.forEach(item => {
-    item.column_values.forEach(col => {
-      if (col.type) allColumnTypes.add(col.type)
-    })
-  })
-
   const getStatusColor = (text) => {
     if (!text) return '#C4C4C4'
     const t = text.toLowerCase()
@@ -661,8 +652,8 @@ export default function Board() {
     )
   }
 
-  // Always show all columns by default
-  const gridColumns = `${columnWidths.task}px repeat(${Math.max(allColumnTypes.size, 1)}, 1fr) 60px`
+  // Basic columns only
+  const gridColumns = `${columnWidths.task}px ${columnWidths.person}px ${columnWidths.status}px ${columnWidths.date}px`
 
   const renderSubtasksRecursive = (taskId, subtasks, level = 0) => {
     return subtasks.map(subtask => {
@@ -722,36 +713,37 @@ export default function Board() {
               </button>
             </div>
 
-            {Array.from(allColumnTypes).map(type => (
-              <div key={type} className="item-cell">
-                {type === 'status' || type === 'color' ? (
-                  <select
-                    className="subtask-select-inline"
-                    value={subtask.status || 'جديد'}
-                    onChange={(e) => updateSubtask(taskId, subtask.id, 'status', e.target.value)}
-                    style={{ backgroundColor: getStatusColor(subtask.status || 'جديد') }}
-                  >
-                    <option value="جديد">جديد</option>
-                    <option value="قيد العمل">قيد العمل</option>
-                    <option value="مكتمل">مكتمل</option>
-                    <option value="معلق">معلق</option>
-                  </select>
-                ) : type === 'person' || type === 'people' || type === 'multiple-person' ? (
-                  renderPersonCell(`${taskId}-${subtask.id}`, subtask.person || '', (newPerson) => {
-                    updateSubtask(taskId, subtask.id, 'person', newPerson)
-                  })
-                ) : type === 'date' ? (
-                  <input
-                    type="date"
-                    className="subtask-input-inline"
-                    value={subtask.date || ''}
-                    onChange={(e) => updateSubtask(taskId, subtask.id, 'date', e.target.value)}
-                  />
-                ) : (
-                  <span className="empty">-</span>
-                )}
-              </div>
-            ))}
+            {/* Person Column */}
+            <div className="item-cell col-person">
+              {renderPersonCell(`${taskId}-${subtask.id}`, subtask.person || '', (newPerson) => {
+                updateSubtask(taskId, subtask.id, 'person', newPerson)
+              })}
+            </div>
+
+            {/* Status Column */}
+            <div className="item-cell col-status">
+              <select
+                className="subtask-select-inline"
+                value={subtask.status || 'جديد'}
+                onChange={(e) => updateSubtask(taskId, subtask.id, 'status', e.target.value)}
+                style={{ backgroundColor: getStatusColor(subtask.status || 'جديد') }}
+              >
+                <option value="جديد">جديد</option>
+                <option value="قيد العمل">قيد العمل</option>
+                <option value="مكتمل">مكتمل</option>
+                <option value="معلق">معلق</option>
+              </select>
+            </div>
+
+            {/* Date Column */}
+            <div className="item-cell col-date">
+              <input
+                type="date"
+                className="subtask-input-inline"
+                value={subtask.date || ''}
+                onChange={(e) => updateSubtask(taskId, subtask.id, 'date', e.target.value)}
+              />
+            </div>
           </div>
 
           {/* Render nested subtasks recursively */}
@@ -781,13 +773,6 @@ export default function Board() {
           >
             {darkMode ? <Sun size={16} /> : <Moon size={16} />}
             <span>{darkMode ? 'وضع نهاري' : 'وضع ليلي'}</span>
-          </button>
-          <button
-            className="action-btn"
-            onClick={() => setShowAllColumns(!showAllColumns)}
-          >
-            <Settings size={16} />
-            <span>{showAllColumns ? 'إخفاء الأعمدة' : 'عرض كل الأعمدة'}</span>
           </button>
           <a
             href={`https://monday.com/boards/${id}`}
@@ -836,17 +821,26 @@ export default function Board() {
                         onMouseDown={(e) => handleResizeStart(e, 'task')}
                       />
                     </div>
-                    {Array.from(allColumnTypes).map(type => (
-                      <div key={type} className="header-cell">{type}</div>
-                    ))}
-                    <div className="header-cell add-column-cell">
-                      <button
-                        className="add-column-btn"
-                        onClick={() => setShowAddColumn(!showAddColumn)}
-                      >
-                        <Plus size={16} />
-                        <span>إضافة عمود</span>
-                      </button>
+                    <div className="header-cell">
+                      المسؤول
+                      <div
+                        className={`column-resize-handle ${resizingColumn === 'person' ? 'resizing' : ''}`}
+                        onMouseDown={(e) => handleResizeStart(e, 'person')}
+                      />
+                    </div>
+                    <div className="header-cell">
+                      الحالة
+                      <div
+                        className={`column-resize-handle ${resizingColumn === 'status' ? 'resizing' : ''}`}
+                        onMouseDown={(e) => handleResizeStart(e, 'status')}
+                      />
+                    </div>
+                    <div className="header-cell">
+                      التاريخ
+                      <div
+                        className={`column-resize-handle ${resizingColumn === 'date' ? 'resizing' : ''}`}
+                        onMouseDown={(e) => handleResizeStart(e, 'date')}
+                      />
                     </div>
                   </div>
                 )}
@@ -896,48 +890,65 @@ export default function Board() {
                           </button>
                         </div>
 
-                      {Array.from(allColumnTypes).map(type => {
-                          const value = getColumnValue(item, type)
-                          const cellKey = `${item.id}-${type}`
-                          return (
-                            <div
-                              key={type}
-                              className={`item-cell interactive-cell ${hoveredCell === cellKey ? 'cell-hovered' : ''}`}
-                              onMouseEnter={() => setHoveredCell(cellKey)}
-                              onMouseLeave={() => setHoveredCell(null)}
-                              onClick={(e) => handleCellClick(e, item.id, type)}
-                            >
-                              {type === 'status' || type === 'color' ? (
-                                value ? (
-                                  <div
-                                    className="status-pill"
-                                    style={{ backgroundColor: getStatusColor(value) }}
-                                  >
-                                    {value}
-                                  </div>
-                                ) : (
-                                  <span className="empty">-</span>
-                                )
-                              ) : type === 'person' || type === 'people' || type === 'multiple-person' ? (
-                                value ? (
-                                  <div className="person-pill">
-                                    <div className="person-avatar">{value[0]}</div>
-                                    <span>{value}</span>
-                                  </div>
-                                ) : (
-                                  <span className="empty">-</span>
-                                )
-                              ) : (
-                                <span>{value || '-'}</span>
-                              )}
-                              {hoveredCell === cellKey && (
-                                <button className="cell-action-btn">
-                                  <ChevronDown size={14} />
-                                </button>
-                              )}
-                            </div>
-                          )
+                      <div className="item-cell col-person">
+                        {renderPersonCell(item.id, person, (newPerson) => {
+                          // Update person in board data
+                          setBoard(prevBoard => {
+                            const updatedItems = prevBoard.items_page.items.map(boardItem => {
+                              if (boardItem.id === item.id) {
+                                const updatedColumnValues = boardItem.column_values.map(col => {
+                                  if (col.type === 'person' || col.type === 'people' || col.type === 'multiple-person') {
+                                    return { ...col, text: newPerson }
+                                  }
+                                  return col
+                                })
+                                return { ...boardItem, column_values: updatedColumnValues }
+                              }
+                              return boardItem
+                            })
+                            return {
+                              ...prevBoard,
+                              items_page: { items: updatedItems }
+                            }
+                          })
+                          console.log(`Updated person for ${item.id} to ${newPerson}`)
                         })}
+                      </div>
+                      <div
+                        className={`item-cell col-status interactive-cell ${hoveredCell === `${item.id}-status` ? 'cell-hovered' : ''}`}
+                        onMouseEnter={() => setHoveredCell(`${item.id}-status`)}
+                        onMouseLeave={() => setHoveredCell(null)}
+                        onClick={(e) => handleCellClick(e, item.id, 'status')}
+                      >
+                        {status ? (
+                          <div
+                            className="status-pill"
+                            style={{ backgroundColor: getStatusColor(status) }}
+                          >
+                            {status}
+                          </div>
+                        ) : (
+                          <span className="empty">-</span>
+                        )}
+                        {hoveredCell === `${item.id}-status` && (
+                          <button className="cell-action-btn">
+                            <ChevronDown size={14} />
+                          </button>
+                        )}
+                      </div>
+                      <div
+                        className={`item-cell col-date interactive-cell ${hoveredCell === `${item.id}-date` ? 'cell-hovered' : ''}`}
+                        onMouseEnter={() => setHoveredCell(`${item.id}-date`)}
+                        onMouseLeave={() => setHoveredCell(null)}
+                        onClick={(e) => handleCellClick(e, item.id, 'date')}
+                      >
+                        {date ? <span>{date}</span> : <span className="empty">-</span>}
+                        {hoveredCell === `${item.id}-date` && (
+                          <button className="cell-action-btn">
+                            <ChevronDown size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Subtasks Rows - Recursive rendering for infinite nesting */}
