@@ -1,5 +1,5 @@
-import { Menu, Bell, Search, MessageSquare, LogOut } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
+import { Menu, Bell, Search, MessageSquare, LogOut, Trash2 } from 'lucide-react'
+import { useAuth, forceCompleteLogout } from '../contexts/AuthContext'
 import { logoutUser } from '../firebase/auth'
 import './Header.css'
 
@@ -9,6 +9,12 @@ export default function Header({ toggleSidebar }) {
   const handleLogout = async () => {
     if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
       await logoutUser()
+    }
+  }
+
+  const handleForceLogout = async () => {
+    if (confirm('🔥 هل تريد حذف كل البيانات وتسجيل خروج كامل؟')) {
+      await forceCompleteLogout()
     }
   }
 
@@ -65,6 +71,10 @@ export default function Header({ toggleSidebar }) {
             <div className="user-role">{getRoleDisplay(userData?.role)}</div>
           </div>
         </div>
+
+        <button className="icon-button" onClick={handleForceLogout} title="🔥 حذف كامل وخروج" style={{ color: '#dc3545' }}>
+          <Trash2 size={20} />
+        </button>
 
         <button className="icon-button logout-button" onClick={handleLogout} title="تسجيل الخروج">
           <LogOut size={20} />
