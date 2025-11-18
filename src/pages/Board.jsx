@@ -228,21 +228,11 @@ export default function Board() {
 
   // Initialize Firebase presence tracking
   useEffect(() => {
-    if (!id) return
+    if (!id || !currentUser || !userData) return
 
-    // Generate or retrieve user ID from localStorage
-    let userId = localStorage.getItem('sunday_user_id')
-    if (!userId) {
-      userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      localStorage.setItem('sunday_user_id', userId)
-    }
-
-    // Get or generate user name
-    let userName = localStorage.getItem('sunday_user_name')
-    if (!userName) {
-      userName = prompt('أدخل اسمك:') || 'موظف'
-      localStorage.setItem('sunday_user_name', userName)
-    }
+    // Use Firebase Auth user data
+    const userId = currentUser.uid
+    const userName = userData.displayName || 'موظف'
 
     // Get or generate user color
     let userColor = localStorage.getItem('sunday_user_color')
@@ -266,7 +256,7 @@ export default function Board() {
       if (cleanupPresence) cleanupPresence()
       if (unsubscribePresence) unsubscribePresence()
     }
-  }, [id])
+  }, [id, currentUser, userData])
 
   // Subscribe to update counts for all items in board
   useEffect(() => {
