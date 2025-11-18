@@ -4,6 +4,7 @@ import React from 'react'
 import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun, User, Copy, Check, Mail, MessageCircle, FileText } from 'lucide-react'
 import TaskModal from '../components/TaskModal'
 import { mockTeamMembers } from '../data/mockData'
+import { initializePresence, subscribeToPresence, generateUserColor, getUserInitials } from '../firebase/presence'
 import './Board.css'
 
 const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
@@ -113,6 +114,7 @@ export default function Board() {
   const [updatesModalOpen, setUpdatesModalOpen] = useState(null) // stores itemId for updates modal
   const [taskUpdates, setTaskUpdates] = useState({}) // Store updates for each task
   const [textModalOpen, setTextModalOpen] = useState(null) // stores { itemId, columnId, columnTitle, value, isSubtask }
+  const [onlineUsers, setOnlineUsers] = useState([]) // Track online users via Firebase
 
   useEffect(() => {
     async function loadData() {
@@ -204,6 +206,48 @@ export default function Board() {
       setTaskOrder(initialOrder)
     }
   }, [board])
+
+  // Initialize Firebase presence tracking
+  useEffect(() => {
+    if (!id) return
+
+    // Generate or retrieve user ID from localStorage
+    let userId = localStorage.getItem('sunday_user_id')
+    if (!userId) {
+      userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      localStorage.setItem('sunday_user_id', userId)
+    }
+
+    // Get or generate user name
+    let userName = localStorage.getItem('sunday_user_name')
+    if (!userName) {
+      userName = prompt('أدخل اسمك:') || 'موظف'
+      localStorage.setItem('sunday_user_name', userName)
+    }
+
+    // Get or generate user color
+    let userColor = localStorage.getItem('sunday_user_color')
+    if (!userColor) {
+      userColor = generateUserColor()
+      localStorage.setItem('sunday_user_color', userColor)
+    }
+
+    // Initialize presence
+    const cleanupPresence = initializePresence(userId, userName, id, userColor)
+
+    // Subscribe to presence updates
+    const unsubscribePresence = subscribeToPresence(id, (users) => {
+      // Filter out current user
+      const otherUsers = users.filter(u => u.userId !== userId)
+      setOnlineUsers(otherUsers)
+    })
+
+    // Cleanup on unmount
+    return () => {
+      if (cleanupPresence) cleanupPresence()
+      if (unsubscribePresence) unsubscribePresence()
+    }
+  }, [id])
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode)
@@ -1102,8 +1146,37 @@ export default function Board() {
             <span>{board.items_page.items.length} مهمة</span>
             <span>•</span>
             <span>{board.groups.length} مجموعة</span>
+            {onlineUsers.length > 0 && (
+              <>
+                <span>•</span>
+                <span>{onlineUsers.length} موظف نشط</span>
+              </>
+            )}
           </div>
         </div>
+
+        {/* Online Users Display */}
+        {onlineUsers.length > 0 && (
+          <div className="online-users-container">
+            {onlineUsers.slice(0, 5).map((user) => (
+              <div
+                key={user.userId}
+                className="online-user-avatar"
+                style={{ backgroundColor: user.color }}
+                title={user.userName}
+              >
+                {getUserInitials(user.userName)}
+                <span className="online-indicator"></span>
+              </div>
+            ))}
+            {onlineUsers.length > 5 && (
+              <div className="online-user-avatar more-users" title={`+${onlineUsers.length - 5} آخرين`}>
+                +{onlineUsers.length - 5}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="board-actions">
           <button
             className="action-btn"

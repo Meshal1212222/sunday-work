@@ -1663,6 +1663,71 @@
   color: var(--text-primary);
 }
 
+/* Online Users Presence Styles */
+.online-users-container {
+  display: flex;
+  align-items: center;
+  gap: -8px;
+  margin: 0 20px;
+}
+
+.online-user-avatar {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  border: 3px solid var(--bg-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 1;
+  margin-left: -8px;
+}
+
+.online-user-avatar:first-child {
+  margin-left: 0;
+}
+
+.online-user-avatar:hover {
+  transform: translateY(-4px) scale(1.1);
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.online-user-avatar.more-users {
+  background: var(--text-secondary);
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background: #00C853;
+  border: 2px solid var(--bg-primary);
+  border-radius: 50%;
+  animation: pulse-online 2s ease-in-out infinite;
+}
+
+@keyframes pulse-online {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .table-header-row,
