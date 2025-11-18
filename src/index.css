@@ -3,6 +3,9 @@
    Design System & Global Styles
    =========================== */
 
+/* Import Theme System */
+@import './styles/theme.css';
+
 /* Reset & Base */
 *, *::before, *::after {
   margin: 0;

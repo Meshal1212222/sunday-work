@@ -1,11 +1,31 @@
 import { Menu, Bell, Search, MessageSquare, LogOut } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
+import { logoutUser } from '../firebase/auth'
 import './Header.css'
 
-export default function Header({ toggleSidebar, setAuth }) {
-  const handleLogout = () => {
+export default function Header({ toggleSidebar }) {
+  const { userData } = useAuth()
+
+  const handleLogout = async () => {
     if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-      setAuth(false)
+      await logoutUser()
     }
+  }
+
+  // Get user initials for avatar
+  const getUserInitials = (name) => {
+    if (!name) return '؟'
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  }
+
+  // Get role display name
+  const getRoleDisplay = (role) => {
+    const roles = {
+      admin: 'مسؤول',
+      manager: 'مدير',
+      employee: 'موظف'
+    }
+    return roles[role] || 'موظف'
   }
 
   return (
@@ -37,10 +57,12 @@ export default function Header({ toggleSidebar, setAuth }) {
         </button>
 
         <div className="user-menu">
-          <div className="user-avatar">م</div>
+          <div className="user-avatar">
+            {getUserInitials(userData?.displayName)}
+          </div>
           <div className="user-info">
-            <div className="user-name">مشال</div>
-            <div className="user-role">مدير</div>
+            <div className="user-name">{userData?.displayName || 'مستخدم'}</div>
+            <div className="user-role">{getRoleDisplay(userData?.role)}</div>
           </div>
         </div>
 

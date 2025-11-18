@@ -1,10 +1,16 @@
 import { useParams } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import React from 'react'
-import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun, User, Copy, Check, Mail, MessageCircle, FileText } from 'lucide-react'
+import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun, User, Copy, Check, Mail, MessageCircle, FileText, Activity } from 'lucide-react'
 import TaskModal from '../components/TaskModal'
 import { mockTeamMembers } from '../data/mockData'
 import { initializePresence, subscribeToPresence, generateUserColor, getUserInitials } from '../firebase/presence'
+import { addUpdate, subscribeToUpdates, subscribeToUpdateCounts } from '../firebase/updates'
+import { getCompanyUsers } from '../firebase/users'
+import { logActivity, ActivityTypes } from '../firebase/activity'
+import { useAuth } from '../contexts/AuthContext'
+import MentionDropdown from '../components/MentionDropdown'
+import ActivityLog from '../components/ActivityLog'
 import './Board.css'
 
 const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
@@ -78,6 +84,7 @@ async function fetchBoardData(boardId) {
 
 export default function Board() {
   const { id } = useParams()
+  const { currentUser, userData } = useAuth()
   const [board, setBoard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -112,9 +119,21 @@ export default function Board() {
   const [editingTaskId, setEditingTaskId] = useState(null) // Track which task is being edited
   const [copiedLinkId, setCopiedLinkId] = useState(null) // Track which link was copied
   const [updatesModalOpen, setUpdatesModalOpen] = useState(null) // stores itemId for updates modal
-  const [taskUpdates, setTaskUpdates] = useState({}) // Store updates for each task
+  const [taskUpdates, setTaskUpdates] = useState({}) // Store updates for each task (now from Firebase)
+  const [updateCounts, setUpdateCounts] = useState({}) // Store update counts for badges
+  const [currentModalUpdates, setCurrentModalUpdates] = useState([]) // Updates for currently open modal
   const [textModalOpen, setTextModalOpen] = useState(null) // stores { itemId, columnId, columnTitle, value, isSubtask }
   const [onlineUsers, setOnlineUsers] = useState([]) // Track online users via Firebase
+
+  // Mentions state
+  const [companyUsers, setCompanyUsers] = useState([]) // All users in company for mentions
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false)
+  const [mentionSearchTerm, setMentionSearchTerm] = useState('')
+  const [mentionCursorPosition, setMentionCursorPosition] = useState(0)
+  const textareaRef = useRef(null) // Ref to textarea for mention insertion
+
+  // Activity Log state
+  const [showActivityLog, setShowActivityLog] = useState(false)
 
   useEffect(() => {
     async function loadData() {
@@ -249,6 +268,54 @@ export default function Board() {
     }
   }, [id])
 
+  // Subscribe to update counts for all items in board
+  useEffect(() => {
+    if (!board || !id) return
+
+    const itemIds = board.items_page.items.map(item => item.id)
+    if (itemIds.length === 0) return
+
+    const unsubscribe = subscribeToUpdateCounts(id, itemIds, (counts) => {
+      setUpdateCounts(counts)
+    })
+
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
+  }, [board, id])
+
+  // Subscribe to updates for currently open modal
+  useEffect(() => {
+    if (!updatesModalOpen || !id) {
+      setCurrentModalUpdates([])
+      return
+    }
+
+    const unsubscribe = subscribeToUpdates(id, updatesModalOpen, (updates) => {
+      setCurrentModalUpdates(updates)
+      // Also update taskUpdates for backward compatibility
+      setTaskUpdates(prev => ({
+        ...prev,
+        [updatesModalOpen]: updates
+      }))
+    })
+
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
+  }, [updatesModalOpen, id])
+
+  // Load company users for mentions
+  useEffect(() => {
+    if (userData?.companyCode) {
+      getCompanyUsers(userData.companyCode).then(result => {
+        if (result.success) {
+          setCompanyUsers(result.users)
+        }
+      })
+    }
+  }, [userData])
+
   const toggleDarkMode = () => {
     setDarkMode(!darkMode)
   }
@@ -261,6 +328,85 @@ export default function Board() {
     } catch (err) {
       console.error('فشل نسخ الرابط:', err)
     }
+  }
+
+  // Mention handling functions
+  const handleTextareaChange = (e) => {
+    const value = e.target.value
+    const cursorPos = e.target.selectionStart
+
+    // Check if user typed @
+    const textBeforeCursor = value.substring(0, cursorPos)
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@')
+
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1)
+      // Check if there's a space after @ (which would close the mention)
+      if (!textAfterAt.includes(' ')) {
+        setShowMentionDropdown(true)
+        setMentionSearchTerm(textAfterAt)
+        setMentionCursorPosition(lastAtIndex)
+      } else {
+        setShowMentionDropdown(false)
+      }
+    } else {
+      setShowMentionDropdown(false)
+    }
+  }
+
+  const handleMentionSelect = (user) => {
+    if (!textareaRef.current) return
+
+    const textarea = textareaRef.current
+    const value = textarea.value
+    const mentionText = `@${user.displayName} `
+
+    // Replace from @ position to cursor with mention
+    const beforeMention = value.substring(0, mentionCursorPosition)
+    const afterCursor = value.substring(textarea.selectionStart)
+    const newValue = beforeMention + mentionText + afterCursor
+
+    textarea.value = newValue
+
+    // Set cursor after mention
+    const newCursorPos = mentionCursorPosition + mentionText.length
+    textarea.setSelectionRange(newCursorPos, newCursorPos)
+    textarea.focus()
+
+    // Hide dropdown
+    setShowMentionDropdown(false)
+    setMentionSearchTerm('')
+  }
+
+  const parseMentions = (text) => {
+    // Simple mention parser - replaces @Name with styled spans
+    const mentionRegex = /@(\w+(?:\s+\w+)*)/g
+    const parts = []
+    let lastIndex = 0
+    let match
+
+    while ((match = mentionRegex.exec(text)) !== null) {
+      // Add text before mention
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index))
+      }
+
+      // Add mention with styling
+      parts.push(
+        <span key={match.index} className="mention">
+          @{match[1]}
+        </span>
+      )
+
+      lastIndex = match.index + match[0].length
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex))
+    }
+
+    return parts.length > 0 ? parts : text
   }
 
   const toggleGroupCollapse = (groupId) => {
@@ -1121,8 +1267,8 @@ export default function Board() {
                   style={{ position: 'relative' }}
                 >
                   <MessageCircle size={14} />
-                  {taskUpdates[`${taskId}-${subtask.id}`]?.length > 0 && (
-                    <span className="updates-badge updates-badge-small">{taskUpdates[`${taskId}-${subtask.id}`].length}</span>
+                  {updateCounts[`${taskId}-${subtask.id}`] > 0 && (
+                    <span className="updates-badge updates-badge-small">{updateCounts[`${taskId}-${subtask.id}`]}</span>
                   )}
                 </button>
               </div>
@@ -1178,6 +1324,14 @@ export default function Board() {
         )}
 
         <div className="board-actions">
+          <button
+            className="action-btn"
+            onClick={() => setShowActivityLog(true)}
+            title="سجل النشاطات"
+          >
+            <Activity size={16} />
+            <span>سجل النشاطات</span>
+          </button>
           <button
             className="action-btn"
             onClick={toggleDarkMode}
@@ -1394,8 +1548,8 @@ export default function Board() {
                             style={{ position: 'relative' }}
                           >
                             <MessageCircle size={18} />
-                            {taskUpdates[item.id]?.length > 0 && (
-                              <span className="updates-badge">{taskUpdates[item.id].length}</span>
+                            {updateCounts[item.id] > 0 && (
+                              <span className="updates-badge">{updateCounts[item.id]}</span>
                             )}
                           </button>
                         </div>
@@ -1634,7 +1788,7 @@ export default function Board() {
                     onClick={() => {
                       const subject = encodeURIComponent('تحديث من Monday.com')
                       const body = encodeURIComponent(
-                        taskUpdates[updatesModalOpen]?.map(u => `${u.author}: ${u.text}`).join('\n\n') || ''
+                        currentModalUpdates.map(u => `${u.author}: ${u.text}`).join('\n\n') || ''
                       )
                       window.location.href = `mailto:?subject=${subject}&body=${body}`
                     }}
@@ -1647,7 +1801,7 @@ export default function Board() {
                     className="updates-action-btn whatsapp"
                     onClick={() => {
                       const text = encodeURIComponent(
-                        taskUpdates[updatesModalOpen]?.map(u => `${u.author}: ${u.text}`).join('\n\n') || ''
+                        currentModalUpdates.map(u => `${u.author}: ${u.text}`).join('\n\n') || ''
                       )
                       window.open(`https://wa.me/?text=${text}`, '_blank')
                     }}
@@ -1663,17 +1817,17 @@ export default function Board() {
               </div>
             </div>
             <div className="updates-modal-body">
-              {taskUpdates[updatesModalOpen]?.length > 0 ? (
+              {currentModalUpdates.length > 0 ? (
                 <div className="updates-list">
-                  {taskUpdates[updatesModalOpen].map((update, index) => (
-                    <div key={index} className="update-item">
+                  {currentModalUpdates.map((update, index) => (
+                    <div key={update.id || index} className="update-item">
                       <div className="update-avatar">{getPersonInitials(update.author)}</div>
                       <div className="update-content">
                         <div className="update-header">
                           <span className="update-author">{update.author}</span>
                           <span className="update-time">{update.time}</span>
                         </div>
-                        <div className="update-text">{update.text}</div>
+                        <div className="update-text">{parseMentions(update.text)}</div>
                       </div>
                     </div>
                   ))}
@@ -1687,46 +1841,99 @@ export default function Board() {
               )}
             </div>
             <div className="updates-input-area">
-              <div className="updates-input-wrapper">
+              <div className="updates-input-wrapper" style={{ position: 'relative' }}>
                 <textarea
+                  ref={textareaRef}
                   className="updates-input"
-                  placeholder="اكتب تحديثاً..."
+                  placeholder="اكتب تحديثاً... (استخدم @ لذكر المستخدمين)"
                   rows={2}
-                  onKeyDown={(e) => {
+                  onChange={handleTextareaChange}
+                  onKeyDown={async (e) => {
+                    // Don't submit if mention dropdown is open and user presses Enter/Tab
+                    if (showMentionDropdown && (e.key === 'Enter' || e.key === 'Tab')) {
+                      return // Let MentionDropdown handle it
+                    }
+
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault()
                       const text = e.target.value.trim()
-                      if (text) {
-                        const newUpdate = {
-                          author: 'أنت',
-                          text: text,
-                          time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+                      if (text && currentUser && userData) {
+                        // Save to Firebase
+                        const result = await addUpdate(
+                          id,
+                          updatesModalOpen,
+                          text,
+                          currentUser.uid,
+                          userData.displayName || 'مستخدم'
+                        )
+
+                        // Log activity
+                        if (result.success) {
+                          const item = board?.items_page?.items?.find(i => i.id === updatesModalOpen)
+                          await logActivity(
+                            id,
+                            ActivityTypes.UPDATE_POSTED,
+                            currentUser.uid,
+                            userData.displayName || 'مستخدم',
+                            {
+                              taskName: item?.name || 'مهمة',
+                              updateText: text.substring(0, 50) + (text.length > 50 ? '...' : '')
+                            }
+                          )
                         }
-                        setTaskUpdates(prev => ({
-                          ...prev,
-                          [updatesModalOpen]: [...(prev[updatesModalOpen] || []), newUpdate]
-                        }))
+
                         e.target.value = ''
+                        setShowMentionDropdown(false)
                       }
+                    } else if (e.key === 'Escape') {
+                      setShowMentionDropdown(false)
                     }
                   }}
                 />
+                {showMentionDropdown && (
+                  <MentionDropdown
+                    users={companyUsers}
+                    searchTerm={mentionSearchTerm}
+                    onSelect={handleMentionSelect}
+                    position={{
+                      bottom: '100%',
+                      left: '0',
+                      marginBottom: '8px'
+                    }}
+                  />
+                )}
                 <button
                   className="updates-send-btn"
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     const textarea = e.target.parentElement.querySelector('textarea')
                     const text = textarea.value.trim()
-                    if (text) {
-                      const newUpdate = {
-                        author: 'أنت',
-                        text: text,
-                        time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+                    if (text && currentUser && userData) {
+                      // Save to Firebase
+                      const result = await addUpdate(
+                        id,
+                        updatesModalOpen,
+                        text,
+                        currentUser.uid,
+                        userData.displayName || 'مستخدم'
+                      )
+
+                      // Log activity
+                      if (result.success) {
+                        const item = board?.items_page?.items?.find(i => i.id === updatesModalOpen)
+                        await logActivity(
+                          id,
+                          ActivityTypes.UPDATE_POSTED,
+                          currentUser.uid,
+                          userData.displayName || 'مستخدم',
+                          {
+                            taskName: item?.name || 'مهمة',
+                            updateText: text.substring(0, 50) + (text.length > 50 ? '...' : '')
+                          }
+                        )
                       }
-                      setTaskUpdates(prev => ({
-                        ...prev,
-                        [updatesModalOpen]: [...(prev[updatesModalOpen] || []), newUpdate]
-                      }))
+
                       textarea.value = ''
+                      setShowMentionDropdown(false)
                     }
                   }}
                 >
@@ -1748,6 +1955,13 @@ export default function Board() {
           }}
         />
       )}
+
+      {/* Activity Log */}
+      <ActivityLog
+        boardId={id}
+        isOpen={showActivityLog}
+        onClose={() => setShowActivityLog(false)}
+      />
     </div>
   )
 }

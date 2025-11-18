@@ -1,0 +1,128 @@
+/* ========================================
+   Mention Dropdown Styles
+   ======================================== */
+
+.mention-dropdown {
+  position: absolute;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  min-width: 250px;
+}
+
+.mention-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.mention-dropdown-item:hover,
+.mention-dropdown-item.selected {
+  background: var(--bg-hover);
+}
+
+.mention-dropdown-item.selected {
+  background: var(--primary);
+  color: white;
+}
+
+.mention-dropdown-item.selected .mention-user-role {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.mention-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  flex-shrink: 0;
+}
+
+.mention-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mention-user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mention-dropdown-item.selected .mention-user-name {
+  color: white;
+}
+
+.mention-user-role {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.mention-dropdown-empty {
+  padding: var(--spacing-md);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* Custom scrollbar */
+.mention-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mention-dropdown::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.mention-dropdown::-webkit-scrollbar-thumb {
+  background: var(--text-tertiary);
+  border-radius: 3px;
+}
+
+.mention-dropdown::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Mention styling in text */
+.mention {
+  display: inline;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.mention:hover {
+  background: var(--primary);
+  color: white;
+}
+
+body.dark-mode .mention {
+  background: rgba(91, 78, 157, 0.2);
+  color: var(--primary-light);
+}
+
+body.dark-mode .mention:hover {
+  background: var(--primary);
+  color: white;
+}

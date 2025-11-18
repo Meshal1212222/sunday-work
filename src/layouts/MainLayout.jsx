@@ -6,7 +6,7 @@ import CommandPalette from '../components/CommandPalette'
 import QuickActions from '../components/QuickActions'
 import './MainLayout.css'
 
-export default function MainLayout({ setAuth }) {
+export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   return (
@@ -16,7 +16,6 @@ export default function MainLayout({ setAuth }) {
       <div className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         <Header
           toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          setAuth={setAuth}
         />
 
         <main className="page-content">
