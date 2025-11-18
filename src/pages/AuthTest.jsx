@@ -1,4 +1,4 @@
-// صفحة لعرض Auth بدون AuthProvider - لاختبار التصميم فقط
+// Sunday Brand Showcase - عرض الهوية البصرية الكاملة
 import Logo from '../components/Logo'
 import brand from '../assets/brand'
 
@@ -6,11 +6,8 @@ export default function AuthTest() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #5B4E9D 0%, #764ba2 50%, #8B5CF6 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
+      background: `linear-gradient(135deg, ${brand.colors.vibrant.purple} 0%, ${brand.colors.vibrant.pink} 50%, ${brand.colors.vibrant.orange} 100%)`,
+      padding: '40px 20px',
       position: 'relative',
       overflow: 'hidden'
     }}>
@@ -22,165 +19,261 @@ export default function AuthTest() {
         right: 0,
         bottom: 0,
         opacity: 0.1,
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M0 0h40v40H0V0zm40 40h40v40H40V40z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
       }}></div>
 
-      {/* Main Card */}
-      <div style={{
-        background: 'white',
-        borderRadius: '32px',
-        boxShadow: '0 25px 80px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1)',
-        padding: '80px 60px',
-        maxWidth: '600px',
-        width: '100%',
-        position: 'relative',
-        zIndex: 1
-      }}>
-        {/* Logo */}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+        {/* Header */}
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '20px',
-          marginBottom: '30px'
+          background: 'white',
+          borderRadius: brand.borderRadius['3xl'],
+          padding: brand.spacing['3xl'],
+          marginBottom: brand.spacing.xl,
+          boxShadow: brand.shadows['2xl'],
+          textAlign: 'center'
         }}>
-          <Logo size="xl" variant="tilted" showText={false} />
-          <h1 style={{
-            fontSize: '56px',
-            fontWeight: brand.typography.fontWeight.black,
-            background: brand.colors.primary.gradient,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            margin: 0,
-            letterSpacing: '-2px'
-          }}>
-            {brand.name}
-          </h1>
-        </div>
+          <Logo size="xl" variant="stacked" showText={true} animated={true} />
 
-        {/* Tagline */}
-        <p style={{
-          fontSize: brand.typography.fontSize.xl,
-          color: brand.colors.gray[600],
-          textAlign: 'center',
-          marginBottom: brand.spacing['3xl'],
-          fontWeight: brand.typography.fontWeight.medium
-        }}>
-          {brand.tagline} 🚀
-        </p>
-
-        {/* Features */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: brand.spacing.lg,
-          marginBottom: brand.spacing['2xl']
-        }}>
-          {brand.features.slice(0, 3).map((item, i) => (
-            <div key={i} style={{
-              textAlign: 'center',
-              padding: brand.spacing.lg,
-              background: `linear-gradient(135deg, ${brand.colors.gray[50]} 0%, #f0f4ff 100%)`,
-              borderRadius: brand.borderRadius.xl,
-              border: `1px solid ${brand.colors.gray[200]}`,
-              transition: 'transform 0.2s ease',
-              cursor: 'pointer'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-            >
-              <div style={{ fontSize: '32px', marginBottom: brand.spacing.sm }}>{item.icon}</div>
-              <div style={{
-                fontSize: brand.typography.fontSize.sm,
-                color: brand.colors.primary.main,
-                fontWeight: brand.typography.fontWeight.semibold
-              }}>{item.title}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Brand Colors Showcase */}
-        <div style={{
-          background: brand.colors.gray[50],
-          padding: brand.spacing.xl,
-          borderRadius: brand.borderRadius.xl,
-          marginBottom: brand.spacing.xl
-        }}>
-          <h3 style={{
+          <p style={{
             fontSize: brand.typography.fontSize.lg,
-            fontWeight: brand.typography.fontWeight.bold,
+            color: brand.colors.gray[600],
+            marginTop: brand.spacing.xl,
+            maxWidth: '600px',
+            margin: '24px auto 0'
+          }}>
+            {brand.description}
+          </p>
+        </div>
+
+        {/* Brand Personality */}
+        <div style={{
+          background: 'white',
+          borderRadius: brand.borderRadius['2xl'],
+          padding: brand.spacing.xl,
+          marginBottom: brand.spacing.xl,
+          boxShadow: brand.shadows.xl
+        }}>
+          <h2 style={{
+            fontSize: brand.typography.fontSize['3xl'],
+            fontWeight: brand.typography.fontWeight.black,
             color: brand.colors.gray[900],
             marginBottom: brand.spacing.lg,
             textAlign: 'center'
-          }}>🎨 الهوية البصرية</h3>
+          }}>🎭 شخصية العلامة التجارية</h2>
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
-            gap: brand.spacing.md,
-            marginBottom: brand.spacing.lg
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: brand.spacing.lg
           }}>
             {[
-              { name: 'Primary', color: brand.colors.primary.main },
-              { name: 'Success', color: brand.colors.success },
-              { name: 'Warning', color: brand.colors.warning },
-              { name: 'Danger', color: brand.colors.danger },
-              { name: 'Info', color: brand.colors.info }
-            ].map((c, i) => (
-              <div key={i} style={{ textAlign: 'center' }}>
-                <div style={{
-                  width: '100%',
-                  height: '50px',
-                  background: c.color,
-                  borderRadius: brand.borderRadius.md,
-                  marginBottom: brand.spacing.sm,
-                  boxShadow: brand.shadows.md
-                }}></div>
-                <div style={{
-                  fontSize: brand.typography.fontSize.xs,
-                  color: brand.colors.gray[600],
-                  fontWeight: brand.typography.fontWeight.medium
-                }}>{c.name}</div>
+              { title: 'الصوت', value: brand.personality.voice, icon: '🗣️' },
+              { title: 'النبرة', value: brand.personality.tone, icon: '🎵' },
+              { title: 'الأسلوب', value: brand.personality.style, icon: '✨' }
+            ].map((item, i) => (
+              <div key={i} style={{
+                background: `linear-gradient(135deg, ${brand.colors.gray[50]} 0%, white 100%)`,
+                padding: brand.spacing.lg,
+                borderRadius: brand.borderRadius.xl,
+                border: `2px solid ${brand.colors.gray[200]}`,
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: brand.spacing.sm }}>{item.icon}</div>
+                <h3 style={{
+                  fontSize: brand.typography.fontSize.lg,
+                  fontWeight: brand.typography.fontWeight.bold,
+                  color: brand.colors.gray[900],
+                  marginBottom: brand.spacing.sm
+                }}>{item.title}</h3>
+                <p style={{
+                  fontSize: brand.typography.fontSize.sm,
+                  color: brand.colors.gray[600]
+                }}>{item.value}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Info Box */}
+        {/* Vibrant Colors */}
         <div style={{
-          background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+          background: 'white',
+          borderRadius: brand.borderRadius['2xl'],
           padding: brand.spacing.xl,
-          borderRadius: brand.borderRadius.xl,
-          textAlign: 'center',
-          border: `2px solid ${brand.colors.warning}`
+          marginBottom: brand.spacing.xl,
+          boxShadow: brand.shadows.xl
         }}>
+          <h2 style={{
+            fontSize: brand.typography.fontSize['3xl'],
+            fontWeight: brand.typography.fontWeight.black,
+            color: brand.colors.gray[900],
+            marginBottom: brand.spacing.lg,
+            textAlign: 'center'
+          }}>🎨 الألوان النابضة بالحياة</h2>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+            gap: brand.spacing.md
+          }}>
+            {Object.entries(brand.colors.vibrant).map(([name, color]) => (
+              <div
+                key={name}
+                style={{
+                  background: color,
+                  height: '120px',
+                  borderRadius: brand.borderRadius.xl,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: brand.shadows.lg,
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s ease',
+                  color: 'white',
+                  fontWeight: brand.typography.fontWeight.bold
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                <span style={{ fontSize: '24px', marginBottom: '8px' }}>●</span>
+                <span style={{ fontSize: '12px', textTransform: 'capitalize' }}>{name}</span>
+                <code style={{ fontSize: '9px', opacity: 0.8 }}>{color}</code>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Features */}
+        <div style={{
+          background: 'white',
+          borderRadius: brand.borderRadius['2xl'],
+          padding: brand.spacing.xl,
+          marginBottom: brand.spacing.xl,
+          boxShadow: brand.shadows.xl
+        }}>
+          <h2 style={{
+            fontSize: brand.typography.fontSize['3xl'],
+            fontWeight: brand.typography.fontWeight.black,
+            color: brand.colors.gray[900],
+            marginBottom: brand.spacing.lg,
+            textAlign: 'center'
+          }}>⭐ المميزات الأساسية</h2>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: brand.spacing.lg
+          }}>
+            {brand.features.map((feature, i) => (
+              <div
+                key={i}
+                style={{
+                  background: `linear-gradient(135deg, ${Object.values(brand.colors.vibrant)[i % 8]}15 0%, ${Object.values(brand.colors.vibrant)[i % 8]}05 100%)`,
+                  padding: brand.spacing.lg,
+                  borderRadius: brand.borderRadius.xl,
+                  border: `2px solid ${Object.values(brand.colors.vibrant)[i % 8]}`,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-8px)'
+                  e.currentTarget.style.boxShadow = brand.shadows.xl
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              >
+                <div style={{ fontSize: '48px', marginBottom: brand.spacing.md }}>{feature.icon}</div>
+                <h3 style={{
+                  fontSize: brand.typography.fontSize.lg,
+                  fontWeight: brand.typography.fontWeight.bold,
+                  color: brand.colors.gray[900],
+                  marginBottom: brand.spacing.sm
+                }}>{feature.title}</h3>
+                <p style={{
+                  fontSize: brand.typography.fontSize.sm,
+                  color: brand.colors.gray[600]
+                }}>{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Logo Variations */}
+        <div style={{
+          background: 'white',
+          borderRadius: brand.borderRadius['2xl'],
+          padding: brand.spacing.xl,
+          marginBottom: brand.spacing.xl,
+          boxShadow: brand.shadows.xl
+        }}>
+          <h2 style={{
+            fontSize: brand.typography.fontSize['3xl'],
+            fontWeight: brand.typography.fontWeight.black,
+            color: brand.colors.gray[900],
+            marginBottom: brand.spacing.lg,
+            textAlign: 'center'
+          }}>🌟 أشكال الشعار المختلفة</h2>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: brand.spacing.xl,
+            padding: brand.spacing.lg
+          }}>
+            <div style={{ textAlign: 'center', padding: brand.spacing.lg, background: brand.colors.gray[50], borderRadius: brand.borderRadius.xl }}>
+              <Logo size="lg" variant="full" showText={true} animated={false} />
+              <p style={{ marginTop: brand.spacing.md, fontSize: brand.typography.fontSize.sm, color: brand.colors.gray[600] }}>Full Logo</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: brand.spacing.lg, background: brand.colors.gray[50], borderRadius: brand.borderRadius.xl }}>
+              <Logo size="lg" variant="stacked" showText={true} animated={false} />
+              <p style={{ marginTop: brand.spacing.md, fontSize: brand.typography.fontSize.sm, color: brand.colors.gray[600] }}>Stacked Logo</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: brand.spacing.lg, background: brand.colors.gray[50], borderRadius: brand.borderRadius.xl }}>
+              <Logo size="lg" showText={false} animated={true} />
+              <p style={{ marginTop: brand.spacing.md, fontSize: brand.typography.fontSize.sm, color: brand.colors.gray[600] }}>Icon Only (Animated)</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Instructions */}
+        <div style={{
+          background: `linear-gradient(135deg, ${brand.colors.vibrant.yellow}30 0%, ${brand.colors.vibrant.orange}30 100%)`,
+          padding: brand.spacing.xl,
+          borderRadius: brand.borderRadius['2xl'],
+          textAlign: 'center',
+          border: `3px solid ${brand.colors.vibrant.orange}`,
+          boxShadow: brand.shadows.xl
+        }}>
+          <h3 style={{
+            fontSize: brand.typography.fontSize['2xl'],
+            fontWeight: brand.typography.fontWeight.bold,
+            color: brand.colors.gray[900],
+            marginBottom: brand.spacing.md
+          }}>
+            🚀 جاهز للانطلاق؟
+          </h3>
           <p style={{
             fontSize: brand.typography.fontSize.lg,
-            color: '#92400e',
-            marginBottom: brand.spacing.md,
-            fontWeight: brand.typography.fontWeight.bold
-          }}>
-            💡 معاينة التصميم
-          </p>
-          <p style={{
-            fontSize: brand.typography.fontSize.sm,
-            color: '#78350f',
+            color: brand.colors.gray[700],
             marginBottom: brand.spacing.lg
           }}>
             لرؤية صفحة المصادقة الكاملة، افتح Console (F12) والصق الكود:
           </p>
           <code style={{
             display: 'block',
-            background: brand.colors.gray[800],
+            background: brand.colors.gray[900],
             color: brand.colors.success,
             padding: brand.spacing.lg,
-            borderRadius: brand.borderRadius.lg,
+            borderRadius: brand.borderRadius.xl,
             fontFamily: brand.typography.fontFamily.code,
-            fontSize: '11px',
+            fontSize: brand.typography.fontSize.sm,
             textAlign: 'left',
             direction: 'ltr',
             overflow: 'auto',
-            lineHeight: '1.6',
+            lineHeight: '1.8',
             boxShadow: brand.shadows.inner
           }}>
 {`(async () => {
@@ -195,45 +288,16 @@ export default function AuthTest() {
 
         {/* Footer */}
         <div style={{
-          marginTop: '40px',
+          marginTop: brand.spacing.xl,
           textAlign: 'center',
-          color: '#999',
-          fontSize: '13px'
+          color: 'white',
+          fontSize: brand.typography.fontSize.lg,
+          fontWeight: brand.typography.fontWeight.medium,
+          textShadow: '0 2px 4px rgba(0,0,0,0.2)'
         }}>
           Made with 💜 by Claude & Meshal
         </div>
       </div>
-
-      {/* Floating Elements */}
-      <div style={{
-        position: 'absolute',
-        top: '10%',
-        right: '10%',
-        width: '100px',
-        height: '100px',
-        background: 'rgba(255,255,255,0.1)',
-        borderRadius: '30px',
-        transform: 'rotate(45deg)',
-        animation: 'float 6s ease-in-out infinite'
-      }}></div>
-      <div style={{
-        position: 'absolute',
-        bottom: '15%',
-        left: '15%',
-        width: '60px',
-        height: '60px',
-        background: 'rgba(255,255,255,0.1)',
-        borderRadius: '20px',
-        transform: 'rotate(-45deg)',
-        animation: 'float 4s ease-in-out infinite'
-      }}></div>
-
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(45deg); }
-          50% { transform: translateY(-20px) rotate(45deg); }
-        }
-      `}</style>
     </div>
   )
 }

@@ -1,24 +1,41 @@
 // Sunday Brand Identity System
-// نظام الهوية البصرية الكامل لمنصة Sunday
+// نظام الهوية البصرية الكامل لمنصة Sunday - مستوحى من Monday.com و Slack
 
 export const brand = {
-  // Colors - الألوان
+  // Brand Personality
+  personality: {
+    voice: 'ودود، احترافي، مبتكر',
+    tone: 'متفائل، داعم، ملهم',
+    style: 'عصري، نابض بالحياة، منظم'
+  },
+
+  // Colors - نظام ألوان غني ومتنوع
   colors: {
+    // Primary Brand Colors
     primary: {
-      main: '#5B4E9D',
-      light: '#7C6DB8',
-      dark: '#43367A',
-      gradient: 'linear-gradient(135deg, #5B4E9D 0%, #8B5CF6 100%)'
+      main: '#6C5CE7',      // بنفسجي نابض
+      light: '#A29BFE',
+      dark: '#5F3DC4',
+      gradient: 'linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%)'
     },
-    secondary: {
-      main: '#8B5CF6',
-      light: '#A78BFA',
-      dark: '#7C3AED'
+
+    // Vibrant Accent Colors (مثل Monday)
+    vibrant: {
+      purple: '#6C5CE7',
+      blue: '#0984E3',
+      green: '#00B894',
+      yellow: '#FDCB6E',
+      orange: '#FF7675',
+      pink: '#FD79A8',
+      teal: '#00CEC9',
+      red: '#FF6B6B'
     },
-    success: '#34C759',
-    warning: '#FF9500',
-    danger: '#FF3B30',
-    info: '#007AFF',
+
+    // Functional Colors
+    success: '#00B894',
+    warning: '#FDCB6E',
+    danger: '#FF6B6B',
+    info: '#0984E3',
     gray: {
       50: '#F9FAFB',
       100: '#F3F4F6',
@@ -96,30 +113,73 @@ export const brand = {
     inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)'
   },
 
-  // Logo SVG
+  // Logo SVG - تصميم فريد مستوحى من الشمس والأحد
   logo: {
-    // SVG Logo كامل
-    svg: `<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    // الشمس المشرقة = Sunday = يوم الأحد
+    full: `<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="sundayGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#5B4E9D;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+        <linearGradient id="sunGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FDCB6E"/>
+          <stop offset="50%" stop-color="#FF7675"/>
+          <stop offset="100%" stop-color="#6C5CE7"/>
         </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
       </defs>
-      <rect width="80" height="80" rx="20" fill="url(#sundayGradient)"/>
-      <g transform="translate(16, 16)">
-        <path d="M24 4L4 14L24 24L44 14L24 4Z" fill="white" opacity="0.9"/>
-        <path d="M4 34L24 44L44 34" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M4 24L24 34L44 24" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- الدائرة الخارجية -->
+      <circle cx="60" cy="60" r="35" fill="url(#sunGradient)" filter="url(#glow)"/>
+      <!-- الأشعة -->
+      <g stroke="url(#sunGradient)" stroke-width="4" stroke-linecap="round">
+        <line x1="60" y1="10" x2="60" y2="25"/>
+        <line x1="95" y1="25" x2="85" y2="35"/>
+        <line x1="110" y1="60" x2="95" y2="60"/>
+        <line x1="95" y1="95" x2="85" y2="85"/>
+        <line x1="60" y1="110" x2="60" y2="95"/>
+        <line x1="25" y1="95" x2="35" y2="85"/>
+        <line x1="10" y1="60" x2="25" y2="60"/>
+        <line x1="25" y1="25" x2="35" y2="35"/>
+      </g>
+      <!-- حرف S في المنتصف -->
+      <text x="60" y="75" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle">S</text>
+    </svg>`,
+
+    // أيقونة مبسطة
+    icon: `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="24" cy="24" r="14" fill="url(#sunGradient)"/>
+      <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="24" y1="4" x2="24" y2="10"/>
+        <line x1="38" y1="10" x2="34" y2="14"/>
+        <line x1="44" y1="24" x2="38" y2="24"/>
+        <line x1="38" y1="38" x2="34" y2="34"/>
+        <line x1="24" y1="44" x2="24" y2="38"/>
+        <line x1="10" y1="38" x2="14" y2="34"/>
+        <line x1="4" y1="24" x2="10" y2="24"/>
+        <line x1="10" y1="10" x2="14" y2="14"/>
       </g>
     </svg>`,
 
-    // Icon only (صغير)
-    icon: `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" opacity="0.9"/>
-      <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    // Favicon
+    favicon: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="16" cy="16" r="16" fill="#6C5CE7"/>
+      <text x="16" y="22" font-family="Arial" font-size="20" font-weight="bold" fill="white" text-anchor="middle">S</text>
     </svg>`
+  },
+
+  // Illustrations - رسومات توضيحية
+  illustrations: {
+    empty: '🌅',
+    success: '🎉',
+    error: '😕',
+    loading: '⏳',
+    celebration: '🎊',
+    rocket: '🚀',
+    star: '⭐',
+    fire: '🔥'
   },
 
   // Brand Info
