@@ -662,8 +662,8 @@ export default function Board() {
   }
 
   const gridColumns = showAllColumns
-    ? `${columnWidths.task}px repeat(${allColumnTypes.size}, 1fr) 150px`
-    : `${columnWidths.task}px ${columnWidths.person}px ${columnWidths.status}px ${columnWidths.date}px`
+    ? `${columnWidths.task}px repeat(${allColumnTypes.size}, 1fr) 60px`
+    : `${columnWidths.task}px ${columnWidths.person}px ${columnWidths.status}px ${columnWidths.date}px 60px`
 
   const renderSubtasksRecursive = (taskId, subtasks, level = 0) => {
     return subtasks.map(subtask => {
