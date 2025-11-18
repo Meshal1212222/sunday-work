@@ -661,9 +661,8 @@ export default function Board() {
     )
   }
 
-  const gridColumns = showAllColumns
-    ? `${columnWidths.task}px repeat(${allColumnTypes.size}, 1fr) 60px`
-    : `${columnWidths.task}px ${columnWidths.person}px ${columnWidths.status}px ${columnWidths.date}px 60px`
+  // Always show all columns by default
+  const gridColumns = `${columnWidths.task}px repeat(${Math.max(allColumnTypes.size, 1)}, 1fr) 60px`
 
   const renderSubtasksRecursive = (taskId, subtasks, level = 0) => {
     return subtasks.map(subtask => {
@@ -723,45 +722,9 @@ export default function Board() {
               </button>
             </div>
 
-            {showAllColumns ? (
-              Array.from(allColumnTypes).map(type => (
-                <div key={type} className="item-cell">
-                  {type === 'status' || type === 'color' ? (
-                    <select
-                      className="subtask-select-inline"
-                      value={subtask.status || 'جديد'}
-                      onChange={(e) => updateSubtask(taskId, subtask.id, 'status', e.target.value)}
-                      style={{ backgroundColor: getStatusColor(subtask.status || 'جديد') }}
-                    >
-                      <option value="جديد">جديد</option>
-                      <option value="قيد العمل">قيد العمل</option>
-                      <option value="مكتمل">مكتمل</option>
-                      <option value="معلق">معلق</option>
-                    </select>
-                  ) : type === 'person' || type === 'people' || type === 'multiple-person' ? (
-                    renderPersonCell(`${taskId}-${subtask.id}`, subtask.person || '', (newPerson) => {
-                      updateSubtask(taskId, subtask.id, 'person', newPerson)
-                    })
-                  ) : type === 'date' ? (
-                    <input
-                      type="date"
-                      className="subtask-input-inline"
-                      value={subtask.date || ''}
-                      onChange={(e) => updateSubtask(taskId, subtask.id, 'date', e.target.value)}
-                    />
-                  ) : (
-                    <span className="empty">-</span>
-                  )}
-                </div>
-              ))
-            ) : (
-              <>
-                <div className="item-cell col-person">
-                  {renderPersonCell(`${taskId}-${subtask.id}`, subtask.person || '', (newPerson) => {
-                    updateSubtask(taskId, subtask.id, 'person', newPerson)
-                  })}
-                </div>
-                <div className="item-cell col-status">
+            {Array.from(allColumnTypes).map(type => (
+              <div key={type} className="item-cell">
+                {type === 'status' || type === 'color' ? (
                   <select
                     className="subtask-select-inline"
                     value={subtask.status || 'جديد'}
@@ -773,17 +736,22 @@ export default function Board() {
                     <option value="مكتمل">مكتمل</option>
                     <option value="معلق">معلق</option>
                   </select>
-                </div>
-                <div className="item-cell col-date">
+                ) : type === 'person' || type === 'people' || type === 'multiple-person' ? (
+                  renderPersonCell(`${taskId}-${subtask.id}`, subtask.person || '', (newPerson) => {
+                    updateSubtask(taskId, subtask.id, 'person', newPerson)
+                  })
+                ) : type === 'date' ? (
                   <input
                     type="date"
                     className="subtask-input-inline"
                     value={subtask.date || ''}
                     onChange={(e) => updateSubtask(taskId, subtask.id, 'date', e.target.value)}
                   />
-                </div>
-              </>
-            )}
+                ) : (
+                  <span className="empty">-</span>
+                )}
+              </div>
+            ))}
           </div>
 
           {/* Render nested subtasks recursively */}
@@ -868,35 +836,9 @@ export default function Board() {
                         onMouseDown={(e) => handleResizeStart(e, 'task')}
                       />
                     </div>
-                    {showAllColumns ? (
-                      Array.from(allColumnTypes).map(type => (
-                        <div key={type} className="header-cell">{type}</div>
-                      ))
-                    ) : (
-                      <>
-                        <div className="header-cell">
-                          المسؤول
-                          <div
-                            className={`column-resize-handle ${resizingColumn === 'person' ? 'resizing' : ''}`}
-                            onMouseDown={(e) => handleResizeStart(e, 'person')}
-                          />
-                        </div>
-                        <div className="header-cell">
-                          الحالة
-                          <div
-                            className={`column-resize-handle ${resizingColumn === 'status' ? 'resizing' : ''}`}
-                            onMouseDown={(e) => handleResizeStart(e, 'status')}
-                          />
-                        </div>
-                        <div className="header-cell">
-                          التاريخ
-                          <div
-                            className={`column-resize-handle ${resizingColumn === 'date' ? 'resizing' : ''}`}
-                            onMouseDown={(e) => handleResizeStart(e, 'date')}
-                          />
-                        </div>
-                      </>
-                    )}
+                    {Array.from(allColumnTypes).map(type => (
+                      <div key={type} className="header-cell">{type}</div>
+                    ))}
                     <div className="header-cell add-column-cell">
                       <button
                         className="add-column-btn"
@@ -954,8 +896,7 @@ export default function Board() {
                           </button>
                         </div>
 
-                      {showAllColumns ? (
-                        Array.from(allColumnTypes).map(type => {
+                      {Array.from(allColumnTypes).map(type => {
                           const value = getColumnValue(item, type)
                           const cellKey = `${item.id}-${type}`
                           return (
@@ -996,53 +937,7 @@ export default function Board() {
                               )}
                             </div>
                           )
-                        })
-                      ) : (
-                        <>
-                          <div className="item-cell col-person">
-                            {renderPersonCell(item.id, person, (newPerson) => {
-                              // In real implementation, would update via Monday API
-                              console.log(`Updated person for ${item.id} to ${newPerson}`)
-                              alert(`تم تعيين ${newPerson} كمسؤول عن المهمة!`)
-                            })}
-                          </div>
-                          <div
-                            className={`item-cell col-status interactive-cell ${hoveredCell === `${item.id}-status` ? 'cell-hovered' : ''}`}
-                            onMouseEnter={() => setHoveredCell(`${item.id}-status`)}
-                            onMouseLeave={() => setHoveredCell(null)}
-                            onClick={(e) => handleCellClick(e, item.id, 'status')}
-                          >
-                            {status ? (
-                              <div
-                                className="status-pill"
-                                style={{ backgroundColor: getStatusColor(status) }}
-                              >
-                                {status}
-                              </div>
-                            ) : (
-                              <span className="empty">-</span>
-                            )}
-                            {hoveredCell === `${item.id}-status` && (
-                              <button className="cell-action-btn">
-                                <ChevronDown size={14} />
-                              </button>
-                            )}
-                          </div>
-                          <div
-                            className={`item-cell col-date interactive-cell ${hoveredCell === `${item.id}-date` ? 'cell-hovered' : ''}`}
-                            onMouseEnter={() => setHoveredCell(`${item.id}-date`)}
-                            onMouseLeave={() => setHoveredCell(null)}
-                            onClick={(e) => handleCellClick(e, item.id, 'date')}
-                          >
-                            {date ? <span>{date}</span> : <span className="empty">-</span>}
-                            {hoveredCell === `${item.id}-date` && (
-                              <button className="cell-action-btn">
-                                <ChevronDown size={14} />
-                              </button>
-                            )}
-                          </div>
-                        </>
-                      )}
+                        })}
                     </div>
 
                     {/* Subtasks Rows - Recursive rendering for infinite nesting */}

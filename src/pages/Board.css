@@ -23,21 +23,26 @@
 }
 
 .dark-mode {
-  --bg-primary: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-  --bg-secondary: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
-  --bg-table: #1f1f1f;
-  --bg-item: #2a2a2a;
-  --bg-item-hover: linear-gradient(90deg, #2a2a2a 0%, #1e3a52 100%);
-  --bg-subtask: linear-gradient(90deg, #252525 0%, #2a2a2a 100%);
-  --bg-subtask-hover: linear-gradient(90deg, #1e3a52 0%, #1a4d6f 100%);
-  --text-primary: #e4e4e7;
-  --text-secondary: #a1a1aa;
-  --text-tertiary: #52525b;
-  --border-color: #3a3a3a;
-  --border-light: #2a2a2a;
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-table: #0d1117;
+  --bg-item: #161b22;
+  --bg-item-hover: #1c2128;
+  --bg-subtask: #0d1117;
+  --bg-subtask-hover: #1c2128;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-tertiary: #6e7681;
+  --border-color: #30363d;
+  --border-light: #21262d;
   --input-bg: rgba(0, 0, 0, 0.2);
   --input-hover-bg: rgba(0, 0, 0, 0.3);
   --input-focus-bg: rgba(0, 0, 0, 0.4);
+  --header-bg: #161b22;
+  --header-cell-bg: #0d1117;
+  --group-bg: #161b22;
+  --group-hover-bg: #1c2128;
+  --group-count-bg: #21262d;
 }
 
 .monday-board {
@@ -142,9 +147,9 @@
 }
 
 .board-table {
-  background: #FFFFFF;
+  background: var(--bg-table);
   border-radius: 8px;
-  border: 1px solid #E1E4E8;
+  border: 1px solid var(--border-color);
   overflow: hidden;
   min-width: 900px;
   transition: background 0.3s ease;
@@ -155,9 +160,9 @@
   display: grid;
   grid-template-columns: var(--grid-cols, 2fr 1.2fr 1fr 1fr);
   gap: 0;
-  background: #F8F9FA;
-  border: 1px solid #E1E4E8;
-  border-bottom: 2px solid #E1E4E8;
+  background: var(--header-bg, #F8F9FA);
+  border: 1px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -167,12 +172,12 @@
   padding: 14px 16px;
   font-size: 13px;
   font-weight: 600;
-  color: #6E7781;
+  color: var(--text-secondary);
   text-align: right;
-  border-left: 1px solid #E1E4E8;
+  border-left: 1px solid var(--border-color);
   position: relative;
   user-select: none;
-  background: #FAFBFC;
+  background: var(--header-cell-bg, #FAFBFC);
 }
 
 .header-cell:first-child {
@@ -219,7 +224,7 @@
 
 /* Group - Clean Professional Style */
 .table-group {
-  border-bottom: 1px solid #E1E4E8;
+  border-bottom: 1px solid var(--border-color);
   position: relative;
   margin-bottom: 16px;
 }
@@ -233,12 +238,12 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  background: #FFFFFF;
-  border: 1px solid #E1E4E8;
+  background: var(--group-bg, #FFFFFF);
+  border: 1px solid var(--border-color);
   border-bottom: none;
   font-size: 14px;
   font-weight: 600;
-  color: #24292F;
+  color: var(--text-primary);
   position: relative;
   cursor: pointer;
   transition: background 0.2s ease;
@@ -249,7 +254,7 @@
   position: absolute;
   right: 8px;
   font-size: 9px;
-  color: #57606A;
+  color: var(--text-secondary);
   transition: transform 0.2s;
 }
 
@@ -258,22 +263,22 @@
 }
 
 .group-row:hover {
-  background: #F6F8FA;
+  background: var(--group-hover-bg, #F6F8FA);
 }
 
 .group-name {
-  color: #24292F;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .group-count {
   font-size: 12px;
-  color: #57606A;
+  color: var(--text-secondary);
   font-weight: 500;
-  background: #F6F8FA;
+  background: var(--group-count-bg, #F6F8FA);
   padding: 4px 10px;
   border-radius: 12px;
-  border: 1px solid #E1E4E8;
+  border: 1px solid var(--border-color);
 }
 
 /* Item Row - Clean Professional Style */
@@ -281,12 +286,12 @@
   display: grid;
   grid-template-columns: var(--grid-cols, 2fr 1.2fr 1fr 1fr);
   gap: 0;
-  border: 1px solid #E1E4E8;
+  border: 1px solid var(--border-color);
   border-top: none;
   transition: background 0.15s ease;
   cursor: move;
   position: relative;
-  background: #FFFFFF;
+  background: var(--bg-item);
 }
 
 .item-row:first-of-type {
@@ -332,12 +337,12 @@
 }
 
 .item-row:hover {
-  background: #F6F8FA;
+  background: var(--bg-item-hover);
   z-index: 1;
 }
 
 .item-row:last-child {
-  border-bottom: 1px solid #E1E4E8;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .item-cell {
@@ -345,9 +350,9 @@
   display: flex;
   align-items: center;
   font-size: 14px;
-  color: #24292F;
+  color: var(--text-primary);
   position: relative;
-  border-left: 1px solid #E1E4E8;
+  border-left: 1px solid var(--border-color);
   min-height: 48px;
 }
 
@@ -583,15 +588,15 @@
   display: grid;
   grid-template-columns: var(--grid-cols, 2fr 1.2fr 1fr 1fr);
   gap: 0;
-  border-bottom: 1px solid #E1E4E8;
-  border-left: 1px solid #E1E4E8;
-  border-right: 1px solid #E1E4E8;
-  background: #FAFBFC;
+  border-bottom: 1px solid var(--border-color);
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-subtask);
   transition: background 0.15s ease;
 }
 
 .subtask-row-inline:hover {
-  background: #F6F8FA;
+  background: var(--bg-subtask-hover);
 }
 
 .subtask-indent {
@@ -708,10 +713,10 @@
 /* Add Item Row - Clean Professional */
 .add-item-row {
   padding: 8px 16px;
-  border-left: 1px solid #E1E4E8;
-  border-right: 1px solid #E1E4E8;
-  border-bottom: 1px solid #E1E4E8;
-  background: #FFFFFF;
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-item);
 }
 
 .add-item-btn {
@@ -719,9 +724,9 @@
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: white;
-  border: 1px solid #E1E4E8;
-  color: #57606A;
+  background: var(--bg-item);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -732,7 +737,7 @@
 }
 
 .add-item-btn:hover {
-  background: #F6F8FA;
+  background: var(--bg-item-hover);
   border-color: #0073EA;
   color: #0073EA;
 }
@@ -851,7 +856,7 @@
   padding: 6px 8px;
   background: transparent;
   border: none;
-  color: #57606A;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -861,7 +866,7 @@
 }
 
 .add-column-btn:hover {
-  background: #F6F8FA;
+  background: var(--bg-item-hover);
   color: #0073EA;
 }
 
