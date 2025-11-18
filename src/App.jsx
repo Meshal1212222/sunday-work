@@ -60,6 +60,11 @@ function AppRoutes() {
 }
 
 function App() {
+  // Special route for testing Auth page - bypass everything
+  if (window.location.pathname === '/sunday-work/test') {
+    return <AuthTest />
+  }
+
   return (
     <AuthProvider>
       <WorkspaceProvider>
