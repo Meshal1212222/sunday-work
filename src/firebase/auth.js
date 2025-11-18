@@ -95,6 +95,11 @@ export async function loginUser(email, password) {
 export async function logoutUser() {
   try {
     await signOut(auth)
+    // Clear all storage
+    localStorage.clear()
+    sessionStorage.clear()
+    // Force reload to clear state
+    window.location.href = '/sunday-work/auth'
     return { success: true }
   } catch (error) {
     console.error('Logout error:', error)
