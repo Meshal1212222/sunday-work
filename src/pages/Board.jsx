@@ -96,7 +96,7 @@ export default function Board() {
     person: 200,
     status: 150,
     date: 150,
-    link: 80
+    link: 200
   })
   const [resizingColumn, setResizingColumn] = useState(null)
   const [resizeStartX, setResizeStartX] = useState(0)
@@ -754,19 +754,28 @@ export default function Board() {
 
             {/* Link Column */}
             <div className="item-cell col-link">
-              {subtask.link ? (
-                <a
-                  href={subtask.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="link-icon-btn"
-                  title={subtask.link}
-                >
-                  <ExternalLink size={14} />
-                </a>
-              ) : (
-                <span className="empty">-</span>
-              )}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
+                {subtask.link && (
+                  <a
+                    href={subtask.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="link-icon-btn"
+                    title={subtask.link}
+                    style={{ flexShrink: 0 }}
+                  >
+                    <ExternalLink size={12} />
+                  </a>
+                )}
+                <input
+                  type="url"
+                  className="subtask-input-inline"
+                  value={subtask.link || ''}
+                  onChange={(e) => updateSubtask(taskId, subtask.id, 'link', e.target.value)}
+                  placeholder="رابط..."
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+              </div>
             </div>
           </div>
 
@@ -996,56 +1005,110 @@ export default function Board() {
                           console.log(`Updated person for ${item.id} to ${newPerson}`)
                         })}
                       </div>
-                      <div
-                        className={`item-cell col-status interactive-cell ${hoveredCell === `${item.id}-status` ? 'cell-hovered' : ''}`}
-                        onMouseEnter={() => setHoveredCell(`${item.id}-status`)}
-                        onMouseLeave={() => setHoveredCell(null)}
-                        onClick={(e) => handleCellClick(e, item.id, 'status')}
-                      >
-                        {status ? (
-                          <div
-                            className="status-pill"
-                            style={{ backgroundColor: getStatusColor(status) }}
-                          >
-                            {status}
-                          </div>
-                        ) : (
-                          <span className="empty">-</span>
-                        )}
-                        {hoveredCell === `${item.id}-status` && (
-                          <button className="cell-action-btn">
-                            <ChevronDown size={14} />
-                          </button>
-                        )}
+                      <div className="item-cell col-status">
+                        <select
+                          className="subtask-select-inline"
+                          value={status || 'جديد'}
+                          onChange={(e) => {
+                            const newStatus = e.target.value
+                            setBoard(prevBoard => ({
+                              ...prevBoard,
+                              items_page: {
+                                items: prevBoard.items_page.items.map(boardItem => {
+                                  if (boardItem.id === item.id) {
+                                    const updatedColumnValues = boardItem.column_values.map(col => {
+                                      if (col.type === 'status' || col.type === 'color') {
+                                        return { ...col, text: newStatus }
+                                      }
+                                      return col
+                                    })
+                                    return { ...boardItem, column_values: updatedColumnValues }
+                                  }
+                                  return boardItem
+                                })
+                              }
+                            }))
+                          }}
+                          style={{ backgroundColor: getStatusColor(status || 'جديد') }}
+                        >
+                          <option value="جديد">جديد</option>
+                          <option value="قيد العمل">قيد العمل</option>
+                          <option value="مكتمل">مكتمل</option>
+                          <option value="معلق">معلق</option>
+                        </select>
                       </div>
                       <div
-                        className={`item-cell col-date interactive-cell ${hoveredCell === `${item.id}-date` ? 'cell-hovered' : ''}`}
-                        onMouseEnter={() => setHoveredCell(`${item.id}-date`)}
-                        onMouseLeave={() => setHoveredCell(null)}
-                        onClick={(e) => handleCellClick(e, item.id, 'date')}
+                        className="item-cell col-date"
                         title={item.creator?.name ? `أُنشئت بواسطة: ${item.creator.name}${item.created_at ? '\nتاريخ الإنشاء: ' + new Date(item.created_at).toLocaleDateString('ar-EG') : ''}` : ''}
                       >
-                        {date ? <span>{date}</span> : <span className="empty">-</span>}
-                        {hoveredCell === `${item.id}-date` && (
-                          <button className="cell-action-btn">
-                            <ChevronDown size={14} />
-                          </button>
-                        )}
+                        <input
+                          type="date"
+                          className="subtask-input-inline"
+                          value={date || ''}
+                          onChange={(e) => {
+                            const newDate = e.target.value
+                            setBoard(prevBoard => ({
+                              ...prevBoard,
+                              items_page: {
+                                items: prevBoard.items_page.items.map(boardItem => {
+                                  if (boardItem.id === item.id) {
+                                    const updatedColumnValues = boardItem.column_values.map(col => {
+                                      if (col.type === 'date') {
+                                        return { ...col, text: newDate }
+                                      }
+                                      return col
+                                    })
+                                    return { ...boardItem, column_values: updatedColumnValues }
+                                  }
+                                  return boardItem
+                                })
+                              }
+                            }))
+                          }}
+                        />
                       </div>
                       <div className="item-cell col-link">
-                        {link ? (
-                          <a
-                            href={link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="link-icon-btn"
-                            title={link}
-                          >
-                            <ExternalLink size={16} />
-                          </a>
-                        ) : (
-                          <span className="empty">-</span>
-                        )}
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
+                          {link && (
+                            <a
+                              href={link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="link-icon-btn"
+                              title={link}
+                              style={{ flexShrink: 0 }}
+                            >
+                              <ExternalLink size={14} />
+                            </a>
+                          )}
+                          <input
+                            type="url"
+                            className="subtask-input-inline"
+                            value={link || ''}
+                            onChange={(e) => {
+                              const newLink = e.target.value
+                              setBoard(prevBoard => ({
+                                ...prevBoard,
+                                items_page: {
+                                  items: prevBoard.items_page.items.map(boardItem => {
+                                    if (boardItem.id === item.id) {
+                                      const updatedColumnValues = boardItem.column_values.map(col => {
+                                        if (col.type === 'link') {
+                                          return { ...col, text: newLink }
+                                        }
+                                        return col
+                                      })
+                                      return { ...boardItem, column_values: updatedColumnValues }
+                                    }
+                                    return boardItem
+                                  })
+                                }
+                              }))
+                            }}
+                            placeholder="رابط..."
+                            style={{ flex: 1, minWidth: 0 }}
+                          />
+                        </div>
                       </div>
                     </div>
 
