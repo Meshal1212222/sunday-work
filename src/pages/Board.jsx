@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import React from 'react'
-import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun, User, Copy, Check } from 'lucide-react'
+import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun, User, Copy, Check, Mail, MessageCircle } from 'lucide-react'
 import TaskModal from '../components/TaskModal'
 import { mockTeamMembers } from '../data/mockData'
 import './Board.css'
@@ -96,7 +96,8 @@ export default function Board() {
     person: 200,
     status: 150,
     date: 150,
-    link: 250
+    link: 250,
+    updates: 80
   })
   const [resizingColumn, setResizingColumn] = useState(null)
   const [resizeStartX, setResizeStartX] = useState(0)
@@ -107,6 +108,8 @@ export default function Board() {
   const [personSearchTerm, setPersonSearchTerm] = useState('')
   const [editingTaskId, setEditingTaskId] = useState(null) // Track which task is being edited
   const [copiedLinkId, setCopiedLinkId] = useState(null) // Track which link was copied
+  const [updatesModalOpen, setUpdatesModalOpen] = useState(null) // stores itemId for updates modal
+  const [taskUpdates, setTaskUpdates] = useState({}) // Store updates for each task
 
   useEffect(() => {
     async function loadData() {
@@ -670,8 +673,8 @@ export default function Board() {
     )
   }
 
-  // Basic columns: المهمة، المسؤول، الحالة، التاريخ، الرابط
-  const gridColumns = `${columnWidths.task}px ${columnWidths.person}px ${columnWidths.status}px ${columnWidths.date}px ${columnWidths.link}px`
+  // Basic columns: المهمة، المسؤول، الحالة، التاريخ، الرابط، التحديثات
+  const gridColumns = `${columnWidths.task}px ${columnWidths.person}px ${columnWidths.status}px ${columnWidths.date}px ${columnWidths.link}px ${columnWidths.updates}px`
 
   const renderSubtasksRecursive = (taskId, subtasks, level = 0) => {
     return subtasks.map(subtask => {
@@ -798,6 +801,23 @@ export default function Board() {
                 )}
               </div>
             </div>
+
+            {/* Updates Column */}
+            <div className="item-cell col-updates">
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
+                <button
+                  onClick={() => setUpdatesModalOpen(`${taskId}-${subtask.id}`)}
+                  className="updates-icon-btn updates-icon-btn-small"
+                  title="التحديثات"
+                  style={{ position: 'relative' }}
+                >
+                  <MessageCircle size={14} />
+                  {taskUpdates[`${taskId}-${subtask.id}`]?.length > 0 && (
+                    <span className="updates-badge updates-badge-small">{taskUpdates[`${taskId}-${subtask.id}`].length}</span>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Render nested subtasks recursively */}
@@ -917,6 +937,13 @@ export default function Board() {
                       <div
                         className={`column-resize-handle ${resizingColumn === 'link' ? 'resizing' : ''}`}
                         onMouseDown={(e) => handleResizeStart(e, 'link')}
+                      />
+                    </div>
+                    <div className="header-cell">
+                      التحديثات
+                      <div
+                        className={`column-resize-handle ${resizingColumn === 'updates' ? 'resizing' : ''}`}
+                        onMouseDown={(e) => handleResizeStart(e, 'updates')}
                       />
                     </div>
                   </div>
@@ -1157,6 +1184,21 @@ export default function Board() {
                           )}
                         </div>
                       </div>
+                      <div className="item-cell col-updates">
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => setUpdatesModalOpen(item.id)}
+                            className="updates-icon-btn"
+                            title="التحديثات"
+                            style={{ position: 'relative' }}
+                          >
+                            <MessageCircle size={18} />
+                            {taskUpdates[item.id]?.length > 0 && (
+                              <span className="updates-badge">{taskUpdates[item.id].length}</span>
+                            )}
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Subtasks Rows - Recursive rendering for infinite nesting */}
@@ -1289,6 +1331,125 @@ export default function Board() {
                 <div className="menu-option">مسح</div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Updates Modal */}
+      {updatesModalOpen && (
+        <div className="updates-modal-overlay" onClick={() => setUpdatesModalOpen(null)}>
+          <div className="updates-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="updates-modal-header">
+              <div>
+                <h3>التحديثات</h3>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div className="updates-modal-actions">
+                  <button
+                    className="updates-action-btn email"
+                    onClick={() => {
+                      const subject = encodeURIComponent('تحديث من Monday.com')
+                      const body = encodeURIComponent(
+                        taskUpdates[updatesModalOpen]?.map(u => `${u.author}: ${u.text}`).join('\n\n') || ''
+                      )
+                      window.location.href = `mailto:?subject=${subject}&body=${body}`
+                    }}
+                    title="إرسال عبر البريد"
+                  >
+                    <Mail size={16} />
+                    <span>إيميل</span>
+                  </button>
+                  <button
+                    className="updates-action-btn whatsapp"
+                    onClick={() => {
+                      const text = encodeURIComponent(
+                        taskUpdates[updatesModalOpen]?.map(u => `${u.author}: ${u.text}`).join('\n\n') || ''
+                      )
+                      window.open(`https://wa.me/?text=${text}`, '_blank')
+                    }}
+                    title="إرسال عبر واتساب"
+                  >
+                    <MessageCircle size={16} />
+                    <span>واتساب</span>
+                  </button>
+                </div>
+                <button onClick={() => setUpdatesModalOpen(null)} className="close-menu-btn">
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="updates-modal-body">
+              {taskUpdates[updatesModalOpen]?.length > 0 ? (
+                <div className="updates-list">
+                  {taskUpdates[updatesModalOpen].map((update, index) => (
+                    <div key={index} className="update-item">
+                      <div className="update-avatar">{getPersonInitials(update.author)}</div>
+                      <div className="update-content">
+                        <div className="update-header">
+                          <span className="update-author">{update.author}</span>
+                          <span className="update-time">{update.time}</span>
+                        </div>
+                        <div className="update-text">{update.text}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="updates-empty">
+                  <MessageCircle size={48} style={{ opacity: 0.3, marginBottom: '12px' }} />
+                  <p>لا توجد تحديثات بعد</p>
+                  <p style={{ fontSize: '13px', marginTop: '8px' }}>ابدأ المحادثة أدناه</p>
+                </div>
+              )}
+            </div>
+            <div className="updates-input-area">
+              <div className="updates-input-wrapper">
+                <textarea
+                  className="updates-input"
+                  placeholder="اكتب تحديثاً..."
+                  rows={2}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      const text = e.target.value.trim()
+                      if (text) {
+                        const newUpdate = {
+                          author: 'أنت',
+                          text: text,
+                          time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+                        }
+                        setTaskUpdates(prev => ({
+                          ...prev,
+                          [updatesModalOpen]: [...(prev[updatesModalOpen] || []), newUpdate]
+                        }))
+                        e.target.value = ''
+                      }
+                    }
+                  }}
+                />
+                <button
+                  className="updates-send-btn"
+                  onClick={(e) => {
+                    const textarea = e.target.parentElement.querySelector('textarea')
+                    const text = textarea.value.trim()
+                    if (text) {
+                      const newUpdate = {
+                        author: 'أنت',
+                        text: text,
+                        time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+                      }
+                      setTaskUpdates(prev => ({
+                        ...prev,
+                        [updatesModalOpen]: [...(prev[updatesModalOpen] || []), newUpdate]
+                      }))
+                      textarea.value = ''
+                    }
+                  }}
+                >
+                  إرسال
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
