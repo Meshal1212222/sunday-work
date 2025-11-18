@@ -413,6 +413,30 @@
   font-weight: 600;
 }
 
+/* Task Name Input for New Tasks */
+.task-name-input {
+  flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.task-name-input:hover {
+  background: var(--input-hover-bg);
+  border-color: #0073EA;
+}
+
+.task-name-input:focus {
+  background: var(--input-focus-bg);
+  border-color: #0073EA;
+  box-shadow: 0 0 0 3px rgba(0, 115, 234, 0.1);
+}
+
 /* Person Column - Clean Professional */
 .person-pill {
   display: inline-flex;

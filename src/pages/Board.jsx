@@ -105,6 +105,7 @@ export default function Board() {
   // Person dropdown state
   const [personDropdownOpen, setPersonDropdownOpen] = useState(null) // stores itemId or subtaskId
   const [personSearchTerm, setPersonSearchTerm] = useState('')
+  const [editingTaskId, setEditingTaskId] = useState(null) // Track which task is being edited
 
   useEffect(() => {
     async function loadData() {
@@ -908,7 +909,57 @@ export default function Board() {
                             />
                           </button>
                           <div className="task-check"></div>
-                          <span className="task-text" onClick={() => handleTaskClick(item)}>{item.name}</span>
+                          {item.isNew ? (
+                            <input
+                              type="text"
+                              className="task-name-input"
+                              value={item.name}
+                              onChange={(e) => {
+                                const newName = e.target.value
+                                setBoard(prevBoard => ({
+                                  ...prevBoard,
+                                  items_page: {
+                                    items: prevBoard.items_page.items.map(boardItem =>
+                                      boardItem.id === item.id
+                                        ? { ...boardItem, name: newName }
+                                        : boardItem
+                                    )
+                                  }
+                                }))
+                              }}
+                              onBlur={() => {
+                                // Remove isNew flag when user finishes editing
+                                if (item.name.trim()) {
+                                  setBoard(prevBoard => ({
+                                    ...prevBoard,
+                                    items_page: {
+                                      items: prevBoard.items_page.items.map(boardItem =>
+                                        boardItem.id === item.id
+                                          ? { ...boardItem, isNew: false }
+                                          : boardItem
+                                      )
+                                    }
+                                  }))
+                                } else {
+                                  // Remove empty task
+                                  setBoard(prevBoard => ({
+                                    ...prevBoard,
+                                    items_page: {
+                                      items: prevBoard.items_page.items.filter(boardItem => boardItem.id !== item.id)
+                                    }
+                                  }))
+                                  setTaskOrder(prev => ({
+                                    ...prev,
+                                    [group.id]: (prev[group.id] || []).filter(id => id !== item.id)
+                                  }))
+                                }
+                              }}
+                              placeholder="اسم المهمة..."
+                              autoFocus
+                            />
+                          ) : (
+                            <span className="task-text" onClick={() => handleTaskClick(item)}>{item.name}</span>
+                          )}
                           <button
                             className="add-subtask-inline-btn"
                             onClick={(e) => {
@@ -1009,12 +1060,33 @@ export default function Board() {
                   <button
                     className="add-item-btn"
                     onClick={() => {
-                      const name = prompt('أدخل اسم المهمة الجديدة:')
-                      if (name) {
-                        console.log('Adding task:', name, 'to group:', group.id)
-                        // In real implementation, this would call Monday API to create item
-                        alert('إضافة المهام الجديدة قادمة قريباً!')
+                      // Create new empty task
+                      const newTask = {
+                        id: `temp-${Date.now()}`,
+                        name: '',
+                        group: { id: group.id },
+                        column_values: [
+                          { id: 'person', text: '', type: 'person' },
+                          { id: 'status', text: '', type: 'status' },
+                          { id: 'date', text: '', type: 'date' },
+                          { id: 'link', text: '', type: 'link' }
+                        ],
+                        isNew: true
                       }
+
+                      // Add to board state
+                      setBoard(prevBoard => ({
+                        ...prevBoard,
+                        items_page: {
+                          items: [...prevBoard.items_page.items, newTask]
+                        }
+                      }))
+
+                      // Add to task order for this group
+                      setTaskOrder(prev => ({
+                        ...prev,
+                        [group.id]: [...(prev[group.id] || []), newTask.id]
+                      }))
                     }}
                   >
                     <Plus size={18} />
