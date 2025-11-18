@@ -24,14 +24,11 @@ function AppRoutes() {
   return (
     <Router basename="/sunday-work">
       <Routes>
-        {/* Auth Routes */}
-        {!isAuthenticated ? (
-          <>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="*" element={<Navigate to="/auth" replace />} />
-          </>
-        ) : (
-          /* Protected Routes */
+        {/* Auth Route - Always accessible */}
+        <Route path="/auth" element={<Auth />} />
+
+        {/* Protected Routes */}
+        {isAuthenticated ? (
           <Route element={<MainLayout />}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
@@ -42,8 +39,10 @@ function AppRoutes() {
             <Route path="/team" element={<Team />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/help" element={<Help />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
+        ) : (
+          /* Redirect to auth if not authenticated */
+          <Route path="*" element={<Navigate to="/auth" replace />} />
         )}
       </Routes>
     </Router>
