@@ -15,6 +15,12 @@ async function fetchBoardData(boardId) {
       boards(ids: [$boardId]) {
         id
         name
+        columns {
+          id
+          title
+          type
+          settings_str
+        }
         groups {
           id
           title
@@ -36,6 +42,7 @@ async function fetchBoardData(boardId) {
               id
               text
               type
+              value
             }
           }
         }
@@ -92,12 +99,7 @@ export default function Board() {
 
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState({
-    task: 400,
-    person: 200,
-    status: 150,
-    date: 150,
-    link: 250,
-    updates: 80
+    task: 400
   })
   const [resizingColumn, setResizingColumn] = useState(null)
   const [resizeStartX, setResizeStartX] = useState(0)
@@ -126,6 +128,56 @@ export default function Board() {
     }
     loadData()
   }, [id])
+
+  // Initialize column widths based on board columns
+  useEffect(() => {
+    if (board?.columns) {
+      const widths = { task: 400 }
+      board.columns.forEach(column => {
+        // Set default widths based on column type
+        switch (column.type) {
+          case 'people':
+          case 'person':
+            widths[column.id] = 200
+            break
+          case 'status':
+          case 'color':
+            widths[column.id] = 150
+            break
+          case 'date':
+          case 'timeline':
+            widths[column.id] = 150
+            break
+          case 'link':
+          case 'url':
+            widths[column.id] = 250
+            break
+          case 'text':
+          case 'long_text':
+            widths[column.id] = 200
+            break
+          case 'numbers':
+          case 'numeric':
+            widths[column.id] = 120
+            break
+          case 'checkbox':
+            widths[column.id] = 80
+            break
+          case 'dropdown':
+            widths[column.id] = 150
+            break
+          case 'tags':
+            widths[column.id] = 180
+            break
+          default:
+            widths[column.id] = 150
+        }
+      })
+      // Add updates column
+      widths['updates'] = 80
+      setColumnWidths(widths)
+    }
+  }, [board?.columns])
 
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode))
@@ -564,6 +616,236 @@ export default function Board() {
     return col?.text || ''
   }
 
+  // Get column value by column ID
+  const getColumnValueById = (item, columnId) => {
+    const col = item.column_values.find(c => c.id === columnId)
+    return col?.text || ''
+  }
+
+  // Render subtask column cell (subtasks are stored differently from main items)
+  const renderSubtaskColumnCell = (column, subtask, taskId, onUpdate) => {
+    // Map Monday column types to subtask fields
+    let value = ''
+    if (column.type === 'people' || column.type === 'person' || column.type === 'multiple-person') {
+      value = subtask.person || ''
+    } else if (column.type === 'status' || column.type === 'color') {
+      value = subtask.status || ''
+    } else if (column.type === 'date' || column.type === 'timeline') {
+      value = subtask.date || ''
+    } else if (column.type === 'link' || column.type === 'url') {
+      value = subtask.link || ''
+    } else {
+      value = subtask[column.id] || ''
+    }
+
+    const subtaskKey = `${taskId}-${subtask.id}`
+
+    switch (column.type) {
+      case 'people':
+      case 'person':
+      case 'multiple-person':
+        return renderPersonCell(subtaskKey, value, (newPerson) => {
+          onUpdate('person', newPerson)
+        })
+
+      case 'status':
+      case 'color':
+        return (
+          <select
+            className="subtask-select-inline"
+            value={value || 'جديد'}
+            onChange={(e) => onUpdate('status', e.target.value)}
+            style={{ backgroundColor: getStatusColor(value || 'جديد') }}
+          >
+            <option value="جديد">جديد</option>
+            <option value="قيد العمل">قيد العمل</option>
+            <option value="مكتمل">مكتمل</option>
+            <option value="معلق">معلق</option>
+          </select>
+        )
+
+      case 'date':
+      case 'timeline':
+        return (
+          <input
+            type="date"
+            className="subtask-input-inline"
+            value={value || ''}
+            onChange={(e) => onUpdate('date', e.target.value)}
+          />
+        )
+
+      case 'link':
+      case 'url':
+        return (
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '100%' }}>
+            <input
+              type="url"
+              className="subtask-input-inline"
+              value={value || ''}
+              onChange={(e) => onUpdate('link', e.target.value)}
+              placeholder="رابط..."
+              style={{ flex: 1, minWidth: 0 }}
+            />
+            {value && (
+              <>
+                <button
+                  onClick={() => copyLinkToClipboard(value, subtaskKey)}
+                  className="link-icon-btn"
+                  title="نسخ الرابط"
+                  style={{ flexShrink: 0 }}
+                >
+                  {copiedLinkId === subtaskKey ? <Check size={12} /> : <Copy size={12} />}
+                </button>
+                <a
+                  href={value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="link-icon-btn"
+                  title="فتح الرابط"
+                  style={{ flexShrink: 0 }}
+                >
+                  <ExternalLink size={12} />
+                </a>
+              </>
+            )}
+          </div>
+        )
+
+      default:
+        return (
+          <div className="subtask-input-inline" style={{ opacity: 0.6 }}>
+            {value || '-'}
+          </div>
+        )
+    }
+  }
+
+  // Render column cell dynamically based on column type
+  const renderColumnCell = (column, item, onUpdate) => {
+    const value = getColumnValueById(item, column.id)
+
+    switch (column.type) {
+      case 'people':
+      case 'person':
+      case 'multiple-person':
+        return renderPersonCell(item.id, value, (newPerson) => {
+          onUpdate(column.id, newPerson, column.type)
+        })
+
+      case 'status':
+      case 'color':
+        return (
+          <select
+            className="subtask-select-inline"
+            value={value || 'جديد'}
+            onChange={(e) => onUpdate(column.id, e.target.value, column.type)}
+            style={{ backgroundColor: getStatusColor(value || 'جديد') }}
+          >
+            <option value="جديد">جديد</option>
+            <option value="قيد العمل">قيد العمل</option>
+            <option value="مكتمل">مكتمل</option>
+            <option value="معلق">معلق</option>
+          </select>
+        )
+
+      case 'date':
+      case 'timeline':
+        return (
+          <input
+            type="date"
+            className="subtask-input-inline"
+            value={value || ''}
+            onChange={(e) => onUpdate(column.id, e.target.value, column.type)}
+          />
+        )
+
+      case 'link':
+      case 'url':
+        return (
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '100%' }}>
+            <input
+              type="url"
+              className="subtask-input-inline"
+              value={value || ''}
+              onChange={(e) => onUpdate(column.id, e.target.value, column.type)}
+              placeholder="رابط..."
+              style={{ flex: 1, minWidth: 0 }}
+            />
+            {value && (
+              <>
+                <button
+                  onClick={() => copyLinkToClipboard(value, item.id)}
+                  className="link-icon-btn"
+                  title="نسخ الرابط"
+                >
+                  {copiedLinkId === item.id ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+                <a href={value} target="_blank" rel="noopener noreferrer" className="link-icon-btn" title="فتح الرابط">
+                  <ExternalLink size={14} />
+                </a>
+              </>
+            )}
+          </div>
+        )
+
+      case 'text':
+      case 'long_text':
+        return (
+          <input
+            type="text"
+            className="subtask-input-inline"
+            value={value || ''}
+            onChange={(e) => onUpdate(column.id, e.target.value, column.type)}
+            placeholder={column.title}
+          />
+        )
+
+      case 'numbers':
+      case 'numeric':
+        return (
+          <input
+            type="number"
+            className="subtask-input-inline"
+            value={value || ''}
+            onChange={(e) => onUpdate(column.id, e.target.value, column.type)}
+            placeholder="0"
+          />
+        )
+
+      case 'checkbox':
+        return (
+          <input
+            type="checkbox"
+            checked={value === 'true' || value === true}
+            onChange={(e) => onUpdate(column.id, e.target.checked.toString(), column.type)}
+            style={{ width: '20px', height: '20px' }}
+          />
+        )
+
+      case 'dropdown':
+        return (
+          <select
+            className="subtask-select-inline"
+            value={value || ''}
+            onChange={(e) => onUpdate(column.id, e.target.value, column.type)}
+          >
+            <option value="">اختر...</option>
+            <option value="خيار 1">خيار 1</option>
+            <option value="خيار 2">خيار 2</option>
+            <option value="خيار 3">خيار 3</option>
+          </select>
+        )
+
+      default:
+        return (
+          <div className="subtask-input-inline" style={{ opacity: 0.6 }}>
+            {value || '-'}
+          </div>
+        )
+    }
+  }
+
   // Get person initials for avatar
   const getPersonInitials = (name) => {
     if (!name) return '?'
@@ -673,8 +955,10 @@ export default function Board() {
     )
   }
 
-  // Basic columns: المهمة، المسؤول، الحالة، التاريخ، الرابط، التحديثات
-  const gridColumns = `${columnWidths.task}px ${columnWidths.person}px ${columnWidths.status}px ${columnWidths.date}px ${columnWidths.link}px ${columnWidths.updates}px`
+  // Build grid columns dynamically based on board columns
+  const gridColumns = board?.columns
+    ? `${columnWidths.task}px ${board.columns.map(col => `${columnWidths[col.id] || 150}px`).join(' ')} ${columnWidths.updates}px`
+    : '400px 200px 150px 150px 250px 80px'
 
   const renderSubtasksRecursive = (taskId, subtasks, level = 0) => {
     return subtasks.map(subtask => {
@@ -734,73 +1018,14 @@ export default function Board() {
               </button>
             </div>
 
-            {/* Person Column */}
-            <div className="item-cell col-person">
-              {renderPersonCell(`${taskId}-${subtask.id}`, subtask.person || '', (newPerson) => {
-                updateSubtask(taskId, subtask.id, 'person', newPerson)
-              })}
-            </div>
-
-            {/* Status Column */}
-            <div className="item-cell col-status">
-              <select
-                className="subtask-select-inline"
-                value={subtask.status || 'جديد'}
-                onChange={(e) => updateSubtask(taskId, subtask.id, 'status', e.target.value)}
-                style={{ backgroundColor: getStatusColor(subtask.status || 'جديد') }}
-              >
-                <option value="جديد">جديد</option>
-                <option value="قيد العمل">قيد العمل</option>
-                <option value="مكتمل">مكتمل</option>
-                <option value="معلق">معلق</option>
-              </select>
-            </div>
-
-            {/* Date Column */}
-            <div className="item-cell col-date">
-              <input
-                type="date"
-                className="subtask-input-inline"
-                value={subtask.date || ''}
-                onChange={(e) => updateSubtask(taskId, subtask.id, 'date', e.target.value)}
-              />
-            </div>
-
-            {/* Link Column */}
-            <div className="item-cell col-link">
-              <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '100%' }}>
-                <input
-                  type="url"
-                  className="subtask-input-inline"
-                  value={subtask.link || ''}
-                  onChange={(e) => updateSubtask(taskId, subtask.id, 'link', e.target.value)}
-                  placeholder="رابط..."
-                  style={{ flex: 1, minWidth: 0 }}
-                />
-                {subtask.link && (
-                  <>
-                    <button
-                      onClick={() => copyLinkToClipboard(subtask.link, `${taskId}-${subtask.id}`)}
-                      className="link-icon-btn"
-                      title="نسخ الرابط"
-                      style={{ flexShrink: 0 }}
-                    >
-                      {copiedLinkId === `${taskId}-${subtask.id}` ? <Check size={12} /> : <Copy size={12} />}
-                    </button>
-                    <a
-                      href={subtask.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="link-icon-btn"
-                      title="فتح الرابط"
-                      style={{ flexShrink: 0 }}
-                    >
-                      <ExternalLink size={12} />
-                    </a>
-                  </>
-                )}
+            {/* Dynamic columns based on board configuration */}
+            {board.columns.map(column => (
+              <div key={column.id} className="item-cell">
+                {renderSubtaskColumnCell(column, subtask, taskId, (field, newValue) => {
+                  updateSubtask(taskId, subtask.id, field, newValue)
+                })}
               </div>
-            </div>
+            ))}
 
             {/* Updates Column */}
             <div className="item-cell col-updates">
@@ -911,34 +1136,15 @@ export default function Board() {
                         onMouseDown={(e) => handleResizeStart(e, 'task')}
                       />
                     </div>
-                    <div className="header-cell">
-                      المسؤول
-                      <div
-                        className={`column-resize-handle ${resizingColumn === 'person' ? 'resizing' : ''}`}
-                        onMouseDown={(e) => handleResizeStart(e, 'person')}
-                      />
-                    </div>
-                    <div className="header-cell">
-                      الحالة
-                      <div
-                        className={`column-resize-handle ${resizingColumn === 'status' ? 'resizing' : ''}`}
-                        onMouseDown={(e) => handleResizeStart(e, 'status')}
-                      />
-                    </div>
-                    <div className="header-cell">
-                      التاريخ
-                      <div
-                        className={`column-resize-handle ${resizingColumn === 'date' ? 'resizing' : ''}`}
-                        onMouseDown={(e) => handleResizeStart(e, 'date')}
-                      />
-                    </div>
-                    <div className="header-cell">
-                      الرابط
-                      <div
-                        className={`column-resize-handle ${resizingColumn === 'link' ? 'resizing' : ''}`}
-                        onMouseDown={(e) => handleResizeStart(e, 'link')}
-                      />
-                    </div>
+                    {board.columns.map(column => (
+                      <div key={column.id} className="header-cell">
+                        {column.title}
+                        <div
+                          className={`column-resize-handle ${resizingColumn === column.id ? 'resizing' : ''}`}
+                          onMouseDown={(e) => handleResizeStart(e, column.id)}
+                        />
+                      </div>
+                    ))}
                     <div className="header-cell">
                       التحديثات
                       <div
@@ -951,10 +1157,6 @@ export default function Board() {
 
                 {/* Group Items */}
                 {!isGroupCollapsed && items.map((item, itemIndex) => {
-                  const person = getColumnValue(item, 'person') || getColumnValue(item, 'people')
-                  const status = getColumnValue(item, 'status') || getColumnValue(item, 'color')
-                  const date = getColumnValue(item, 'date')
-                  const link = getColumnValue(item, 'link')
                   const subtasks = taskSubtasks[item.id] || []
                   const isExpanded = expandedTasks[item.id]
                   const isDraggedOver = dragOverTask?.taskId === item.id
@@ -1045,44 +1247,19 @@ export default function Board() {
                           </button>
                         </div>
 
-                      <div className="item-cell col-person">
-                        {renderPersonCell(item.id, person, (newPerson) => {
-                          // Update person in board data
-                          setBoard(prevBoard => {
-                            const updatedItems = prevBoard.items_page.items.map(boardItem => {
-                              if (boardItem.id === item.id) {
-                                const updatedColumnValues = boardItem.column_values.map(col => {
-                                  if (col.type === 'person' || col.type === 'people' || col.type === 'multiple-person') {
-                                    return { ...col, text: newPerson }
-                                  }
-                                  return col
-                                })
-                                return { ...boardItem, column_values: updatedColumnValues }
-                              }
-                              return boardItem
-                            })
-                            return {
-                              ...prevBoard,
-                              items_page: { items: updatedItems }
-                            }
-                          })
-                          console.log(`Updated person for ${item.id} to ${newPerson}`)
-                        })}
-                      </div>
-                      <div className="item-cell col-status">
-                        <select
-                          className="subtask-select-inline"
-                          value={status || 'جديد'}
-                          onChange={(e) => {
-                            const newStatus = e.target.value
+                      {/* Dynamic columns based on board configuration */}
+                      {board.columns.map(column => (
+                        <div key={column.id} className="item-cell">
+                          {renderColumnCell(column, item, (columnId, newValue, columnType) => {
+                            // Update column value in board data
                             setBoard(prevBoard => ({
                               ...prevBoard,
                               items_page: {
                                 items: prevBoard.items_page.items.map(boardItem => {
                                   if (boardItem.id === item.id) {
                                     const updatedColumnValues = boardItem.column_values.map(col => {
-                                      if (col.type === 'status' || col.type === 'color') {
-                                        return { ...col, text: newStatus }
+                                      if (col.id === columnId) {
+                                        return { ...col, text: newValue }
                                       }
                                       return col
                                     })
@@ -1092,98 +1269,9 @@ export default function Board() {
                                 })
                               }
                             }))
-                          }}
-                          style={{ backgroundColor: getStatusColor(status || 'جديد') }}
-                        >
-                          <option value="جديد">جديد</option>
-                          <option value="قيد العمل">قيد العمل</option>
-                          <option value="مكتمل">مكتمل</option>
-                          <option value="معلق">معلق</option>
-                        </select>
-                      </div>
-                      <div
-                        className="item-cell col-date"
-                        title={item.creator?.name ? `أُنشئت بواسطة: ${item.creator.name}${item.created_at ? '\nتاريخ الإنشاء: ' + new Date(item.created_at).toLocaleDateString('ar-EG') : ''}` : ''}
-                      >
-                        <input
-                          type="date"
-                          className="subtask-input-inline"
-                          value={date || ''}
-                          onChange={(e) => {
-                            const newDate = e.target.value
-                            setBoard(prevBoard => ({
-                              ...prevBoard,
-                              items_page: {
-                                items: prevBoard.items_page.items.map(boardItem => {
-                                  if (boardItem.id === item.id) {
-                                    const updatedColumnValues = boardItem.column_values.map(col => {
-                                      if (col.type === 'date') {
-                                        return { ...col, text: newDate }
-                                      }
-                                      return col
-                                    })
-                                    return { ...boardItem, column_values: updatedColumnValues }
-                                  }
-                                  return boardItem
-                                })
-                              }
-                            }))
-                          }}
-                        />
-                      </div>
-                      <div className="item-cell col-link">
-                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '100%' }}>
-                          <input
-                            type="url"
-                            className="subtask-input-inline"
-                            value={link || ''}
-                            onChange={(e) => {
-                              const newLink = e.target.value
-                              setBoard(prevBoard => ({
-                                ...prevBoard,
-                                items_page: {
-                                  items: prevBoard.items_page.items.map(boardItem => {
-                                    if (boardItem.id === item.id) {
-                                      const updatedColumnValues = boardItem.column_values.map(col => {
-                                        if (col.type === 'link') {
-                                          return { ...col, text: newLink }
-                                        }
-                                        return col
-                                      })
-                                      return { ...boardItem, column_values: updatedColumnValues }
-                                    }
-                                    return boardItem
-                                  })
-                                }
-                              }))
-                            }}
-                            placeholder="رابط..."
-                            style={{ flex: 1, minWidth: 0 }}
-                          />
-                          {link && (
-                            <>
-                              <button
-                                onClick={() => copyLinkToClipboard(link, item.id)}
-                                className="link-icon-btn"
-                                title="نسخ الرابط"
-                                style={{ flexShrink: 0 }}
-                              >
-                                {copiedLinkId === item.id ? <Check size={14} /> : <Copy size={14} />}
-                              </button>
-                              <a
-                                href={link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="link-icon-btn"
-                                title="فتح الرابط"
-                                style={{ flexShrink: 0 }}
-                              >
-                                <ExternalLink size={14} />
-                              </a>
-                            </>
-                          )}
+                          })}
                         </div>
-                      </div>
+                      ))}
                       <div className="item-cell col-updates">
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
                           <button
