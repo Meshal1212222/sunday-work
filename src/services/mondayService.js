@@ -306,6 +306,62 @@ export function mapBoardToSunday(mondayBoard) {
 }
 
 /**
+ * Get single item (task) with all column values
+ * This is useful for getting phone numbers and other data not sent in webhooks
+ */
+export async function getItem(itemId) {
+  const query = `
+    query ($itemId: ID!) {
+      items(ids: [$itemId]) {
+        id
+        name
+        state
+        created_at
+        updated_at
+        board {
+          id
+          name
+        }
+        group {
+          id
+          title
+        }
+        creator {
+          id
+          name
+          email
+        }
+        subscribers {
+          id
+          name
+          email
+        }
+        column_values {
+          id
+          title
+          text
+          type
+          value
+        }
+      }
+    }
+  `
+
+  try {
+    const data = await mondayQuery(query, { itemId: String(itemId) })
+    if (data.items && data.items.length > 0) {
+      console.log('✅ Fetched item from Monday:', data.items[0].name)
+      return data.items[0]
+    }
+    console.log('⚠️ No item found with ID:', itemId)
+    return null
+  } catch (error) {
+    console.error(`Failed to fetch item ${itemId}:`, error)
+    return null
+  }
+}
+
+/**
  * Map Monday.com workspace to Sunday format
  */
 export function mapWorkspaceToSunday(mondayWorkspace, boards = []) {

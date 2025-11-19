@@ -4,6 +4,7 @@
  */
 
 import ultraMsgService from './ultramsg'
+import { getItem, getBoards, getBoardItems } from './mondayService'
 
 class MondayWebhookService {
   constructor() {
@@ -207,6 +208,82 @@ class MondayWebhookService {
   }
 
   /**
+   * سحب كل المهام من Monday وتحديث قاعدة بيانات الأرقام
+   * يستخرج أرقام الهاتف من كل المهام في كل البوردات
+   */
+  async syncLeadsFromMonday() {
+    try {
+      console.log('🔄 Starting sync from Monday.com...')
+
+      // جلب كل البوردات
+      const boards = await getBoards()
+      console.log(`📊 Found ${boards.length} boards`)
+
+      let totalItems = 0
+      let phonesFound = 0
+      const newLeads = []
+
+      // المرور على كل بورد
+      for (const board of boards) {
+        console.log(`📋 Syncing board: ${board.name} (${board.id})`)
+
+        // جلب مهام البورد
+        const items = await getBoardItems(board.id)
+        totalItems += items.length
+
+        // المرور على كل مهمة
+        for (const item of items) {
+          if (!item.column_values) continue
+
+          // البحث عن عمود الهاتف
+          const phoneCol = item.column_values.find(col =>
+            col.type === 'phone' ||
+            col.title?.toLowerCase().includes('phone') ||
+            col.title?.toLowerCase().includes('واتساب') ||
+            col.title?.toLowerCase().includes('جوال') ||
+            col.title?.toLowerCase().includes('whatsapp')
+          )
+
+          // البحث عن عمود الاسم أو استخدام اسم المهمة
+          const nameCol = item.column_values.find(col =>
+            col.type === 'text' ||
+            col.title?.toLowerCase().includes('name') ||
+            col.title?.toLowerCase().includes('اسم')
+          )
+
+          const name = nameCol?.text || item.name
+          const phone = phoneCol?.text || phoneCol?.value
+
+          if (phone && phone.trim()) {
+            // إضافة/تحديث Lead
+            this.addOrUpdateLead(item.id, name, phone.trim())
+            phonesFound++
+            newLeads.push({ id: item.id, name, phone: phone.trim() })
+          }
+        }
+      }
+
+      console.log(`✅ Sync completed!`)
+      console.log(`   📊 Total items: ${totalItems}`)
+      console.log(`   📞 Phone numbers found: ${phonesFound}`)
+
+      return {
+        success: true,
+        totalItems,
+        phonesFound,
+        leads: newLeads
+      }
+
+    } catch (error) {
+      console.error('❌ Sync failed:', error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+  }
+
+  /**
    * حفظ قواعد الأتمتة إلى localStorage
    */
   saveAutomationRules() {
@@ -282,8 +359,8 @@ class MondayWebhookService {
    */
   async sendWhatsAppNotification(rule, data) {
     try {
-      // استخراج رقم الموظف من البيانات
-      const phoneNumber = this.extractPhoneNumber(data)
+      // استخراج رقم الموظف من البيانات (async now!)
+      const phoneNumber = await this.extractPhoneNumber(data)
       if (!phoneNumber) {
         console.log('⚠️  No phone number found, skipping WhatsApp send')
         return { success: false, message: 'No phone number' }
@@ -320,8 +397,9 @@ class MondayWebhookService {
 
   /**
    * استخراج رقم الهاتف من بيانات Monday
+   * يستخدم Monday API لجلب بيانات المهمة كاملة إذا لم يكن الرقم موجود في webhook
    */
-  extractPhoneNumber(data) {
+  async extractPhoneNumber(data) {
     console.log('🔍 Extracting phone number from data:', data)
 
     // 1. محاولة استخراج رقم مباشر من البيانات
@@ -340,16 +418,53 @@ class MondayWebhookService {
         col.type === 'phone' ||
         col.title?.toLowerCase().includes('phone') ||
         col.title?.toLowerCase().includes('واتساب') ||
-        col.title?.toLowerCase().includes('جوال')
+        col.title?.toLowerCase().includes('جوال') ||
+        col.title?.toLowerCase().includes('whatsapp')
       )
       if (phoneCol) {
         const phone = phoneCol.text || phoneCol.value
-        console.log('✅ Found phone in columnValues:', phone)
-        return phone
+        if (phone && phone.trim()) {
+          console.log('✅ Found phone in columnValues:', phone)
+          return phone.trim()
+        }
       }
     }
 
-    // 3. محاولة استخراج userId ثم البحث في leads database
+    // 3. إذا لم نجد الرقم في webhook، نجيب بيانات المهمة من Monday API
+    if (data.pulseId || data.itemId) {
+      const itemId = data.pulseId || data.itemId
+      console.log('📡 Fetching full item data from Monday API for itemId:', itemId)
+
+      try {
+        const fullItem = await getItem(itemId)
+
+        if (fullItem && fullItem.column_values) {
+          // ابحث عن عمود الهاتف في البيانات الكاملة
+          const phoneCol = fullItem.column_values.find(col =>
+            col.type === 'phone' ||
+            col.title?.toLowerCase().includes('phone') ||
+            col.title?.toLowerCase().includes('واتساب') ||
+            col.title?.toLowerCase().includes('جوال') ||
+            col.title?.toLowerCase().includes('whatsapp')
+          )
+
+          if (phoneCol) {
+            const phone = phoneCol.text || phoneCol.value
+            if (phone && phone.trim()) {
+              console.log('✅ Found phone from Monday API:', phone)
+              return phone.trim()
+            }
+          }
+
+          console.log('⚠️ No phone column found in item. Available columns:',
+            fullItem.column_values.map(c => `${c.title} (${c.type})`).join(', '))
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch item from Monday API:', error)
+      }
+    }
+
+    // 4. محاولة استخراج userId ثم البحث في leads database (fallback)
     let userId = data.userId
 
     // إذا لم يكن userId موجود، حاول استخراجه من column values
@@ -375,17 +490,6 @@ class MondayWebhookService {
       const lead = this.findLeadById(userId)
       if (lead && lead.phone) {
         console.log('✅ Found phone in leads database:', lead.phone, 'for user:', lead.name)
-        return lead.phone
-      } else {
-        console.log('⚠️ User found but no phone number in leads database for userId:', userId)
-      }
-    }
-
-    // 4. إذا كان في معرف المهمة (pulseId)، حاول البحث به
-    if (data.pulseId) {
-      const lead = this.findLeadById(data.pulseId)
-      if (lead && lead.phone) {
-        console.log('✅ Found phone using pulseId:', lead.phone)
         return lead.phone
       }
     }
