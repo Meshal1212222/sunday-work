@@ -41,6 +41,27 @@ export default function Auth() {
     setLoading(false)
   }
 
+  const handleAdminLogin = async () => {
+    setError(null)
+    setLoading(true)
+
+    // Try to login with admin credentials
+    let result = await loginUser('admin@admin.com', 'admin123')
+
+    // If login fails, register the admin account first
+    if (!result.success) {
+      result = await registerUser('admin@admin.com', 'admin123', 'Admin', '')
+    }
+
+    if (result.success) {
+      navigate('/')
+    } else {
+      setError(result.error)
+    }
+
+    setLoading(false)
+  }
+
   const handleRegister = async (e) => {
     e.preventDefault()
     setError(null)
@@ -204,6 +225,26 @@ export default function Auth() {
                     <>
                       <LogIn size={18} />
                       <span>تسجيل الدخول</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleAdminLogin}
+                  className="btn btn-secondary btn-block"
+                  disabled={loading}
+                  style={{ marginTop: '12px' }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 size={18} className="spin" />
+                      <span>جاري تسجيل الدخول...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Key size={18} />
+                      <span>دخول سريع كـ Admin</span>
                     </>
                   )}
                 </button>
