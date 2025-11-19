@@ -48,7 +48,7 @@ class MondayWebhookService {
             name: 'إرسال واتساب عند اقتراب الموعد',
             trigger: 'date_approaching',
             triggerColumn: 'date',
-            condition: { daysBefor: 1 },
+            condition: { daysBefore: 1 },
             action: 'send_whatsapp',
             active: true,
             messageTemplate: 'deadline_reminder'
@@ -62,6 +62,26 @@ class MondayWebhookService {
             action: 'send_whatsapp',
             active: true,
             messageTemplate: 'task_overdue'
+          },
+          {
+            id: 'wa-5',
+            name: 'إرسال واتساب عند إضافة ملف',
+            trigger: 'file_added',
+            triggerColumn: 'files',
+            condition: null,
+            action: 'send_whatsapp',
+            active: true,
+            messageTemplate: 'file_added'
+          },
+          {
+            id: 'wa-6',
+            name: 'إرسال واتساب عند تجاوز تاريخ التسليم',
+            trigger: 'date_overdue',
+            triggerColumn: 'date',
+            condition: null,
+            action: 'send_whatsapp',
+            active: true,
+            messageTemplate: 'date_overdue'
           }
         ]
         this.saveAutomationRules()
@@ -284,7 +304,29 @@ class MondayWebhookService {
 🏢 القسم: ${boardName}
 ⚠️  الحالة: متأخر
 
-يرجى المتابعة فوراً! 🔴`
+يرجى المتابعة فوراً! 🔴`,
+
+      file_added: `مرحباً،
+تم إضافة ملف جديد للمهمة من قِبل ${data.uploadedBy || 'أحد الأعضاء'}:
+
+اسم المهمة: ${taskName}
+القسم: ${boardName}
+المجموعة: ${data.group || 'غير محدد'}
+الملف: ${data.fileUrl || 'رابط الملف'}
+
+يرجى الاطلاع عليه في أقرب وقت.`,
+
+      date_overdue: `🚨 تنبيه عاجل يا ${assigneeName}!
+
+المهمة تجاوزت تاريخ التسليم:
+
+📋 المهمة: ${taskName}
+📂 القسم: ${boardName}
+⏰ متأخرة بـ: ${data.daysOverdue || '1'} ${data.daysOverdue === 1 ? 'يوم' : 'أيام'}
+🎨 الحالة: ${status}
+
+⚠️ يرجى المتابعة فوراً!
+التأخير يؤثر على سير العمل.`
     }
 
     return templates[template] || templates.status_change

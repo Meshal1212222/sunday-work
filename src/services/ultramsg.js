@@ -190,6 +190,42 @@ ${daysLeft <= 1 ? 'تحتاج متابعة عاجلة! 🔥' : 'لا تنسى ا
   }
 
   /**
+   * إرسال تنبيه ملف جديد (نسخة من Zapier)
+   */
+  async sendNewFileNotification(task, assigneeName, assigneePhone, fileUrl, uploadedBy, group) {
+    const message = `مرحباً،
+تم إضافة ملف جديد للمهمة من قِبل ${uploadedBy}:
+
+اسم المهمة: ${task.title || 'غير محدد'}
+القسم: ${task.department || 'غير محدد'}
+المجموعة: ${group || 'غير محدد'}
+الملف: ${fileUrl}
+
+يرجى الاطلاع عليه في أقرب وقت.`
+
+    return await this.sendMessage(assigneePhone, message)
+  }
+
+  /**
+   * إرسال تنبيه تجاوز تاريخ التسليم
+   */
+  async sendOverdueTaskNotification(task, assigneeName, assigneePhone, daysOverdue) {
+    const message = `🚨 تنبيه عاجل يا ${assigneeName}!
+
+المهمة تجاوزت تاريخ التسليم:
+
+📋 المهمة: ${task.title || 'غير محدد'}
+📂 القسم: ${task.department || 'غير محدد'}
+⏰ متأخرة بـ: ${daysOverdue} ${daysOverdue === 1 ? 'يوم' : 'أيام'}
+🎨 الحالة: ${task.status || 'غير محدد'}
+
+⚠️ يرجى المتابعة فوراً!
+التأخير يؤثر على سير العمل.`
+
+    return await this.sendMessage(assigneePhone, message)
+  }
+
+  /**
    * اختبار الاتصال
    */
   async testConnection() {
