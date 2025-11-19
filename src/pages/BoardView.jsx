@@ -287,6 +287,36 @@ export default function BoardView() {
     }
   }
 
+  /**
+   * التحقق من المهمة المتأخرة
+   * المهمة متأخرة إذا:
+   * 1. الحالة = "متأخر" OR
+   * 2. تاريخ التسليم فات AND الحالة ليست "تم"
+   */
+  const isTaskOverdue = (item) => {
+    // إذا الحالة = متأخر
+    if (item.status === 'متأخر' || item.status === 'متاخر') {
+      return true
+    }
+
+    // إذا تاريخ التسليم فات والحالة ليست "تم"
+    if (item.dueDate && item.status !== 'تم' && item.status !== 'مكتملة') {
+      try {
+        const dueDate = new Date(item.dueDate)
+        const now = new Date()
+        // إزالة الوقت للمقارنة بالتاريخ فقط
+        dueDate.setHours(0, 0, 0, 0)
+        now.setHours(0, 0, 0, 0)
+
+        return dueDate < now
+      } catch {
+        return false
+      }
+    }
+
+    return false
+  }
+
   if (loading) {
     return (
       <div className="board-loading">
@@ -543,7 +573,7 @@ export default function BoardView() {
                         )}
 
                         <div
-                          className="cell-content date-cell"
+                          className={`cell-content date-cell ${isTaskOverdue(item) ? 'overdue' : ''}`}
                           onClick={() => setDateTimePickerOpen({ itemId: item.id })}
                         >
                           {item.dueDate ? (
@@ -552,15 +582,25 @@ export default function BoardView() {
                                 const formatted = formatDateTime(item.dueDate)
                                 if (!formatted) return <span className="empty-cell">-</span>
 
+                                const isOverdue = isTaskOverdue(item)
+
                                 return (
-                                  <div className="datetime-compact">
-                                    <Calendar size={14} />
-                                    <span>{formatted.date}</span>
+                                  <div className={`datetime-compact ${isOverdue ? 'overdue-date' : ''}`}>
+                                    <Calendar size={14} style={isOverdue ? { color: '#FF3B30' } : {}} />
+                                    <span style={isOverdue ? { color: '#FF3B30', fontWeight: '600' } : {}}>{formatted.date}</span>
                                     {formatted.hasTime && (
                                       <>
-                                        <Clock size={12} />
-                                        <span className="time-text">{formatted.time}</span>
+                                        <Clock size={12} style={isOverdue ? { color: '#FF3B30' } : {}} />
+                                        <span className="time-text" style={isOverdue ? { color: '#FF3B30' } : {}}>{formatted.time}</span>
                                       </>
+                                    )}
+                                    {isOverdue && (
+                                      <span style={{
+                                        fontSize: '0.75rem',
+                                        color: '#FF3B30',
+                                        marginLeft: '0.25rem',
+                                        fontWeight: '700'
+                                      }}>⚠️</span>
                                     )}
                                   </div>
                                 )
