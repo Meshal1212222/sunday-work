@@ -9,6 +9,7 @@ export default function Settings() {
     instanceId: '',
     token: ''
   })
+  const [testPhone, setTestPhone] = useState('')
   const [saveStatus, setSaveStatus] = useState(null)
   const [testStatus, setTestStatus] = useState(null)
   const [testing, setTesting] = useState(false)
@@ -36,6 +37,11 @@ export default function Settings() {
       return
     }
 
+    if (!testPhone) {
+      setTestStatus({ success: false, message: 'يرجى إدخال رقم واتساب للاختبار' })
+      return
+    }
+
     setTesting(true)
     setTestStatus(null)
 
@@ -47,8 +53,6 @@ export default function Settings() {
         ultraMsgConfig.token
       )
 
-      // يمكنك تغيير هذا الرقم لرقمك للاختبار
-      const testPhone = '966500000000'
       const testMessage = '✅ اختبار اتصال Sunday Board Pro - Ultra MSG'
 
       const result = await ultraMsgService.sendMessage(testPhone, testMessage)
@@ -137,6 +141,36 @@ export default function Settings() {
                 placeholder="••••••••••••••"
                 className="input-field"
               />
+            </div>
+
+            <div style={{
+              marginTop: '24px',
+              padding: '16px',
+              backgroundColor: '#F0F9FF',
+              borderRadius: '8px',
+              border: '1px solid #BAE6FD'
+            }}>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label htmlFor="testPhone">
+                  <strong>رقم الاختبار</strong>
+                  <span style={{ color: '#0369A1', fontSize: '13px', marginRight: '8px' }}>
+                    (أدخل رقمك لاختبار الاتصال)
+                  </span>
+                </label>
+                <input
+                  id="testPhone"
+                  type="text"
+                  value={testPhone}
+                  onChange={(e) => setTestPhone(e.target.value)}
+                  placeholder="966501234567"
+                  className="input-field"
+                  dir="ltr"
+                  style={{ textAlign: 'left' }}
+                />
+                <small style={{ color: '#0369A1', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                  💡 الصيغة: كود الدولة + الرقم بدون صفر (مثال: 966501234567)
+                </small>
+              </div>
             </div>
 
             {saveStatus && (
