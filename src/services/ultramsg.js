@@ -28,7 +28,12 @@ class UltraMsgService {
   async sendMessage(phoneNumber, message) {
     try {
       // تأكد من صيغة الرقم الصحيحة (مع كود الدولة بدون +)
-      const formattedPhone = phoneNumber.replace(/[^0-9]/g, '')
+      let formattedPhone = phoneNumber.replace(/[^0-9]/g, '')
+
+      // Add @c.us suffix if not present (required by Ultra MSG)
+      if (!formattedPhone.includes('@')) {
+        formattedPhone = `${formattedPhone}@c.us`
+      }
 
       const url = `${this.apiUrl}/messages/chat`
 
@@ -47,6 +52,9 @@ class UltraMsgService {
 
       const data = await response.json()
 
+      // Log the response for debugging
+      console.log('Ultra MSG Response:', data)
+
       if (data.sent === 'true' || data.sent === true) {
         return {
           success: true,
@@ -54,10 +62,12 @@ class UltraMsgService {
           data: data
         }
       } else {
+        // Show detailed error from Ultra MSG
+        const errorMessage = data.error || data.message || 'خطأ غير معروف'
         return {
           success: false,
-          message: 'فشل إرسال الرسالة ❌',
-          error: data.message || 'خطأ غير معروف'
+          message: `فشل إرسال الرسالة: ${errorMessage}`,
+          data: data
         }
       }
     } catch (error) {

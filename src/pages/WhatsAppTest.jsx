@@ -14,7 +14,7 @@ export default function WhatsAppTest() {
 
   const [assigneeData, setAssigneeData] = useState({
     name: 'محمد',
-    whatsappNumber: '966501234567'
+    whatsappNumber: '' // اتركه فارغ ليقوم المستخدم بإدخال رقمه
   })
 
   const [currentUserData] = useState({
@@ -107,7 +107,7 @@ export default function WhatsAppTest() {
             </div>
 
             <div className="form-group">
-              <label>رقم الواتساب:</label>
+              <label>رقم الواتساب: <span style={{ color: '#DC3545', fontWeight: '700' }}>*</span></label>
               <input
                 type="text"
                 value={assigneeData.whatsappNumber}
@@ -115,10 +115,13 @@ export default function WhatsAppTest() {
                 className="input-field"
                 placeholder="966501234567"
                 dir="ltr"
-                style={{ textAlign: 'left' }}
+                style={{
+                  textAlign: 'left',
+                  borderColor: assigneeData.whatsappNumber && assigneeData.whatsappNumber.length < 12 ? '#FFC107' : '#E0E0E0'
+                }}
               />
-              <small style={{ color: '#999', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                الرقم بصيغة: كود الدولة + الرقم بدون صفر (مثال: 966501234567)
+              <small style={{ color: assigneeData.whatsappNumber ? '#128C7E' : '#DC3545', fontSize: '12px', marginTop: '4px', display: 'block', fontWeight: '600' }}>
+                ⚠️ أدخل رقم واتساب حقيقي! الصيغة: 966XXXXXXXXX (بدون صفر أو + في البداية)
               </small>
             </div>
           </div>
