@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   base: '/sunday-management/',
   server: {
-    port: 8080,
+    port: 8081,
     open: true
   },
   build: {
