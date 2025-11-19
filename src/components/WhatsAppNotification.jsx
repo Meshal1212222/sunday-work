@@ -80,11 +80,18 @@ export default function WhatsAppNotification({ task, assignee, currentUser, butt
   }
 
   const handleButtonClick = () => {
+    console.log('🚀 WhatsApp Button Clicked - NEW CODE v2025!')
+    console.log('directSend:', directSend)
+    console.log('assignee:', assignee)
+    console.log('task:', task)
+
     if (directSend) {
       // إرسال مباشر بدون نافذة تأكيد
+      console.log('✅ Direct send mode - sending immediately...')
       handleSendNotification()
     } else {
       // فتح نافذة التأكيد
+      console.log('📝 Modal mode - opening confirmation...')
       setShowModal(true)
     }
   }
