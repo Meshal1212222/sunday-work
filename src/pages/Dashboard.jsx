@@ -33,13 +33,13 @@ export default function Dashboard() {
             >
               <div className="stat-header">
                 <div className="stat-icon" style={{ backgroundColor: `${workspace.color}20` }}>
-                  <span style={{ fontSize: '24px' }}>{workspace.icon}</span>
+                  <span style={{ fontSize: '20px' }}>{workspace.icon}</span>
                 </div>
               </div>
               <div className="stat-body">
-                <div className="stat-value" style={{fontSize: '16px', fontWeight: '700'}}>{workspace.name}</div>
-                <div className="stat-label" style={{fontSize: '13px'}}>{workspace.boards} لوحة</div>
-                <div className="stat-subtitle" style={{fontSize: '12px'}}>{workspace.members} عضو</div>
+                <div className="stat-value" style={{fontSize: '14px', fontWeight: '700'}}>{workspace.name}</div>
+                <div className="stat-label" style={{fontSize: '12px'}}>{workspace.boards} لوحة</div>
+                <div className="stat-subtitle" style={{fontSize: '11px'}}>{workspace.members} عضو</div>
               </div>
               <div className="stat-progress">
                 <div
