@@ -1841,13 +1841,14 @@ export default function Board() {
                     }
 
                     return (
-                      <div style={{ display: 'inline-block' }}>
-                        <WhatsAppNotification
-                          task={taskData}
-                          assignee={assigneeData}
-                          currentUser={currentUserData}
-                        />
-                      </div>
+                      <WhatsAppNotification
+                        task={taskData}
+                        assignee={assigneeData}
+                        currentUser={currentUserData}
+                        buttonClassName="updates-action-btn whatsapp"
+                        buttonText="أبديت واتساب"
+                        buttonSize={16}
+                      />
                     )
                   })()}
                 </div>

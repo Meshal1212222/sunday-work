@@ -3,7 +3,7 @@ import { Send, MessageCircle, Check, AlertCircle, Loader2 } from 'lucide-react'
 import ultraMsgService from '../services/ultramsg'
 import './WhatsAppNotification.css'
 
-export default function WhatsAppNotification({ task, assignee, currentUser }) {
+export default function WhatsAppNotification({ task, assignee, currentUser, buttonClassName, buttonText, buttonSize }) {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [showModal, setShowModal] = useState(false)
@@ -73,12 +73,12 @@ export default function WhatsAppNotification({ task, assignee, currentUser }) {
     <>
       {/* زر إرسال إشعار */}
       <button
-        className="whatsapp-notify-btn"
+        className={buttonClassName || "whatsapp-notify-btn"}
         onClick={() => setShowModal(true)}
         title="إرسال تنبيه واتساب"
       >
-        <MessageCircle size={18} />
-        <span>تنبيه واتساب</span>
+        <MessageCircle size={buttonSize || 18} />
+        <span>{buttonText || "تنبيه واتساب"}</span>
       </button>
 
       {/* نافذة التأكيد */}
