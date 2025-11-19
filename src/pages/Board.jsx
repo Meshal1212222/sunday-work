@@ -1577,13 +1577,28 @@ export default function Board() {
                               assigneeName = personColumn?.text || 'الموظف'
                             }
 
-                            const assigneePhone = phoneColumn?.text || ''
+                            // Try to get phone from text, value, or additional_info
+                            let assigneePhone = phoneColumn?.text || phoneColumn?.value || ''
+
+                            // If value is JSON, try to parse it
+                            if (!assigneePhone && phoneColumn?.value) {
+                              try {
+                                const parsed = JSON.parse(phoneColumn.value)
+                                assigneePhone = parsed.phone || parsed.phoneNumber || parsed.number || ''
+                              } catch (e) {
+                                // Not JSON, use as is
+                                assigneePhone = phoneColumn.value || ''
+                              }
+                            }
+
+                            // Clean the phone number (remove +, spaces, etc.)
+                            assigneePhone = assigneePhone.toString().trim()
 
                             console.log('☎️  Extracted phone:', assigneePhone)
                             console.log('👤 Assignee name:', assigneeName)
 
                             // Only show WhatsApp button if phone number exists
-                            if (assigneePhone) {
+                            if (assigneePhone && assigneePhone.length > 5) {
                               const taskData = {
                                 title: item.name || 'غير محدد',
                                 department: board?.name || 'غير محدد',
