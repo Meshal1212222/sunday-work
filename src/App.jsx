@@ -13,6 +13,7 @@ import Team from './pages/Team'
 import Settings from './pages/Settings'
 import Help from './pages/Help'
 import WhatsAppTest from './pages/WhatsAppTest'
+import ZapierImport from './pages/ZapierImport'
 
 // Layouts
 import MainLayout from './layouts/MainLayout'
@@ -45,6 +46,7 @@ function AppRoutes() {
           <Route path="/team" element={<Team />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/whatsapp-test" element={<WhatsAppTest />} />
+          <Route path="/zapier-import" element={<ZapierImport />} />
           <Route path="/help" element={<Help />} />
         </Route>
 
