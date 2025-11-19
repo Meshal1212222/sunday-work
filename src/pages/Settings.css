@@ -13,6 +13,10 @@
   transition: all var(--transition-base);
 }
 
+.settings-card-large {
+  grid-column: 1 / -1;
+}
+
 .settings-card:hover {
   box-shadow: var(--shadow-md);
   border-color: var(--primary);
@@ -63,4 +67,136 @@
   background: var(--primary-bg);
   border-color: var(--primary);
   color: var(--primary);
+}
+
+/* Ultra MSG Settings */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #323338;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.input-field {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #E0E0E0;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  direction: ltr;
+  text-align: left;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #6161FF;
+  box-shadow: 0 0 0 3px rgba(97, 97, 255, 0.1);
+}
+
+.input-field::placeholder {
+  color: #AAA;
+}
+
+.status-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  font-size: 14px;
+  animation: slideDown 0.3s ease;
+}
+
+.status-message.success {
+  background: #D4EDDA;
+  color: #155724;
+  border: 2px solid #28A745;
+}
+
+.status-message.error {
+  background: #F8D7DA;
+  color: #721C24;
+  border: 2px solid #DC3545;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #6161FF 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(97, 97, 255, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(97, 97, 255, 0.4);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.info-box {
+  background: #E3F2FD;
+  border-right: 4px solid #2196F3;
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 20px;
+}
+
+.info-box strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #1976D2;
+  font-size: 15px;
+}
+
+.info-box p {
+  margin: 6px 0;
+  color: #0D47A1;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.info-box a {
+  color: #1976D2;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.info-box a:hover {
+  text-decoration: underline;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
