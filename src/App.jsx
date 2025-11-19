@@ -31,29 +31,23 @@ function AppRoutes() {
         <Route path="/auth-debug" element={<AuthDebug />} />
         <Route path="/test" element={<AuthTest />} />
 
-        {/* Root redirect based on auth */}
-        <Route path="/" element={
-          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/auth" replace />
-        } />
+        {/* Root redirect - always go to dashboard */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-        {/* Protected Routes */}
-        {isAuthenticated && (
-          <Route element={<MainLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/workspaces" element={<Workspaces />} />
-            <Route path="/workspace/:id" element={<WorkspaceView />} />
-            <Route path="/board/:id" element={<Board />} />
-            <Route path="/automations" element={<Automations />} />
-            <Route path="/team" element={<Team />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/help" element={<Help />} />
-          </Route>
-        )}
+        {/* Main Routes - Open for demo/testing */}
+        <Route element={<MainLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/workspaces" element={<Workspaces />} />
+          <Route path="/workspace/:id" element={<WorkspaceView />} />
+          <Route path="/board/:id" element={<Board />} />
+          <Route path="/automations" element={<Automations />} />
+          <Route path="/team" element={<Team />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/help" element={<Help />} />
+        </Route>
 
-        {/* Catch all - Redirect based on auth */}
-        <Route path="*" element={
-          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/auth" replace />
-        } />
+        {/* Catch all - go to dashboard */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
   )
