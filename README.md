@@ -99,7 +99,7 @@ Compression             - Response Compression
 ## 📁 البنية الهيكلية
 
 ```
-sunday-work/
+sunday-management/
 ├── 📂 src/                          Frontend (React + Vite)
 │   ├── components/                  59 React Components
 │   ├── pages/                       Application Pages
@@ -163,8 +163,8 @@ sunday-work/
 
 ```bash
 # استنساخ المشروع
-git clone https://github.com/Meshal1212222/sunday-work.git
-cd sunday-work
+git clone https://github.com/Meshal1212222/sunday-management.git
+cd sunday-management
 
 # تثبيت Frontend dependencies
 npm install

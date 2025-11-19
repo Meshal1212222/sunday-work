@@ -24,7 +24,7 @@ function AppRoutes() {
   const { isAuthenticated } = useAuth()
 
   return (
-    <Router basename="/sunday-work">
+    <Router basename="/sunday-management">
       <Routes>
         {/* Auth Routes - Always accessible (MUST be first) */}
         <Route path="/auth" element={<Auth />} />
@@ -61,7 +61,7 @@ function AppRoutes() {
 
 function App() {
   // Special route for testing Auth page - bypass everything
-  if (window.location.pathname === '/sunday-work/test') {
+  if (window.location.pathname === '/sunday-management/test') {
     return <AuthTest />
   }
 

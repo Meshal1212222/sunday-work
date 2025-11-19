@@ -118,11 +118,11 @@ export default function Dashboard() {
             جميع بياناتك من Monday.com متصلة ومتزامنة
           </p>
           <div style={{display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap'}}>
-            <a href="/sunday-work/workspaces" className="btn btn-primary" style={{textDecoration: 'none'}}>
+            <a href="/workspaces" className="btn btn-primary" style={{textDecoration: 'none'}}>
               <FolderKanban size={18} />
               <span>عرض مساحات العمل</span>
             </a>
-            <a href="/sunday-work/team" className="btn btn-secondary" style={{textDecoration: 'none'}}>
+            <a href="/team" className="btn btn-secondary" style={{textDecoration: 'none'}}>
               <Users size={18} />
               <span>عرض الفريق</span>
             </a>

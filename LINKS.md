@@ -93,17 +93,17 @@ npm start
 
 ### الصفحة الرئيسية:
 ```
-https://meshal1212222.github.io/sunday-work/
+https://meshal1212222.github.io/sunday-management/
 ```
 
 ### النسخة الأساسية:
 ```
-https://meshal1212222.github.io/sunday-work/board-original.html
+https://meshal1212222.github.io/sunday-management/board-original.html
 ```
 
 ### النسخة المتقدمة:
 ```
-https://meshal1212222.github.io/sunday-work/board-pro.html
+https://meshal1212222.github.io/sunday-management/board-pro.html
 ```
 
 ---

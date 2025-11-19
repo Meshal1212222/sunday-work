@@ -99,7 +99,7 @@ export async function logoutUser() {
     localStorage.clear()
     sessionStorage.clear()
     // Force reload to clear state
-    window.location.href = '/sunday-work/auth'
+    window.location.href = '/sunday-management/auth'
     return { success: true }
   } catch (error) {
     console.error('Logout error:', error)

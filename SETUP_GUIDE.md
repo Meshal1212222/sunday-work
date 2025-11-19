@@ -40,8 +40,8 @@
 ### 1️⃣ استنساخ المشروع
 
 ```bash
-git clone https://github.com/Meshal1212222/sunday-work.git
-cd sunday-work
+git clone https://github.com/Meshal1212222/sunday-management.git
+cd sunday-management
 ```
 
 ### 2️⃣ إعداد Frontend
@@ -228,7 +228,7 @@ Authorization: Bearer <accessToken>
 ## 🎯 البنية الهيكلية
 
 ```
-sunday-work/
+sunday-management/
 ├── src/                          # Frontend React
 │   ├── components/               # 59 React component
 │   ├── pages/                    # الصفحات
@@ -346,7 +346,7 @@ pm2 save
 ### Frontend لا يعمل؟
 ```bash
 # تأكد أنك في المجلد الصحيح
-pwd  # يجب أن يكون sunday-work/
+pwd  # يجب أن يكون sunday-management/
 
 # امسح node_modules وأعد التثبيت
 rm -rf node_modules package-lock.json

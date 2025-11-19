@@ -22,7 +22,7 @@ export async function forceCompleteLogout() {
   await logoutUser()
 
   // 4. Hard reload
-  window.location.href = '/sunday-work/auth'
+  window.location.href = '/sunday-management/auth'
 }
 
 export function useAuth() {

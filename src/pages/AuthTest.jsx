@@ -281,7 +281,7 @@ export default function AuthTest() {
   dbs.forEach(db => indexedDB.deleteDatabase(db.name));
   localStorage.clear();
   sessionStorage.clear();
-  setTimeout(() => location.href = '/sunday-work/auth', 1000);
+  setTimeout(() => location.href = '/sunday-management/auth', 1000);
 })();`}
           </code>
         </div>

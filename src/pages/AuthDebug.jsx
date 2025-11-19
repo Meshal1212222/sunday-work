@@ -28,7 +28,7 @@ export default function AuthDebug() {
     await logoutUser()
 
     // Reload
-    window.location.href = '/sunday-work/auth'
+    window.location.href = '/sunday-management/auth'
   }
 
   return (
