@@ -18,6 +18,7 @@ import ZapierImport from './pages/ZapierImport'
 import ManualZapCopy from './pages/ManualZapCopy'
 import DataSync from './pages/DataSync'
 import WhatsAppBot from './pages/WhatsAppBot'
+import MyWork from './pages/MyWork'
 
 // Layouts
 import MainLayout from './layouts/MainLayout'
@@ -43,6 +44,7 @@ function AppRoutes() {
         {/* Main Routes - Open for demo/testing */}
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/my-work" element={<MyWork />} />
           <Route path="/workspaces" element={<Workspaces />} />
           <Route path="/workspace/:id" element={<WorkspaceView />} />
           <Route path="/board/:id" element={<Board />} />
