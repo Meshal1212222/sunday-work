@@ -331,6 +331,84 @@ class LocalDataStore {
   }
 
   /**
+   * جلب المهام المؤرشفة منظمة حسب الشهر
+   * @returns {Object} - { 'YYYY-MM': { month: 'شهر', year: 'سنة', items: [...] } }
+   */
+  getArchivedItemsByMonth() {
+    try {
+      const archivedItems = this.getArchivedItems()
+      const itemsByMonth = {}
+
+      // تنظيم المهام حسب شهر الأرشفة
+      Object.entries(archivedItems).forEach(([boardId, items]) => {
+        items.forEach(item => {
+          // استخدام updated_at لتحديد تاريخ الأرشفة
+          const archiveDate = item.updated_at || item.created_at
+          if (!archiveDate) return
+
+          const date = new Date(archiveDate)
+          const year = date.getFullYear()
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          const monthKey = `${year}-${month}`
+
+          if (!itemsByMonth[monthKey]) {
+            itemsByMonth[monthKey] = {
+              month: this.getMonthNameArabic(date.getMonth()),
+              year: year,
+              monthNumber: date.getMonth() + 1,
+              items: []
+            }
+          }
+
+          itemsByMonth[monthKey].items.push({
+            ...item,
+            boardId: boardId
+          })
+        })
+      })
+
+      return itemsByMonth
+    } catch (error) {
+      console.error('Failed to get archived items by month:', error)
+      return {}
+    }
+  }
+
+  /**
+   * الحصول على قائمة الأشهر المتاحة في الأرشيف
+   * @returns {Array} - [{key: 'YYYY-MM', label: 'شهر YYYY', count: number}]
+   */
+  getArchiveMonths() {
+    try {
+      const itemsByMonth = this.getArchivedItemsByMonth()
+
+      return Object.entries(itemsByMonth)
+        .map(([key, data]) => ({
+          key: key,
+          label: `${data.month} ${data.year}`,
+          month: data.month,
+          year: data.year,
+          count: data.items.length
+        }))
+        .sort((a, b) => b.key.localeCompare(a.key)) // ترتيب من الأحدث للأقدم
+    } catch (error) {
+      console.error('Failed to get archive months:', error)
+      return []
+    }
+  }
+
+  /**
+   * الحصول على اسم الشهر بالعربية
+   */
+  getMonthNameArabic(monthIndex) {
+    const months = [
+      'يناير', 'فبراير', 'مارس', 'إبريل', 'مايو', 'يونيو',
+      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+    ]
+    return months[monthIndex] || ''
+  }
+
+  /**
    * الحصول على إحصائيات البيانات المحفوظة
    */
   getStats() {

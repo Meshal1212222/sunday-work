@@ -17,10 +17,15 @@ export default function DataSync() {
   const [backupInfo, setBackupInfo] = useState(null)
   const [firebaseResult, setFirebaseResult] = useState(null)
 
+  // Archive filter states
+  const [selectedMonth, setSelectedMonth] = useState('all') // 'all' or 'YYYY-MM'
+  const [archiveMonths, setArchiveMonths] = useState([])
+
   useEffect(() => {
     loadStats()
     loadSyncStatus()
     loadBackupInfo()
+    loadArchiveMonths()
 
     // تحديث حالة المزامنة كل ثانية إذا كانت قيد التنفيذ
     const interval = setInterval(() => {
@@ -32,6 +37,13 @@ export default function DataSync() {
 
     return () => clearInterval(interval)
   }, [])
+
+  // تحديث الأشهر عند تغيير التاب إلى المهام المؤرشفة
+  useEffect(() => {
+    if (activeTab === 'archived-items') {
+      loadArchiveMonths()
+    }
+  }, [activeTab])
 
   const loadStats = () => {
     const currentStats = localDataStore.getStats()
@@ -48,6 +60,11 @@ export default function DataSync() {
     if (info.success) {
       setBackupInfo(info.metadata)
     }
+  }
+
+  const loadArchiveMonths = () => {
+    const months = localDataStore.getArchiveMonths()
+    setArchiveMonths(months)
   }
 
   const handleSync = async () => {
@@ -507,43 +524,109 @@ export default function DataSync() {
 
         {activeTab === 'archived-items' && (
           <div className="archived-items-content">
-            <h3>📦 المهام المؤرشفة</h3>
-            {Object.keys(archivedItems).length > 0 ? (
-              <div className="archived-items-by-board">
-                {Object.entries(archivedItems).map(([boardId, items]) => {
-                  if (items.length === 0) return null
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0 }}>📦 المهام المؤرشفة</h3>
 
-                  const board = archivedBoards.find(b => b.id === boardId) ||
-                                localDataStore.getBoards().find(b => b.id === boardId)
+              {/* Month Filter */}
+              {archiveMonths.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.875rem', color: '#8E8E93' }}>الشهر:</label>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '6px',
+                      border: '1px solid #E5E5EA',
+                      background: 'white',
+                      fontSize: '0.875rem',
+                      cursor: 'pointer',
+                      minWidth: '150px'
+                    }}
+                  >
+                    <option value="all">كل الأشهر ({stats?.archivedItems || 0})</option>
+                    {archiveMonths.map(month => (
+                      <option key={month.key} value={month.key}>
+                        {month.label} ({month.count})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
 
-                  return (
-                    <div key={boardId} className="board-items-group">
-                      <h4>
-                        📋 {board?.name || `Board ${boardId}`}
-                        <span className="items-count">({items.length} مهمة)</span>
-                      </h4>
-                      <div className="items-list">
-                        {items.map(item => (
-                          <div key={item.id} className="item-card archived">
-                            <div className="item-name">{item.name}</div>
-                            <div className="item-meta">
-                              <span>👤 {item.creator?.name || 'غير محدد'}</span>
-                              <span>📅 {new Date(item.created_at).toLocaleDateString('ar-SA')}</span>
-                              <span className="archived-badge">مؤرشف</span>
-                            </div>
-                          </div>
-                        ))}
+            {(() => {
+              // Get items based on selected filter
+              let itemsToDisplay = {}
+
+              if (selectedMonth === 'all') {
+                itemsToDisplay = archivedItems
+              } else {
+                // Get items for specific month
+                const itemsByMonth = localDataStore.getArchivedItemsByMonth()
+                const monthData = itemsByMonth[selectedMonth]
+
+                if (monthData && monthData.items.length > 0) {
+                  // Group by board
+                  monthData.items.forEach(item => {
+                    if (!itemsToDisplay[item.boardId]) {
+                      itemsToDisplay[item.boardId] = []
+                    }
+                    itemsToDisplay[item.boardId].push(item)
+                  })
+                }
+              }
+
+              return Object.keys(itemsToDisplay).length > 0 ? (
+                <div className="archived-items-by-board">
+                  {Object.entries(itemsToDisplay).map(([boardId, items]) => {
+                    if (items.length === 0) return null
+
+                    const board = archivedBoards.find(b => b.id === boardId) ||
+                                  localDataStore.getBoards().find(b => b.id === boardId)
+
+                    return (
+                      <div key={boardId} className="board-items-group">
+                        <h4>
+                          📋 {board?.name || `Board ${boardId}`}
+                          <span className="items-count">({items.length} مهمة)</span>
+                        </h4>
+                        <div className="items-list">
+                          {items.map(item => {
+                            const archiveDate = item.updated_at || item.created_at
+                            return (
+                              <div key={item.id} className="item-card archived">
+                                <div className="item-name">{item.name}</div>
+                                <div className="item-meta">
+                                  <span>👤 {item.creator?.name || 'غير محدد'}</span>
+                                  <span>📅 {new Date(item.created_at).toLocaleDateString('ar-SA')}</span>
+                                  {archiveDate && (
+                                    <span style={{ color: '#8E8E93', fontSize: '0.8125rem' }}>
+                                      📦 أرشف: {new Date(archiveDate).toLocaleDateString('ar-SA')}
+                                    </span>
+                                  )}
+                                  <span className="archived-badge">مؤرشف</span>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <Archive size={48} style={{ opacity: 0.3 }} />
-                <p>لا توجد مهام مؤرشفة</p>
-              </div>
-            )}
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <Archive size={48} style={{ opacity: 0.3 }} />
+                  <p>
+                    {selectedMonth === 'all'
+                      ? 'لا توجد مهام مؤرشفة'
+                      : `لا توجد مهام مؤرشفة في ${archiveMonths.find(m => m.key === selectedMonth)?.label || 'هذا الشهر'}`
+                    }
+                  </p>
+                </div>
+              )
+            })()}
           </div>
         )}
       </div>
