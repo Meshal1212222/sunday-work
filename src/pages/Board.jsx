@@ -1534,15 +1534,26 @@ export default function Board() {
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
                           {/* WhatsApp Button for each task */}
                           {(() => {
-                            // Extract phone number from task columns
-                            const phoneColumn = item.column_values.find(col =>
-                              col.title === 'رقم الواتساب' ||
-                              col.title === 'واتساب' ||
-                              col.title === 'Phone' ||
-                              col.title === 'WhatsApp' ||
-                              col.title === 'جوال' ||
-                              col.title === 'Whatsapp'
-                            )
+                            // Debug: Print all columns to see what we have
+                            console.log('🔍 Task:', item.name)
+                            console.log('📋 All columns:', item.column_values.map(col => ({
+                              title: col.title,
+                              text: col.text,
+                              type: col.type
+                            })))
+
+                            // Extract phone number from task columns - use includes for flexibility
+                            const phoneColumn = item.column_values.find(col => {
+                              const title = col.title?.toLowerCase() || ''
+                              return title.includes('واتساب') ||
+                                     title.includes('جوال') ||
+                                     title.includes('phone') ||
+                                     title.includes('whatsapp') ||
+                                     title.includes('رقم') ||
+                                     col.type === 'phone'
+                            })
+
+                            console.log('📱 Phone column found:', phoneColumn)
 
                             // Extract person data
                             const personColumn = item.column_values.find(col =>
@@ -1567,6 +1578,9 @@ export default function Board() {
                             }
 
                             const assigneePhone = phoneColumn?.text || ''
+
+                            console.log('☎️  Extracted phone:', assigneePhone)
+                            console.log('👤 Assignee name:', assigneeName)
 
                             // Only show WhatsApp button if phone number exists
                             if (assigneePhone) {
