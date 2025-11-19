@@ -110,7 +110,8 @@ class UltraMsgService {
    */
   async getGroups() {
     try {
-      const url = `${this.apiUrl}/chats/groups?token=${this.token}`
+      // Use /chats endpoint instead of /chats/groups (which doesn't exist)
+      const url = `${this.apiUrl}/chats?token=${this.token}`
 
       const response = await fetch(url, {
         method: 'GET',
@@ -120,12 +121,17 @@ class UltraMsgService {
       })
 
       const data = await response.json()
-      console.log('📱 Groups list:', data)
+      console.log('📱 Chats list:', data)
 
       if (Array.isArray(data)) {
+        // Filter only groups (isGroup: true or id contains @g.us)
+        const groups = data.filter(chat => chat.isGroup === true || chat.id?.includes('@g.us'))
+
+        console.log(`Found ${groups.length} groups out of ${data.length} chats`)
+
         return {
           success: true,
-          groups: data.map(group => ({
+          groups: groups.map(group => ({
             id: group.id,
             name: group.name || group.subject,
             participantsCount: group.participants?.length || 0
