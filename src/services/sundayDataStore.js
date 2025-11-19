@@ -4,10 +4,13 @@
  * البديل المحلي لـ Monday.com
  */
 
+import firebaseBackup from './firebaseBackup'
+
 class SundayDataStore {
   constructor() {
     this.storageKey = 'sunday_local_data'
     this.data = this.loadData()
+    this.autoBackupEnabled = true // تفعيل النسخ الاحتياطي التلقائي
   }
 
   /**
@@ -17,7 +20,12 @@ class SundayDataStore {
     try {
       const saved = localStorage.getItem(this.storageKey)
       if (saved) {
+        console.log('✅ Loaded data from localStorage')
         return JSON.parse(saved)
+      } else {
+        // إذا لم توجد بيانات محلية، حاول الاسترجاع من Firebase
+        console.log('⚠️ No local data found, checking Firebase...')
+        this.restoreFromFirebaseIfEmpty()
       }
     } catch (error) {
       console.error('Error loading Sunday data:', error)
@@ -27,19 +35,64 @@ class SundayDataStore {
     return {
       boards: [],
       items: {},
-      users: []
+      users: [],
+      workspaces: []
+    }
+  }
+
+  /**
+   * استرجاع تلقائي من Firebase إذا كان localStorage فارغاً
+   */
+  async restoreFromFirebaseIfEmpty() {
+    try {
+      const result = await firebaseBackup.restoreAllData()
+      if (result.success && result.data) {
+        console.log('✅ Restored data from Firebase automatically')
+        this.data = {
+          ...result.data,
+          users: result.data.users || []
+        }
+        this.saveData(false) // حفظ في localStorage فقط (بدون backup إلى Firebase مرة أخرى)
+      }
+    } catch (error) {
+      console.log('ℹ️ No Firebase backup found or error:', error.message)
     }
   }
 
   /**
    * حفظ البيانات
+   * @param {boolean} backupToFirebase - حفظ نسخة احتياطية في Firebase (افتراضي: true)
    */
-  saveData() {
+  async saveData(backupToFirebase = true) {
     try {
+      // 1. حفظ في localStorage
       localStorage.setItem(this.storageKey, JSON.stringify(this.data))
-      console.log('💾 Sunday data saved')
+      console.log('💾 Sunday data saved to localStorage')
+
+      // 2. حفظ في Firebase (إذا كان مفعلاً)
+      if (backupToFirebase && this.autoBackupEnabled) {
+        this.backupToFirebase()
+      }
     } catch (error) {
       console.error('Error saving Sunday data:', error)
+    }
+  }
+
+  /**
+   * نسخ احتياطي إلى Firebase (بدون انتظار)
+   */
+  async backupToFirebase() {
+    try {
+      // نسخ احتياطي في الخلفية (لا ننتظر حتى لا نبطئ التطبيق)
+      firebaseBackup.backupAllData(this.data).then(result => {
+        if (result.success) {
+          console.log('☁️ Backed up to Firebase successfully')
+        } else {
+          console.warn('⚠️ Firebase backup failed:', result.error)
+        }
+      })
+    } catch (error) {
+      console.warn('⚠️ Firebase backup error:', error.message)
     }
   }
 
@@ -351,10 +404,78 @@ class SundayDataStore {
     this.data = {
       boards: [],
       items: {},
-      users: []
+      users: [],
+      workspaces: []
     }
-    this.saveData()
-    console.log('🗑️ All data cleared')
+    this.saveData(false) // مسح localStorage فقط، لا نمسح Firebase
+    console.log('🗑️ All data cleared from localStorage')
+  }
+
+  /**
+   * نسخ احتياطي يدوي إلى Firebase
+   */
+  async manualBackupToFirebase() {
+    try {
+      console.log('🔄 Starting manual backup to Firebase...')
+      const result = await firebaseBackup.backupAllData(this.data)
+      return result
+    } catch (error) {
+      console.error('❌ Manual backup failed:', error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+  }
+
+  /**
+   * استرجاع يدوي من Firebase
+   */
+  async manualRestoreFromFirebase() {
+    try {
+      console.log('🔄 Starting manual restore from Firebase...')
+      const result = await firebaseBackup.restoreAllData()
+
+      if (result.success && result.data) {
+        this.data = {
+          ...result.data,
+          users: result.data.users || []
+        }
+        this.saveData(false) // حفظ في localStorage فقط
+        console.log('✅ Data restored from Firebase')
+      }
+
+      return result
+    } catch (error) {
+      console.error('❌ Manual restore failed:', error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+  }
+
+  /**
+   * الحصول على معلومات آخر نسخة احتياطية
+   */
+  async getBackupInfo() {
+    try {
+      return await firebaseBackup.getBackupMetadata()
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+  }
+
+  /**
+   * تفعيل/تعطيل النسخ الاحتياطي التلقائي
+   */
+  toggleAutoBackup(enabled) {
+    this.autoBackupEnabled = enabled
+    localStorage.setItem('sunday_auto_backup', enabled ? 'true' : 'false')
+    console.log(`🔄 Auto backup ${enabled ? 'enabled' : 'disabled'}`)
   }
 }
 

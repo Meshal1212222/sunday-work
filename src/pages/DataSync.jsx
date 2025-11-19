@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Download, Archive, Database, RefreshCw, Trash2, CheckCircle, AlertCircle, Clock, FolderOpen } from 'lucide-react'
+import { Download, Archive, Database, RefreshCw, Trash2, CheckCircle, AlertCircle, Clock, FolderOpen, Cloud, Upload } from 'lucide-react'
 import localDataStore from '../services/localDataStore'
+import sundayDataStore from '../services/sundayDataStore'
 import './DataSync.css'
 
 export default function DataSync() {
@@ -10,9 +11,16 @@ export default function DataSync() {
   const [result, setResult] = useState(null)
   const [activeTab, setActiveTab] = useState('overview') // overview, archived-boards, archived-items
 
+  // Firebase Backup states
+  const [backingUp, setBackingUp] = useState(false)
+  const [restoring, setRestoring] = useState(false)
+  const [backupInfo, setBackupInfo] = useState(null)
+  const [firebaseResult, setFirebaseResult] = useState(null)
+
   useEffect(() => {
     loadStats()
     loadSyncStatus()
+    loadBackupInfo()
 
     // تحديث حالة المزامنة كل ثانية إذا كانت قيد التنفيذ
     const interval = setInterval(() => {
@@ -33,6 +41,13 @@ export default function DataSync() {
   const loadSyncStatus = () => {
     const status = localDataStore.getSyncStatus()
     setSyncStatus(status)
+  }
+
+  const loadBackupInfo = async () => {
+    const info = await sundayDataStore.getBackupInfo()
+    if (info.success) {
+      setBackupInfo(info.metadata)
+    }
   }
 
   const handleSync = async () => {
@@ -76,6 +91,72 @@ export default function DataSync() {
         loadStats()
         setSyncStatus(null)
       }
+    }
+  }
+
+  // Firebase Backup handlers
+  const handleFirebaseBackup = async () => {
+    setBackingUp(true)
+    setFirebaseResult(null)
+
+    try {
+      const result = await sundayDataStore.manualBackupToFirebase()
+
+      if (result.success) {
+        setFirebaseResult({
+          success: true,
+          message: `✅ تم النسخ الاحتياطي إلى Firebase بنجاح! (${result.duration})`
+        })
+        loadBackupInfo()
+      } else {
+        setFirebaseResult({
+          success: false,
+          message: `❌ فشل النسخ الاحتياطي: ${result.error}`
+        })
+      }
+    } catch (error) {
+      setFirebaseResult({
+        success: false,
+        message: `❌ خطأ: ${error.message}`
+      })
+    } finally {
+      setBackingUp(false)
+    }
+  }
+
+  const handleFirebaseRestore = async () => {
+    if (!confirm('⚠️ هل أنت متأكد من استرجاع البيانات من Firebase؟ سيتم استبدال البيانات المحلية الحالية.')) {
+      return
+    }
+
+    setRestoring(true)
+    setFirebaseResult(null)
+
+    try {
+      const result = await sundayDataStore.manualRestoreFromFirebase()
+
+      if (result.success) {
+        setFirebaseResult({
+          success: true,
+          message: `✅ تم الاسترجاع من Firebase بنجاح! (${result.duration})`
+        })
+        loadStats()
+        loadBackupInfo()
+        // إعادة تحميل الصفحة لتحديث البيانات
+        setTimeout(() => window.location.reload(), 1500)
+      } else {
+        setFirebaseResult({
+          success: false,
+          message: `❌ فشل الاسترجاع: ${result.error}`
+        })
+      }
+    } catch (error) {
+      setFirebaseResult({
+        success: false,
+        message: `❌ خطأ: ${error.message}`
+      })
+    } finally {
+      setRestoring(false)
     }
   }
 
@@ -171,6 +252,107 @@ export default function DataSync() {
             <span>{result.message}</span>
           </div>
         )}
+      </div>
+
+      {/* Firebase Backup Controls */}
+      <div className="sync-controls-card">
+        <div className="card-header">
+          <div className="header-icon" style={{ background: 'linear-gradient(135deg, #FF9500, #FF6B00)' }}>
+            <Cloud size={24} />
+          </div>
+          <div>
+            <h3>النسخ الاحتياطي السحابي (Firebase)</h3>
+            <p>نسخ احتياطي تلقائي ويدوي إلى Firebase Firestore</p>
+          </div>
+        </div>
+
+        <div className="sync-actions">
+          <button
+            className="sync-btn primary"
+            onClick={handleFirebaseBackup}
+            disabled={backingUp || restoring}
+            style={{ background: '#FF9500', borderColor: '#FF9500' }}
+          >
+            {backingUp ? (
+              <>
+                <RefreshCw size={20} className="spin" />
+                <span>جاري النسخ الاحتياطي...</span>
+              </>
+            ) : (
+              <>
+                <Upload size={20} />
+                <span>نسخ احتياطي الآن</span>
+              </>
+            )}
+          </button>
+
+          <button
+            className="sync-btn"
+            onClick={handleFirebaseRestore}
+            disabled={backingUp || restoring}
+            style={{ borderColor: '#007AFF', color: '#007AFF' }}
+          >
+            {restoring ? (
+              <>
+                <RefreshCw size={20} className="spin" />
+                <span>جاري الاسترجاع...</span>
+              </>
+            ) : (
+              <>
+                <Download size={20} />
+                <span>استرجاع من Firebase</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Backup Info */}
+        {backupInfo && (
+          <div className="backup-info" style={{
+            background: 'rgba(52, 199, 89, 0.1)',
+            border: '1px solid rgba(52, 199, 89, 0.3)',
+            borderRadius: '8px',
+            padding: '1rem',
+            marginTop: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem'
+          }}>
+            <CheckCircle size={20} style={{ color: '#34C759' }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
+                آخر نسخة احتياطية: {new Date(backupInfo.lastBackup).toLocaleString('ar-SA')}
+              </div>
+              <div style={{ fontSize: '0.875rem', color: '#8E8E93' }}>
+                {backupInfo.boardsCount} بورد • {backupInfo.itemsCount} مهمة • {backupInfo.workspacesCount} workspace
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Firebase Result Message */}
+        {firebaseResult && (
+          <div className={`result-message ${firebaseResult.success ? 'success' : 'error'}`}>
+            {firebaseResult.success ? (
+              <CheckCircle size={20} />
+            ) : (
+              <AlertCircle size={20} />
+            )}
+            <span>{firebaseResult.message}</span>
+          </div>
+        )}
+
+        <div style={{
+          fontSize: '0.8125rem',
+          color: '#8E8E93',
+          marginTop: '1rem',
+          padding: '0.75rem',
+          background: 'rgba(0, 122, 255, 0.05)',
+          borderRadius: '6px',
+          border: '1px solid rgba(0, 122, 255, 0.1)'
+        }}>
+          💡 <strong>النسخ الاحتياطي التلقائي:</strong> يتم حفظ بياناتك تلقائياً في Firebase عند كل تعديل (إضافة/تحديث/حذف مهام)
+        </div>
       </div>
 
       {/* Stats Cards */}
