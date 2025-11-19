@@ -11,6 +11,7 @@ import { logActivity, ActivityTypes } from '../firebase/activity'
 import { useAuth } from '../contexts/AuthContext'
 import MentionDropdown from '../components/MentionDropdown'
 import ActivityLog from '../components/ActivityLog'
+import WhatsAppNotification from '../components/WhatsAppNotification'
 import './Board.css'
 
 const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
@@ -1787,19 +1788,68 @@ export default function Board() {
                     <Mail size={16} />
                     <span>إيميل</span>
                   </button>
-                  <button
-                    className="updates-action-btn whatsapp"
-                    onClick={() => {
-                      const text = encodeURIComponent(
-                        currentModalUpdates.map(u => `${u.author}: ${u.text}`).join('\n\n') || ''
-                      )
-                      window.open(`https://wa.me/?text=${text}`, '_blank')
-                    }}
-                    title="إرسال عبر واتساب"
-                  >
-                    <MessageCircle size={16} />
-                    <span>واتساب</span>
-                  </button>
+
+                  {/* WhatsApp Notification with Ultra MSG */}
+                  {(() => {
+                    const currentItem = board?.items_page?.items?.find(i => i.id === updatesModalOpen)
+                    if (!currentItem) return null
+
+                    // Extract data from column_values
+                    const personColumn = currentItem.column_values.find(col => col.type === 'multiple-person' || col.type === 'person')
+                    const statusColumn = currentItem.column_values.find(col => col.type === 'color')
+                    const dateColumn = currentItem.column_values.find(col => col.type === 'date')
+                    const phoneColumn = currentItem.column_values.find(col => col.title === 'رقم الواتساب' || col.title === 'واتساب' || col.title === 'Phone' || col.title === 'WhatsApp')
+
+                    // Parse person data
+                    let assigneeName = 'الموظف'
+                    let assigneePhone = ''
+
+                    try {
+                      if (personColumn && personColumn.value) {
+                        const personData = JSON.parse(personColumn.value)
+                        if (personData.personsAndTeams && personData.personsAndTeams.length > 0) {
+                          assigneeName = personData.personsAndTeams[0].name || personColumn.text || 'الموظف'
+                        } else if (personColumn.text) {
+                          assigneeName = personColumn.text
+                        }
+                      }
+                    } catch (e) {
+                      assigneeName = personColumn?.text || 'الموظف'
+                    }
+
+                    // Get phone number
+                    if (phoneColumn) {
+                      assigneePhone = phoneColumn.text || ''
+                    }
+
+                    // Prepare task data
+                    const taskData = {
+                      title: currentItem.name || 'غير محدد',
+                      department: board?.name || 'غير محدد',
+                      status: statusColumn?.text || 'غير محدد',
+                      qualityCheck: 'غير محدد',
+                      dueDate: dateColumn?.text || 'غير محدد'
+                    }
+
+                    const assigneeData = {
+                      name: assigneeName,
+                      whatsappNumber: assigneePhone
+                    }
+
+                    const currentUserData = {
+                      name: userData?.displayName || currentUser?.displayName || 'المدير'
+                    }
+
+                    return (
+                      <div style={{ display: 'inline-block' }}>
+                        <WhatsAppNotification
+                          task={taskData}
+                          assignee={assigneeData}
+                          currentUser={currentUserData}
+                        />
+                      </div>
+                    )
+                  })()}
                 </div>
                 <button onClick={() => setUpdatesModalOpen(null)} className="close-menu-btn">
                   <X size={18} />
