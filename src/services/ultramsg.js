@@ -22,7 +22,7 @@ class UltraMsgService {
 
   /**
    * إرسال رسالة واتساب
-   * @param {string} phoneNumber - رقم الهاتف (مثال: 966501234567)
+   * @param {string} phoneNumber - رقم الهاتف (مثال: 966501234567) أو Group ID (مثال: 966501234567-1234567890@g.us)
    * @param {string} message - نص الرسالة
    */
   async sendMessage(phoneNumber, message) {
@@ -31,24 +31,34 @@ class UltraMsgService {
       console.log('API URL:', this.apiUrl)
       console.log('Instance ID:', this.instanceId)
       console.log('Token:', this.token ? '✅ Token exists' : '❌ No token')
-      console.log('Phone (original):', phoneNumber)
+      console.log('Phone/Group (original):', phoneNumber)
 
-      // تأكد من صيغة الرقم الصحيحة (مع كود الدولة بدون +)
-      let formattedPhone = phoneNumber.replace(/[^0-9]/g, '')
+      let formattedRecipient = phoneNumber
 
-      // Add @c.us suffix if not present (required by Ultra MSG)
-      if (!formattedPhone.includes('@')) {
-        formattedPhone = `${formattedPhone}@c.us`
+      // Check if it's a group ID (contains @g.us) or regular number
+      if (phoneNumber.includes('@g.us')) {
+        // It's already a group ID, keep as is
+        console.log('📱 Detected Group ID')
+        formattedRecipient = phoneNumber
+      } else if (phoneNumber.includes('@c.us')) {
+        // Already formatted as chat ID, keep as is
+        console.log('📱 Detected Chat ID')
+        formattedRecipient = phoneNumber
+      } else {
+        // It's a regular phone number, format it
+        console.log('📱 Detected Phone Number')
+        formattedRecipient = phoneNumber.replace(/[^0-9]/g, '')
+        formattedRecipient = `${formattedRecipient}@c.us`
       }
 
-      console.log('Phone (formatted):', formattedPhone)
+      console.log('Recipient (formatted):', formattedRecipient)
 
       const url = `${this.apiUrl}/messages/chat`
       console.log('Full URL:', url)
 
       const requestBody = {
         token: this.token,
-        to: formattedPhone,
+        to: formattedRecipient,
         body: message,
         priority: '10'
       }
@@ -93,6 +103,60 @@ class UltraMsgService {
         error: error.message
       }
     }
+  }
+
+  /**
+   * الحصول على قائمة المجموعات المتاحة
+   */
+  async getGroups() {
+    try {
+      const url = `${this.apiUrl}/chats/groups?token=${this.token}`
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      const data = await response.json()
+      console.log('📱 Groups list:', data)
+
+      if (Array.isArray(data)) {
+        return {
+          success: true,
+          groups: data.map(group => ({
+            id: group.id,
+            name: group.name || group.subject,
+            participantsCount: group.participants?.length || 0
+          }))
+        }
+      } else {
+        return {
+          success: false,
+          message: 'فشل جلب قائمة المجموعات',
+          groups: []
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching groups:', error)
+      return {
+        success: false,
+        message: 'خطأ في جلب المجموعات',
+        error: error.message,
+        groups: []
+      }
+    }
+  }
+
+  /**
+   * إرسال رسالة لمجموعة واتساب
+   * @param {string} groupId - معرف المجموعة (مثال: 966501234567-1234567890@g.us)
+   * @param {string} message - نص الرسالة
+   */
+  async sendGroupMessage(groupId, message) {
+    console.log('📱 Sending to WhatsApp Group:', groupId)
+    return await this.sendMessage(groupId, message)
   }
 
   /**

@@ -95,6 +95,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     { icon: Users, label: 'الفريق', path: '/team' },
     { icon: Settings, label: 'الإعدادات', path: '/settings' },
     { icon: MessageCircle, label: 'اختبار واتساب', path: '/whatsapp-test' },
+    { icon: Users, label: 'مجموعات واتساب', path: '/whatsapp-groups' },
     { icon: HelpCircle, label: 'المساعدة', path: '/help' },
   ]
 
