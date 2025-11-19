@@ -14,7 +14,66 @@ import {
   X
 } from 'lucide-react'
 import sundayDataStore from '../services/sundayDataStore'
+import { getBoardItems } from '../services/mondayService'
 import './BoardView.css'
+
+const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
+const MONDAY_API_URL = 'https://api.monday.com/v2'
+
+async function fetchBoardFromMonday(boardId) {
+  const query = `
+    query ($boardId: ID!) {
+      boards(ids: [$boardId]) {
+        id
+        name
+        columns {
+          id
+          title
+          type
+        }
+        groups {
+          id
+          title
+        }
+        items_page(limit: 500) {
+          items {
+            id
+            name
+            group {
+              id
+              title
+            }
+            column_values {
+              id
+              type
+              text
+              value
+            }
+          }
+        }
+      }
+    }
+  `
+
+  const response = await fetch(MONDAY_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': MONDAY_API_TOKEN
+    },
+    body: JSON.stringify({
+      query,
+      variables: { boardId }
+    })
+  })
+
+  const result = await response.json()
+  if (result.errors) {
+    throw new Error(result.errors[0].message)
+  }
+
+  return result.data.boards[0]
+}
 
 export default function BoardView() {
   const { boardId } = useParams()
@@ -26,25 +85,120 @@ export default function BoardView() {
   const [editingCell, setEditingCell] = useState(null)
   const [newItemGroupId, setNewItemGroupId] = useState(null)
   const [dateTimePickerOpen, setDateTimePickerOpen] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     loadBoard()
   }, [boardId])
 
-  const loadBoard = () => {
-    const boards = sundayDataStore.getBoards()
-    const currentBoard = boards.find(b => b.id === boardId)
+  const loadBoard = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-    if (currentBoard) {
-      setBoard(currentBoard)
-      setGroups(currentBoard.groups || [])
+      // جلب البيانات من Monday
+      console.log('📥 جاري سحب البيانات من Monday...', boardId)
+      const mondayBoard = await fetchBoardFromMonday(boardId)
 
-      // تحميل المهام لكل مجموعة
+      if (!mondayBoard) {
+        throw new Error('البورد غير موجود')
+      }
+
+      console.log('✅ تم سحب البيانات من Monday:', mondayBoard)
+
+      // تحويل بيانات Monday إلى صيغة Sunday
+      const transformedBoard = {
+        id: mondayBoard.id,
+        name: mondayBoard.name,
+        groups: mondayBoard.groups.map(g => ({
+          id: g.id,
+          title: g.title
+        }))
+      }
+
+      // حفظ البورد في sundayDataStore
+      const storeData = sundayDataStore.data
+      const boardIndex = storeData.boards.findIndex(b => b.id === mondayBoard.id)
+
+      if (boardIndex >= 0) {
+        storeData.boards[boardIndex] = transformedBoard
+      } else {
+        storeData.boards.push(transformedBoard)
+      }
+
+      // تهيئة items للبورد
+      if (!storeData.items[mondayBoard.id]) {
+        storeData.items[mondayBoard.id] = []
+      }
+
+      // تحويل المهام
       const itemsByGroup = {}
-      currentBoard.groups?.forEach(group => {
-        itemsByGroup[group.id] = sundayDataStore.getItems(boardId, group.id)
+      mondayBoard.groups.forEach(group => {
+        itemsByGroup[group.id] = []
       })
+
+      const allBoardItems = []
+
+      mondayBoard.items_page.items.forEach(item => {
+        // استخراج البيانات من الأعمدة
+        const personCol = item.column_values.find(c => c.type === 'multiple-person' || c.type === 'people')
+        const statusCol = item.column_values.find(c => c.type === 'status')
+        const dateCol = item.column_values.find(c => c.type === 'date')
+
+        let assignee = null
+        if (personCol?.text) {
+          assignee = personCol.text
+        }
+
+        let status = 'جديدة'
+        if (statusCol?.text) {
+          status = statusCol.text
+        }
+
+        let dueDate = null
+        if (dateCol?.value) {
+          try {
+            const dateValue = JSON.parse(dateCol.value)
+            dueDate = dateValue.date || null
+            if (dateValue.time) {
+              dueDate = `${dateValue.date}T${dateValue.time}`
+            }
+          } catch (e) {
+            console.warn('Failed to parse date:', e)
+          }
+        }
+
+        const transformedItem = {
+          id: item.id,
+          name: item.name,
+          boardId: mondayBoard.id,
+          groupId: item.group.id,
+          assignee,
+          status,
+          dueDate,
+          state: 'active'
+        }
+
+        itemsByGroup[item.group.id].push(transformedItem)
+        allBoardItems.push(transformedItem)
+      })
+
+      // حفظ كل المهام للبورد
+      storeData.items[mondayBoard.id] = allBoardItems
+      sundayDataStore.saveData()
+
+      setBoard(transformedBoard)
+      setGroups(transformedBoard.groups)
       setItems(itemsByGroup)
+      setLoading(false)
+
+      console.log('✅ تم حفظ البيانات محلياً')
+
+    } catch (error) {
+      console.error('❌ خطأ في تحميل البورد:', error)
+      setError(error.message)
+      setLoading(false)
     }
   }
 
@@ -133,11 +287,43 @@ export default function BoardView() {
     }
   }
 
-  if (!board) {
+  if (loading) {
     return (
       <div className="board-loading">
         <div className="spinner"></div>
-        <p>جاري تحميل البورد...</p>
+        <p>جاري سحب البيانات من Monday.com...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="board-loading">
+        <div style={{ color: '#FF3B30', marginBottom: '1rem' }}>❌</div>
+        <h3>حدث خطأ</h3>
+        <p>{error}</p>
+        <button
+          onClick={() => loadBoard()}
+          style={{
+            marginTop: '1rem',
+            padding: '0.5rem 1.5rem',
+            background: '#5B4E9D',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          إعادة المحاولة
+        </button>
+      </div>
+    )
+  }
+
+  if (!board) {
+    return (
+      <div className="board-loading">
+        <p>البورد غير موجود</p>
       </div>
     )
   }
