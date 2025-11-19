@@ -1766,3 +1766,28 @@
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   }
 }
+
+/* WhatsApp Task Button Styling */
+.whatsapp-task-btn {
+  color: #25D366 !important;
+  border-color: #25D366 !important;
+}
+
+.whatsapp-task-btn:hover {
+  background: #25D366 !important;
+  color: white !important;
+  border-color: #25D366 !important;
+}
+
+.whatsapp-task-btn svg {
+  fill: currentColor;
+}
+
+.whatsapp-task-btn.spin svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

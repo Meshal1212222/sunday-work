@@ -1532,6 +1532,76 @@ export default function Board() {
                       ))}
                       <div className="item-cell col-updates">
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
+                          {/* WhatsApp Button for each task */}
+                          {(() => {
+                            // Extract phone number from task columns
+                            const phoneColumn = item.column_values.find(col =>
+                              col.title === 'رقم الواتساب' ||
+                              col.title === 'واتساب' ||
+                              col.title === 'Phone' ||
+                              col.title === 'WhatsApp' ||
+                              col.title === 'جوال' ||
+                              col.title === 'Whatsapp'
+                            )
+
+                            // Extract person data
+                            const personColumn = item.column_values.find(col =>
+                              col.type === 'multiple-person' || col.type === 'person'
+                            )
+
+                            const statusColumn = item.column_values.find(col => col.type === 'color')
+                            const dateColumn = item.column_values.find(col => col.type === 'date')
+
+                            let assigneeName = 'الموظف'
+                            try {
+                              if (personColumn && personColumn.value) {
+                                const personData = JSON.parse(personColumn.value)
+                                if (personData.personsAndTeams && personData.personsAndTeams.length > 0) {
+                                  assigneeName = personData.personsAndTeams[0].name || personColumn.text || 'الموظف'
+                                } else if (personColumn.text) {
+                                  assigneeName = personColumn.text
+                                }
+                              }
+                            } catch (e) {
+                              assigneeName = personColumn?.text || 'الموظف'
+                            }
+
+                            const assigneePhone = phoneColumn?.text || ''
+
+                            // Only show WhatsApp button if phone number exists
+                            if (assigneePhone) {
+                              const taskData = {
+                                title: item.name || 'غير محدد',
+                                department: board?.name || 'غير محدد',
+                                status: statusColumn?.text || 'غير محدد',
+                                qualityCheck: 'غير محدد',
+                                dueDate: dateColumn?.text || 'غير محدد'
+                              }
+
+                              const assigneeData = {
+                                name: assigneeName,
+                                whatsappNumber: assigneePhone
+                              }
+
+                              const currentUserData = {
+                                name: userData?.displayName || currentUser?.displayName || 'المدير'
+                              }
+
+                              return (
+                                <WhatsAppNotification
+                                  task={taskData}
+                                  assignee={assigneeData}
+                                  currentUser={currentUserData}
+                                  buttonClassName="updates-icon-btn whatsapp-task-btn"
+                                  buttonText=""
+                                  buttonSize={18}
+                                  directSend={true}
+                                />
+                              )
+                            }
+                            return null
+                          })()}
+
                           <button
                             onClick={() => setUpdatesModalOpen(item.id)}
                             className="updates-icon-btn"
