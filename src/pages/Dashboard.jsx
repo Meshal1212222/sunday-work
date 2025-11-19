@@ -18,7 +18,7 @@ export default function Dashboard() {
 
       {/* Workspaces Grid */}
       <div className="dashboard-content" style={{marginTop: '30px'}}>
-        <h2 style={{fontSize: '24px', color: '#323338', marginBottom: '20px'}}>مساحات العمل</h2>
+        <h2 style={{fontSize: '20px', color: '#323338', marginBottom: '20px', fontWeight: '600'}}>مساحات العمل</h2>
         <div className="stats-grid">
           {mockWorkspaces.map((workspace) => (
             <div
@@ -33,13 +33,13 @@ export default function Dashboard() {
             >
               <div className="stat-header">
                 <div className="stat-icon" style={{ backgroundColor: `${workspace.color}20` }}>
-                  <span style={{ fontSize: '32px' }}>{workspace.icon}</span>
+                  <span style={{ fontSize: '24px' }}>{workspace.icon}</span>
                 </div>
               </div>
               <div className="stat-body">
-                <div className="stat-value" style={{fontSize: '20px'}}>{workspace.name}</div>
-                <div className="stat-label">{workspace.boards} لوحة</div>
-                <div className="stat-subtitle">{workspace.members} عضو</div>
+                <div className="stat-value" style={{fontSize: '16px', fontWeight: '700'}}>{workspace.name}</div>
+                <div className="stat-label" style={{fontSize: '13px'}}>{workspace.boards} لوحة</div>
+                <div className="stat-subtitle" style={{fontSize: '12px'}}>{workspace.members} عضو</div>
               </div>
               <div className="stat-progress">
                 <div
