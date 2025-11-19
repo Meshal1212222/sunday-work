@@ -27,6 +27,12 @@ class UltraMsgService {
    */
   async sendMessage(phoneNumber, message) {
     try {
+      console.log('📞 Ultra MSG - Starting send...')
+      console.log('API URL:', this.apiUrl)
+      console.log('Instance ID:', this.instanceId)
+      console.log('Token:', this.token ? '✅ Token exists' : '❌ No token')
+      console.log('Phone (original):', phoneNumber)
+
       // تأكد من صيغة الرقم الصحيحة (مع كود الدولة بدون +)
       let formattedPhone = phoneNumber.replace(/[^0-9]/g, '')
 
@@ -35,20 +41,29 @@ class UltraMsgService {
         formattedPhone = `${formattedPhone}@c.us`
       }
 
+      console.log('Phone (formatted):', formattedPhone)
+
       const url = `${this.apiUrl}/messages/chat`
+      console.log('Full URL:', url)
+
+      const requestBody = {
+        token: this.token,
+        to: formattedPhone,
+        body: message,
+        priority: '10'
+      }
+      console.log('Request body:', requestBody)
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams({
-          token: this.token,
-          to: formattedPhone,
-          body: message,
-          priority: '10', // أعلى أولوية
-        }),
+        body: new URLSearchParams(requestBody),
       })
+
+      console.log('Response status:', response.status)
+      console.log('Response OK:', response.ok)
 
       const data = await response.json()
 
