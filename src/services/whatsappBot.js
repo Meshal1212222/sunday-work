@@ -305,12 +305,19 @@ class WhatsAppBot {
     }
 
     if (lowerMsg.includes('ضيف') || lowerMsg.includes('أضف') || lowerMsg.includes('صيف') || lowerMsg.includes('add')) {
+      const board = this.extractBoardName(message)
+      const group = this.extractGroupName(message)
+      const assignee = this.extractAssigneeName(message)
+      const taskName = this.extractTaskName(message)
+
+      console.log('📝 Extracted info:', { board, group, assignee, taskName })
+
       return {
         action: 'add_task',
-        board: this.extractBoardName(message),
-        group: this.extractGroupName(message),
-        assignee: this.extractAssigneeName(message),
-        taskName: this.extractTaskName(message)
+        board,
+        group,
+        assignee,
+        taskName
       }
     }
 
@@ -323,14 +330,14 @@ class WhatsAppBot {
    */
   extractBoardName(message) {
     const boardPatterns = [
-      /في بورد (.+?)(?:\s|$|في|ل)/i,
-      /بورد (.+?)(?:\s|$|في|ل)/i,
-      /board (.+?)(?:\s|$|in|for)/i
+      /في\s+بورد\s+([^\s]+(?:\s+[^\s]+)*?)(?:\s+في\s+(?:قروب|مجموعة)|$|\s+لـ?\s+)/i,
+      /بورد\s+([^\s]+(?:\s+[^\s]+)*?)(?:\s+في\s+(?:قروب|مجموعة)|$|\s+لـ?\s+)/i,
+      /board\s+([^\s]+(?:\s+[^\s]+)*?)(?:\s+in\s+group|$|\s+for\s+)/i
     ]
 
     for (const pattern of boardPatterns) {
       const match = message.match(pattern)
-      if (match) {
+      if (match && match[1]) {
         return match[1].trim()
       }
     }
@@ -343,13 +350,13 @@ class WhatsAppBot {
    */
   extractGroupName(message) {
     const groupPatterns = [
-      /في (?:قروب|مجموعة|group) (.+?)(?:\s|$|ل)/i,
-      /(?:قروب|مجموعة|group) (.+?)(?:\s|$|ل)/i
+      /في\s+(?:قروب|مجموعة|group)\s+([^\s]+(?:\s+[^\s]+)*?)(?:\s+لـ?\s+|$)/i,
+      /(?:قروب|مجموعة|group)\s+([^\s]+(?:\s+[^\s]+)*?)(?:\s+لـ?\s+|$)/i
     ]
 
     for (const pattern of groupPatterns) {
       const match = message.match(pattern)
-      if (match) {
+      if (match && match[1]) {
         return match[1].trim()
       }
     }
@@ -362,15 +369,14 @@ class WhatsAppBot {
    */
   extractAssigneeName(message) {
     const assigneePatterns = [
-      /ل(.+?)$/i,
-      /لـ(.+?)$/i,
-      /assign to (.+?)$/i,
-      /for (.+?)$/i
+      /لـ?\s+([^\s]+(?:\s+[^\s]+)*)$/i,
+      /assign\s+to\s+([^\s]+(?:\s+[^\s]+)*)$/i,
+      /for\s+([^\s]+(?:\s+[^\s]+)*)$/i
     ]
 
     for (const pattern of assigneePatterns) {
       const match = message.match(pattern)
-      if (match) {
+      if (match && match[1]) {
         return match[1].trim()
       }
     }
@@ -382,14 +388,25 @@ class WhatsAppBot {
    * استخراج نص المهمة
    */
   extractTaskName(message) {
-    // أزل الكلمات الزائدة واستخرج نص المهمة
     let taskName = message
-      .replace(/ضيف|أضف|صيف|add/gi, '')
-      .replace(/مهمة|task/gi, '')
-      .replace(/في بورد .+/i, '')
-      .replace(/في قروب .+/i, '')
-      .replace(/لـ? .+$/i, '')
-      .trim()
+
+    // 1. امسح الأمر من البداية
+    taskName = taskName.replace(/^(ضيف|أضف|صيف|add)\s+/gi, '')
+
+    // 2. امسح كلمة "مهمة" أو "task"
+    taskName = taskName.replace(/^(مهمة|task)\s+/gi, '')
+
+    // 3. امسح معلومات البورد (كل شي من "في بورد" لحد "في قروب" أو "لـ" أو نهاية)
+    taskName = taskName.replace(/\s+في\s+بورد\s+.+?(?=\s+في\s+(?:قروب|مجموعة)|$|\s+لـ)/gi, '')
+
+    // 4. امسح معلومات المجموعة (كل شي من "في قروب" لحد "لـ" أو نهاية)
+    taskName = taskName.replace(/\s+في\s+(?:قروب|مجموعة|group)\s+.+?(?=\s+لـ|$)/gi, '')
+
+    // 5. امسح معلومات الشخص (كل شي من "لـ" للنهاية)
+    taskName = taskName.replace(/\s+لـ?\s+.+$/gi, '')
+
+    // 6. نظف المسافات الزائدة
+    taskName = taskName.trim()
 
     return taskName || 'مهمة جديدة'
   }
