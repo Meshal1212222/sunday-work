@@ -1,24 +1,33 @@
 {
-    "name": "sunday-management-github-ready",
-    "version": "1.0.0",
-    "description": "A web application for managing Sunday tasks.",
-    "main": "src/js/main.js",
+    "name": "sunday-management-pro",
+    "version": "2.0.0",
+    "type": "module",
+    "description": "Sunday Board Pro - نظام إدارة مشاريع احترافي مستوحى من Monday.com",
     "scripts": {
-        "start": "live-server src",
-        "build": "echo 'Build step not defined'",
-        "deploy": "gh-pages -d src"
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "deploy": "npm run build && gh-pages -d dist"
     },
     "keywords": [
         "management",
         "tasks",
-        "sunday"
+        "sunday",
+        "monday.com",
+        "project-management"
     ],
-    "author": "Your Name",
+    "author": "Sunday Team",
     "license": "MIT",
     "dependencies": {
-        "live-server": "^1.2.1"
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "react-router-dom": "^6.20.0"
     },
     "devDependencies": {
+        "@types/react": "^18.2.43",
+        "@types/react-dom": "^18.2.17",
+        "@vitejs/plugin-react": "^4.2.1",
+        "vite": "^5.0.8",
         "gh-pages": "^6.3.0"
     },
     "homepage": "https://Meshal1212222.github.io/sunday-management"
