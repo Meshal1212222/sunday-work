@@ -1848,6 +1848,7 @@ export default function Board() {
                         buttonClassName="updates-action-btn whatsapp"
                         buttonText="أبديت واتساب"
                         buttonSize={16}
+                        directSend={true}
                       />
                     )
                   })()}

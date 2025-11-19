@@ -1,12 +1,22 @@
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Send, MessageCircle, Check, AlertCircle, Loader2 } from 'lucide-react'
 import ultraMsgService from '../services/ultramsg'
 import './WhatsAppNotification.css'
 
-export default function WhatsAppNotification({ task, assignee, currentUser, buttonClassName, buttonText, buttonSize }) {
+export default function WhatsAppNotification({ task, assignee, currentUser, buttonClassName, buttonText, buttonSize, directSend = false }) {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [showModal, setShowModal] = useState(false)
+
+  // Auto-hide result message after 4 seconds for direct send
+  useEffect(() => {
+    if (directSend && result) {
+      const timer = setTimeout(() => {
+        setResult(null)
+      }, 4000)
+      return () => clearTimeout(timer)
+    }
+  }, [directSend, result])
 
   // بيانات Ultra MSG (يجب أن تكون في localStorage أو من الإعدادات)
   const getUltraMsgConfig = () => {
@@ -69,17 +79,58 @@ export default function WhatsAppNotification({ task, assignee, currentUser, butt
     }
   }
 
+  const handleButtonClick = () => {
+    if (directSend) {
+      // إرسال مباشر بدون نافذة تأكيد
+      handleSendNotification()
+    } else {
+      // فتح نافذة التأكيد
+      setShowModal(true)
+    }
+  }
+
   return (
     <>
       {/* زر إرسال إشعار */}
       <button
         className={buttonClassName || "whatsapp-notify-btn"}
-        onClick={() => setShowModal(true)}
+        onClick={handleButtonClick}
         title="إرسال تنبيه واتساب"
+        disabled={loading}
       >
-        <MessageCircle size={buttonSize || 18} />
-        <span>{buttonText || "تنبيه واتساب"}</span>
+        {loading ? (
+          <>
+            <Loader2 size={buttonSize || 18} className="spin" />
+            <span>جاري الإرسال...</span>
+          </>
+        ) : (
+          <>
+            <MessageCircle size={buttonSize || 18} />
+            <span>{buttonText || "تنبيه واتساب"}</span>
+          </>
+        )}
       </button>
+
+      {/* رسالة النتيجة للإرسال المباشر */}
+      {directSend && result && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          zIndex: 10001,
+          minWidth: '300px',
+          animation: 'slideDown 0.3s ease'
+        }}>
+          <div className={`result-message ${result.success ? 'success' : 'error'}`}>
+            {result.success ? (
+              <Check size={18} />
+            ) : (
+              <AlertCircle size={18} />
+            )}
+            <span>{result.message}</span>
+          </div>
+        </div>
+      )}
 
       {/* نافذة التأكيد */}
       {showModal && (
