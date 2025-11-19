@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إرسال رسالة اختبار - Ultra MSG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #25D366;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .status-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+        }
+        .status-label {
+            font-weight: 600;
+            color: #333;
+        }
+        .status-value {
+            color: #666;
+            font-family: monospace;
+        }
+        .btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px 0;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(37, 211, 102, 0.4);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            font-weight: 500;
+        }
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+            display: block;
+        }
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+            display: block;
+        }
+        .logs {
+            margin-top: 20px;
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-line {
+            margin: 5px 0;
+            padding: 4px 0;
+            border-bottom: 1px solid #333;
+        }
+        .icon {
+            font-size: 60px;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">💬</div>
+        <h1>اختبار Ultra MSG</h1>
+        <p class="subtitle">Sunday Board Pro - WhatsApp Integration Test</p>
+
+        <div class="status-box">
+            <h3 style="margin-bottom: 15px; color: #333;">📋 بيانات الاتصال:</h3>
+            <div class="status-item">
+                <span class="status-label">API URL:</span>
+                <span class="status-value">https://api.ultramsg.com/instance117440/</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Instance ID:</span>
+                <span class="status-value">instance117440</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Token:</span>
+                <span class="status-value">21jybm4xten03x21</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">رقم الجوال:</span>
+                <span class="status-value">+966563652525</span>
+            </div>
+        </div>
+
+        <button onclick="sendTestMessage()" class="btn" id="sendBtn">
+            📤 إرسال رسالة اختبار الآن
+        </button>
+
+        <div id="result" class="result"></div>
+
+        <div class="logs" id="logs">
+            <div class="log-line" style="color: #00aaff;">
+                ✅ جاهز للإرسال - اضغط الزر أعلاه لبدء الاختبار
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://api.ultramsg.com/instance117440/'
+        const INSTANCE_ID = 'instance117440'
+        const TOKEN = '21jybm4xten03x21'
+        const PHONE = '+966563652525'
+
+        const sendBtn = document.getElementById('sendBtn')
+        const resultDiv = document.getElementById('result')
+        const logsDiv = document.getElementById('logs')
+
+        function addLog(message, color = '#00ff00') {
+            const logLine = document.createElement('div')
+            logLine.className = 'log-line'
+            logLine.style.color = color
+            const timestamp = new Date().toLocaleTimeString('ar-SA')
+            logLine.textContent = `[${timestamp}] ${message}`
+            logsDiv.appendChild(logLine)
+            logsDiv.scrollTop = logsDiv.scrollHeight
+        }
+
+        async function sendTestMessage() {
+            sendBtn.disabled = true
+            sendBtn.textContent = '⏳ جاري الإرسال...'
+            resultDiv.style.display = 'none'
+
+            // Clear previous logs except first one
+            logsDiv.innerHTML = '<div class="log-line" style="color: #ffaa00;">🚀 بدء عملية الإرسال...</div>'
+
+            try {
+                addLog('📞 Ultra MSG - Starting send...', '#00ff00')
+                addLog(`API URL: ${API_URL}`, '#00aaff')
+                addLog(`Instance ID: ${INSTANCE_ID}`, '#00aaff')
+                addLog(`Token: ${TOKEN}`, '#00aaff')
+                addLog(`Phone (original): ${PHONE}`, '#00aaff')
+
+                // Format phone number
+                let formattedPhone = PHONE.replace(/[^0-9]/g, '')
+                if (!formattedPhone.includes('@')) {
+                    formattedPhone = `${formattedPhone}@c.us`
+                }
+                addLog(`Phone (formatted): ${formattedPhone}`, '#00aaff')
+
+                const message = `هلا وغلا! 😃✨
+
+هذه رسالة اختبار من Sunday Board Pro
+
+✅ Ultra MSG Integration Active
+🚀 تم الإرسال بنجاح من النظام!
+📱 Instance: ${INSTANCE_ID}
+
+النظام شغال 100%! 💪`
+
+                addLog('Message prepared:', '#ffaa00')
+                addLog(message, '#ffff00')
+
+                const url = `${API_URL}messages/chat`
+                addLog(`Full URL: ${url}`, '#00aaff')
+
+                const requestBody = {
+                    token: TOKEN,
+                    to: formattedPhone,
+                    body: message,
+                    priority: '10'
+                }
+
+                addLog('📤 Sending request to Ultra MSG...', '#ffaa00')
+                addLog(`Request body: ${JSON.stringify(requestBody, null, 2)}`, '#00aaff')
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(requestBody)
+                })
+
+                addLog(`Response status: ${response.status}`, response.ok ? '#00ff00' : '#ff0000')
+                addLog(`Response OK: ${response.ok}`, response.ok ? '#00ff00' : '#ff0000')
+
+                const data = await response.json()
+                addLog('Ultra MSG Response:', '#ffff00')
+                addLog(JSON.stringify(data, null, 2), '#ffff00')
+
+                if (data.sent === 'true' || data.sent === true) {
+                    addLog('✅✅✅ تم إرسال الرسالة بنجاح!', '#00ff00')
+                    resultDiv.className = 'result success'
+                    resultDiv.innerHTML = `
+                        <div style="font-size: 24px; margin-bottom: 10px;">✅</div>
+                        <div style="font-size: 18px; font-weight: bold;">تم إرسال الرسالة بنجاح!</div>
+                        <div style="margin-top: 10px; font-size: 14px;">تحقق من جوالك: ${PHONE}</div>
+                    `
+                } else {
+                    const errorMsg = data.error || data.message || 'خطأ غير معروف'
+                    addLog(`❌ فشل الإرسال: ${errorMsg}`, '#ff0000')
+                    resultDiv.className = 'result error'
+                    resultDiv.innerHTML = `
+                        <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
+                        <div style="font-size: 18px; font-weight: bold;">فشل إرسال الرسالة</div>
+                        <div style="margin-top: 10px; font-size: 14px;">${errorMsg}</div>
+                        <div style="margin-top: 10px; font-size: 12px; color: #999;">Response: ${JSON.stringify(data)}</div>
+                    `
+                }
+
+            } catch (error) {
+                addLog(`❌ خطأ في الاتصال: ${error.message}`, '#ff0000')
+                addLog(`Stack: ${error.stack}`, '#ff0000')
+                resultDiv.className = 'result error'
+                resultDiv.innerHTML = `
+                    <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
+                    <div style="font-size: 18px; font-weight: bold;">خطأ في الاتصال</div>
+                    <div style="margin-top: 10px; font-size: 14px;">${error.message}</div>
+                `
+            } finally {
+                sendBtn.disabled = false
+                sendBtn.textContent = '📤 إرسال رسالة اختبار الآن'
+            }
+        }
+
+        // Auto-send on load (optional - remove if you want manual trigger only)
+        // window.addEventListener('load', () => {
+        //     setTimeout(() => sendTestMessage(), 1000)
+        // })
+    </script>
+</body>
+</html>
