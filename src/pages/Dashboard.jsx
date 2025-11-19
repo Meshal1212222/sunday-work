@@ -8,6 +8,19 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
+      {/* VERSION BANNER - ULTRA MSG ACTIVE */}
+      <div style={{
+        backgroundColor: '#25D366',
+        color: 'white',
+        padding: '12px 20px',
+        textAlign: 'center',
+        fontWeight: 'bold',
+        fontSize: '16px',
+        marginBottom: '10px'
+      }}>
+        ✅ ULTRA MSG WHATSAPP INTEGRATION ACTIVE - v2025.11.19.FINAL
+      </div>
+
       {/* Header */}
       <div className="dashboard-header">
         <div className="header-content">
