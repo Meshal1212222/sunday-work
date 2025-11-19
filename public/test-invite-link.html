@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اختبار الإرسال عبر رابط الدعوة</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+      font-size: 28px;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #555;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: border-color 0.3s;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 150px;
+      line-height: 1.6;
+    }
+
+    .preview-box {
+      background: #f5f5f5;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+      white-space: pre-wrap;
+      line-height: 1.8;
+      font-size: 15px;
+    }
+
+    .preview-label {
+      font-weight: 600;
+      color: #667eea;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    button {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 10px;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(37, 211, 102, 0.4);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 10px;
+      display: none;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .result.success {
+      background: #d4edda;
+      color: #155724;
+      border: 2px solid #c3e6cb;
+      display: block;
+    }
+
+    .result.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 2px solid #f5c6cb;
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .loading {
+      text-align: center;
+      font-size: 16px;
+      color: #666;
+    }
+
+    .emoji {
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 اختبار الإرسال للمجموعة</h1>
+
+    <div class="input-group">
+      <label>رابط الدعوة:</label>
+      <input
+        type="text"
+        id="inviteLink"
+        value="https://chat.whatsapp.com/Ll7q9yg9AsbEmohPnJ5IgO"
+        readonly
+      >
+    </div>
+
+    <div class="input-group">
+      <label>الرسالة:</label>
+      <textarea id="message" placeholder="اكتب رسالتك هنا...">السلام عليكم يا جماعة الخير! 🎉
+
+جايكم نظام إدارة قوي من Sunday Board Pro! 🚀
+
+النظام راح يسهل عليكم:
+✅ متابعة المهام تلقائياً
+✅ إرسال تنبيهات واتساب للموظفين
+✅ تنظيم المشاريع بشكل احترافي
+
+صبركم بس شوي وراح نبهركم! 💪✨
+
+#SundayBoardPro #InnovationInProgress</textarea>
+    </div>
+
+    <div class="preview-box">
+      <span class="preview-label">📝 معاينة الرسالة:</span>
+      <div id="preview"></div>
+    </div>
+
+    <button id="sendBtn" onclick="sendMessage()">
+      <span class="emoji">📤</span> إرسال الرسالة للمجموعة
+    </button>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    // Configuration
+    const API_URL = 'https://api.ultramsg.com/instance117440'
+    const TOKEN = '21jybm4xten03x21'
+
+    // Update preview on message change
+    document.getElementById('message').addEventListener('input', function() {
+      document.getElementById('preview').textContent = this.value
+    })
+
+    // Initial preview
+    document.getElementById('preview').textContent = document.getElementById('message').value
+
+    async function sendMessage() {
+      const inviteLink = document.getElementById('inviteLink').value
+      const message = document.getElementById('message').value
+      const sendBtn = document.getElementById('sendBtn')
+      const resultDiv = document.getElementById('result')
+
+      if (!message.trim()) {
+        showResult('error', '⚠️ يرجى كتابة رسالة أولاً')
+        return
+      }
+
+      // Disable button and show loading
+      sendBtn.disabled = true
+      sendBtn.innerHTML = '<span class="loading">⏳ جاري الإرسال...</span>'
+      resultDiv.className = 'result'
+      resultDiv.style.display = 'none'
+
+      try {
+        // Extract invite code
+        const inviteCode = inviteLink.split('chat.whatsapp.com/')[1]
+        console.log('🔗 Invite Code:', inviteCode)
+
+        // Step 1: Join the group
+        console.log('📱 Step 1: Joining group...')
+        const joinUrl = `${API_URL}/group/join`
+        const joinResponse = await fetch(joinUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            token: TOKEN,
+            inviteCode: inviteCode
+          })
+        })
+
+        const joinData = await joinResponse.json()
+        console.log('Join Response:', joinData)
+
+        // Step 2: Get groups to find the chatId
+        console.log('📋 Step 2: Getting groups list...')
+        const groupsUrl = `${API_URL}/chats/groups?token=${TOKEN}`
+        const groupsResponse = await fetch(groupsUrl)
+        const groupsData = await groupsResponse.json()
+        console.log('Groups:', groupsData)
+
+        if (!Array.isArray(groupsData) || groupsData.length === 0) {
+          showResult('error', '❌ لم يتم العثور على مجموعات. تأكد من أن الرقم عضو في المجموعة')
+          return
+        }
+
+        // Find the newest group (likely the one we just joined)
+        const targetGroup = groupsData[0] // Take the first/newest group
+        console.log('🎯 Target Group:', targetGroup)
+
+        // Step 3: Send message
+        console.log('✉️ Step 3: Sending message...')
+        const sendUrl = `${API_URL}/messages/chat`
+        const sendResponse = await fetch(sendUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            token: TOKEN,
+            to: targetGroup.id,
+            body: message,
+            priority: '10'
+          })
+        })
+
+        const sendData = await sendResponse.json()
+        console.log('Send Response:', sendData)
+
+        if (sendData.sent === 'true' || sendData.sent === true) {
+          showResult('success', `✅ تم إرسال الرسالة بنجاح للمجموعة: ${targetGroup.name || targetGroup.subject}`)
+        } else {
+          showResult('error', `❌ فشل الإرسال: ${sendData.error || sendData.message || 'خطأ غير معروف'}`)
+        }
+
+      } catch (error) {
+        console.error('Error:', error)
+        showResult('error', `❌ خطأ: ${error.message}`)
+      } finally {
+        // Re-enable button
+        sendBtn.disabled = false
+        sendBtn.innerHTML = '<span class="emoji">📤</span> إرسال الرسالة للمجموعة'
+      }
+    }
+
+    function showResult(type, message) {
+      const resultDiv = document.getElementById('result')
+      resultDiv.className = `result ${type}`
+      resultDiv.textContent = message
+      resultDiv.style.display = 'block'
+    }
+  </script>
+</body>
+</html>

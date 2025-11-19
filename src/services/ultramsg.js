@@ -160,6 +160,101 @@ class UltraMsgService {
   }
 
   /**
+   * الانضمام لمجموعة عبر رابط الدعوة
+   * @param {string} inviteLink - رابط الدعوة (مثال: https://chat.whatsapp.com/XXXXXX)
+   */
+  async joinGroupByInviteLink(inviteLink) {
+    try {
+      // Extract invite code from URL
+      let inviteCode = inviteLink
+      if (inviteLink.includes('chat.whatsapp.com/')) {
+        inviteCode = inviteLink.split('chat.whatsapp.com/')[1]
+      }
+
+      console.log('🔗 Joining group with invite code:', inviteCode)
+
+      const url = `${this.apiUrl}/group/join`
+      const requestBody = {
+        token: this.token,
+        inviteCode: inviteCode
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(requestBody),
+      })
+
+      const data = await response.json()
+      console.log('Join Group Response:', data)
+
+      return {
+        success: data.status === 'success' || data.joined === true,
+        message: data.status === 'success' ? 'تم الانضمام للمجموعة بنجاح' : 'فشل الانضمام للمجموعة',
+        groupId: data.chatId || null,
+        data: data
+      }
+    } catch (error) {
+      console.error('Error joining group:', error)
+      return {
+        success: false,
+        message: 'خطأ في الانضمام للمجموعة',
+        error: error.message
+      }
+    }
+  }
+
+  /**
+   * إرسال رسالة لمجموعة باستخدام رابط الدعوة
+   * @param {string} inviteLink - رابط الدعوة (مثال: https://chat.whatsapp.com/XXXXXX)
+   * @param {string} message - نص الرسالة
+   */
+  async sendMessageByInviteLink(inviteLink, message) {
+    try {
+      console.log('🚀 Attempting to send message via invite link...')
+
+      // First, try to join the group (in case not already a member)
+      const joinResult = await this.joinGroupByInviteLink(inviteLink)
+
+      if (joinResult.groupId) {
+        console.log('✅ Group joined, sending message to:', joinResult.groupId)
+        // Now send the message using the group ID
+        return await this.sendMessage(joinResult.groupId, message)
+      } else {
+        // If join failed, try to get group ID from groups list
+        console.log('⚠️ Join returned no groupId, fetching groups list...')
+        const groupsResult = await this.getGroups()
+
+        if (groupsResult.success && groupsResult.groups.length > 0) {
+          // Try to find a group that might match (this is a fallback)
+          console.log('📋 Found groups:', groupsResult.groups.length)
+          // For now, we'll need the user to manually select
+          return {
+            success: false,
+            message: 'تم الانضمام للمجموعة، لكن يرجى استخدام "مجموعات واتساب" لاختيار المجموعة وإرسال الرسالة',
+            groups: groupsResult.groups
+          }
+        }
+
+        return {
+          success: false,
+          message: 'فشل الحصول على معرف المجموعة. يرجى التأكد من الانضمام للمجموعة أولاً.',
+          data: joinResult.data
+        }
+      }
+    } catch (error) {
+      console.error('Error sending message by invite link:', error)
+      return {
+        success: false,
+        message: 'خطأ في إرسال الرسالة عبر رابط الدعوة',
+        error: error.message
+      }
+    }
+  }
+
+  /**
    * إرسال تنبيه تحديث تاسك
    * @param {object} task - بيانات التاسك
    * @param {string} assigneeName - اسم الموظف المسؤول
