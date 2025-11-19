@@ -11,7 +11,8 @@ import {
   ChevronDown,
   ChevronUp,
   MoreHorizontal,
-  Zap
+  Zap,
+  MessageCircle
 } from 'lucide-react'
 import { mockWorkspaces, mockBoards } from '../data/mockData'
 import './Sidebar.css'
@@ -89,6 +90,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     { icon: Zap, label: 'الأتمتة', path: '/automations' },
     { icon: Users, label: 'الفريق', path: '/team' },
     { icon: Settings, label: 'الإعدادات', path: '/settings' },
+    { icon: MessageCircle, label: 'اختبار واتساب', path: '/whatsapp-test' },
     { icon: HelpCircle, label: 'المساعدة', path: '/help' },
   ]
 

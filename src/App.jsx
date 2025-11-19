@@ -12,6 +12,7 @@ import Automations from './pages/Automations'
 import Team from './pages/Team'
 import Settings from './pages/Settings'
 import Help from './pages/Help'
+import WhatsAppTest from './pages/WhatsAppTest'
 
 // Layouts
 import MainLayout from './layouts/MainLayout'
@@ -43,6 +44,7 @@ function AppRoutes() {
           <Route path="/automations" element={<Automations />} />
           <Route path="/team" element={<Team />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/whatsapp-test" element={<WhatsAppTest />} />
           <Route path="/help" element={<Help />} />
         </Route>
 
