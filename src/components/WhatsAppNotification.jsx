@@ -25,9 +25,19 @@ export default function WhatsAppNotification({ task, assignee, currentUser, butt
   }
 
   const handleSendNotification = async () => {
+    // Debug: Print what we received
+    console.log('🚀🚀🚀 WhatsApp Send Started 🚀🚀🚀')
+    console.log('📋 Task:', JSON.stringify(task, null, 2))
+    console.log('👤 Assignee:', JSON.stringify(assignee, null, 2))
+    console.log('📱 WhatsApp Number RAW:', assignee?.whatsappNumber)
+    console.log('📱 Number type:', typeof assignee?.whatsappNumber)
+    console.log('📱 Number length:', assignee?.whatsappNumber?.length)
+    console.log('📱 Number value:', `"${assignee?.whatsappNumber}"`)
+
     // التحقق من إعدادات Ultra MSG
     const config = getUltraMsgConfig()
     if (!config || !config.apiUrl || !config.token) {
+      console.log('❌ Ultra MSG config missing')
       setResult({
         success: false,
         message: 'يجب تكوين إعدادات Ultra MSG أولاً من صفحة الإعدادات'
@@ -35,14 +45,28 @@ export default function WhatsAppNotification({ task, assignee, currentUser, butt
       return
     }
 
-    // التحقق من رقم الموظف
-    if (!assignee?.whatsappNumber) {
+    // التحقق من رقم الموظف - check if it's a non-empty string
+    console.log('🔍 Starting phone validation...')
+    console.log('🔍 assignee?.whatsappNumber:', assignee?.whatsappNumber)
+    console.log('🔍 Type before toString:', typeof assignee?.whatsappNumber)
+
+    const phoneNumber = assignee?.whatsappNumber?.toString().trim()
+    console.log('🔍 After toString().trim():', phoneNumber)
+    console.log('🔍 Length:', phoneNumber?.length)
+    console.log('🔍 Truthy check:', !!phoneNumber)
+    console.log('🔍 Length check:', phoneNumber?.length >= 5)
+
+    if (!phoneNumber || phoneNumber.length < 5) {
+      console.log('❌❌❌ Phone number INVALID:', phoneNumber)
+      console.log('❌ Reason: phoneNumber =', phoneNumber, '| length =', phoneNumber?.length)
       setResult({
         success: false,
-        message: 'رقم واتساب الموظف غير موجود'
+        message: `رقم واتساب الموظف غير موجود أو غير صحيح (${phoneNumber || 'فارغ'})`
       })
       return
     }
+
+    console.log('✅✅✅ Phone number VALID:', phoneNumber)
 
     setLoading(true)
     setResult(null)
@@ -51,13 +75,19 @@ export default function WhatsAppNotification({ task, assignee, currentUser, butt
       // تهيئة Ultra MSG
       ultraMsgService.configure(config.apiUrl, config.instanceId, config.token)
 
-      // إرسال الإشعار
+      console.log('📤 Sending to Ultra MSG...')
+      console.log('Name:', assignee.name)
+      console.log('Phone:', phoneNumber)
+
+      // إرسال الإشعار - use the validated phoneNumber
       const response = await ultraMsgService.sendTaskUpdateNotification(
         task,
         assignee.name,
-        assignee.whatsappNumber,
+        phoneNumber,
         currentUser.name || 'المدير'
       )
+
+      console.log('📨 Response:', response)
 
       setResult(response)
 
@@ -82,8 +112,8 @@ export default function WhatsAppNotification({ task, assignee, currentUser, butt
   const handleButtonClick = () => {
     console.log('🚀 WhatsApp Button Clicked - NEW CODE v2025!')
     console.log('directSend:', directSend)
-    console.log('assignee:', assignee)
-    console.log('task:', task)
+    console.log('assignee:', JSON.stringify(assignee, null, 2))
+    console.log('task:', JSON.stringify(task, null, 2))
 
     if (directSend) {
       // إرسال مباشر بدون نافذة تأكيد
