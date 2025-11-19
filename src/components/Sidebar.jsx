@@ -14,7 +14,8 @@ import {
   Zap,
   MessageCircle,
   Download,
-  Copy
+  Copy,
+  Database
 } from 'lucide-react'
 import { mockWorkspaces, mockBoards } from '../data/mockData'
 import './Sidebar.css'
@@ -92,6 +93,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     { icon: Zap, label: 'الأتمتة', path: '/automations' },
     { icon: Download, label: 'استيراد من Zapier', path: '/zapier-import' },
     { icon: Copy, label: 'نسخ Zap يدوياً', path: '/manual-zap-copy' },
+    { icon: Database, label: 'الأرشيف والمزامنة', path: '/data-sync' },
     { icon: Users, label: 'الفريق', path: '/team' },
     { icon: Settings, label: 'الإعدادات', path: '/settings' },
     { icon: MessageCircle, label: 'اختبار واتساب', path: '/whatsapp-test' },

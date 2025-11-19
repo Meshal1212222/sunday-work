@@ -43,12 +43,14 @@ async function mondayQuery(query, variables = {}) {
 }
 
 /**
- * Get all boards with full details
+ * Get all boards with full details (including archived)
+ * @param {boolean} includeArchived - Include archived boards
  */
-export async function getBoards() {
+export async function getBoards(includeArchived = true) {
+  // Monday API supports state filter: all, active, archived, deleted
   const query = `
     query {
-      boards(limit: 100) {
+      boards(limit: 500, state: ${includeArchived ? 'all' : 'active'}) {
         id
         name
         description
@@ -82,7 +84,9 @@ export async function getBoards() {
 
   try {
     const data = await mondayQuery(query)
-    return data.boards || []
+    const boards = data.boards || []
+    console.log(`✅ Fetched ${boards.length} boards (active: ${boards.filter(b => b.state === 'active').length}, archived: ${boards.filter(b => b.state === 'archived').length})`)
+    return boards
   } catch (error) {
     console.error('Failed to fetch boards:', error)
     return []
@@ -90,19 +94,17 @@ export async function getBoards() {
 }
 
 /**
- * Get board items from this month only
+ * Get all board items (including archived)
+ * @param {string} boardId - Board ID
+ * @param {boolean} includeArchived - Include archived items (default: true)
  */
-export async function getBoardItems(boardId) {
-  // Get first day of current month
-  const now = new Date()
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const firstDayISO = firstDayOfMonth.toISOString()
-
+export async function getBoardItems(boardId, includeArchived = true) {
   const query = `
     query ($boardId: ID!) {
       boards(ids: [$boardId]) {
         id
         name
+        state
         items_page(limit: 500) {
           items {
             id
@@ -122,9 +124,15 @@ export async function getBoardItems(boardId) {
             }
             column_values {
               id
+              title
               text
               type
               value
+            }
+            group {
+              id
+              title
+              color
             }
           }
         }
@@ -135,16 +143,19 @@ export async function getBoardItems(boardId) {
   try {
     const data = await mondayQuery(query, { boardId: String(boardId) })
     if (data.boards && data.boards[0]) {
-      const allItems = data.boards[0].items_page?.items || []
+      const board = data.boards[0]
+      let allItems = board.items_page?.items || []
 
-      // Filter for this month's items
-      const thisMonthItems = allItems.filter(item => {
-        const updatedDate = new Date(item.updated_at)
-        return updatedDate >= firstDayOfMonth
-      })
+      // Filter archived items if needed
+      if (!includeArchived) {
+        allItems = allItems.filter(item => item.state !== 'archived')
+      }
 
-      console.log(`Board ${boardId}: ${allItems.length} total items, ${thisMonthItems.length} from this month`)
-      return thisMonthItems
+      const activeCount = allItems.filter(i => i.state === 'active').length
+      const archivedCount = allItems.filter(i => i.state === 'archived').length
+
+      console.log(`📋 Board ${board.name}: ${allItems.length} total items (active: ${activeCount}, archived: ${archivedCount})`)
+      return allItems
     }
     return []
   } catch (error) {
