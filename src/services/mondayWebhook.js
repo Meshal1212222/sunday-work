@@ -9,7 +9,9 @@ class MondayWebhookService {
   constructor() {
     this.webhookUrl = null
     this.automationRules = []
+    this.leadsDatabase = []
     this.loadAutomationRules()
+    this.loadLeadsDatabase()
   }
 
   /**
@@ -90,6 +92,67 @@ class MondayWebhookService {
       console.error('Error loading automation rules:', error)
       this.automationRules = []
     }
+  }
+
+  /**
+   * تحميل قاعدة بيانات Leads من localStorage
+   */
+  loadLeadsDatabase() {
+    try {
+      const saved = localStorage.getItem('leads_database')
+      if (saved) {
+        this.leadsDatabase = JSON.parse(saved)
+      } else {
+        // القائمة الافتراضية من Zapier
+        this.leadsDatabase = [
+          {"id": "66571417", "name": "Majed", "phone": "+966532263391"},
+          {"id": "66571878", "name": "meshal", "phone": "+966563652525"},
+          {"id": "66572630", "name": "رشا العتيبي", "phone": "+966537117373"},
+          {"id": "66717472", "name": "محمد مهنا", "phone": "+905355048722"},
+          {"id": "70103826", "name": "yazeed almutairi", "phone": "+966504439336"},
+          {"id": "70105644", "name": "Salma alz", "phone": "+538669473"},
+          {"id": "70155801", "name": "Abdulaziz", "phone": "+966551936042"},
+          {"id": "71376395", "name": "محمد سالم", "phone": "+966552389264"},
+          {"id": "72053194", "name": "أمل القرني", "phone": "+966558589721"},
+          {"id": "73877180", "name": "رغد العتيبي", "phone": "+966506282332"},
+          {"id": "73877204", "name": "Badr Anaam", "phone": "+966535379039"},
+          {"id": "75410617", "name": "مصعب نور", "phone": "+966534806762"},
+          {"id": "75801303", "name": "sami alnajjar", "phone": "+962795501720"},
+          {"id": "76045114", "name": "سليمان احمد", "phone": "+966553174481"},
+          {"id": "76465323", "name": "امل الزهراني", "phone": "+966550132910"},
+          {"id": "77569050", "name": "ياسر مهنا", "phone": "+905359423856"},
+          {"id": "78186226", "name": "انوار عبدالله العمار", "phone": "+966550729835"},
+          {"id": "78489860", "name": "محمد فهد الظاهري", "phone": "+966537805895"},
+          {"id": "80336009", "name": "منيرة القحطاني", "phone": "+966558335470"},
+          {"id": "82885846", "name": "Mohamed Yasser", "phone": "+201128015557"},
+          {"id": "87264553", "name": "MOHAMMED JAMAL", "phone": "+905538653177"},
+          {"id": "89474754", "name": "عبدالمجيد يحيى القحطاني", "phone": "+966508464097"},
+          {"id": "90149000", "name": "RokiaMeryem", "phone": "+212675971509"}
+        ]
+        this.saveLeadsDatabase()
+      }
+    } catch (error) {
+      console.error('Error loading leads database:', error)
+      this.leadsDatabase = []
+    }
+  }
+
+  /**
+   * حفظ قاعدة بيانات Leads إلى localStorage
+   */
+  saveLeadsDatabase() {
+    try {
+      localStorage.setItem('leads_database', JSON.stringify(this.leadsDatabase))
+    } catch (error) {
+      console.error('Error saving leads database:', error)
+    }
+  }
+
+  /**
+   * البحث عن Lead بالـ ID
+   */
+  findLeadById(id) {
+    return this.leadsDatabase.find(lead => lead.id === id.toString())
   }
 
   /**
@@ -281,7 +344,9 @@ class MondayWebhookService {
 تم تعيينك على مهمة جديدة:
 
 📋 المهمة: ${taskName}
-🏢 القسم: ${boardName}
+🏢 اللوحة: ${boardName}
+📁 المجموعة: ${data.group || 'غير محدد'}
+⏰ تاريخ التسليم: ${data.dueDate || 'غير محدد'}
 ✅ الحالة: ${status}
 
 ياليت تطلع عليها 👀`,
