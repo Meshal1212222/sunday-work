@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunday Board - النسخة الأساسية</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+        }
+
+        .board {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .task-group {
+            margin-bottom: 30px;
+        }
+
+        .group-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .task-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .task-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .badge-success { background: #00c875; }
+        .badge-warning { background: #fdab3d; }
+        .badge-danger { background: #e44258; }
+
+        .assignee {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .add-task-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .add-task-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            transition: all 0.2s ease;
+        }
+
+        .back-link:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-link">← العودة للصفحة الرئيسية</a>
+            <h1>📋 Sunday Board - النسخة الأساسية</h1>
+            <p>نظام بسيط وسريع لإدارة المهام والمشاريع</p>
+        </div>
+
+        <div class="board">
+            <div class="task-group">
+                <div class="group-header">
+                    📊 مشاريع قيد التنفيذ
+                </div>
+
+                <div class="task-card">
+                    <div class="task-title">تحديث البنية الاستضافية</div>
+                    <div class="task-meta">
+                        <span class="badge badge-success">قيد التنفيذ</span>
+                        <div class="assignee">
+                            <div class="avatar">👨‍💻</div>
+                            <span>Ahmed</span>
+                        </div>
+                        <span style="font-size: 13px; color: #666;">📅 Nov 30</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 75%"></div>
+                    </div>
+                </div>
+
+                <div class="task-card">
+                    <div class="task-title">تخطيط تحسين التشغيل والأداء</div>
+                    <div class="task-meta">
+                        <span class="badge badge-warning">مراجعة</span>
+                        <div class="assignee">
+                            <div class="avatar">👩‍💼</div>
+                            <span>Sara</span>
+                        </div>
+                        <span style="font-size: 13px; color: #666;">📅 Nov 25</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 45%"></div>
+                    </div>
+                </div>
+
+                <div class="task-card">
+                    <div class="task-title">إعادة تصميم واجهة المستخدم</div>
+                    <div class="task-meta">
+                        <span class="badge badge-danger">متأخر</span>
+                        <div class="assignee">
+                            <div class="avatar">👨‍🎨</div>
+                            <span>Mohammed</span>
+                        </div>
+                        <span style="font-size: 13px; color: #666;">📅 Nov 20</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 20%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="task-group">
+                <div class="group-header">
+                    ✅ مشاريع مكتملة
+                </div>
+
+                <div class="task-card">
+                    <div class="task-title">إطلاق الميزة الجديدة</div>
+                    <div class="task-meta">
+                        <span class="badge badge-success">تم الإنجاز</span>
+                        <div class="assignee">
+                            <div class="avatar">👩‍💻</div>
+                            <span>Layla</span>
+                        </div>
+                        <span style="font-size: 13px; color: #666;">📅 Nov 15</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="add-task-btn" onclick="alert('✨ ميزة إضافة مهمة جديدة قريباً!')">
+                    ✨ إضافة مهمة جديدة
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
