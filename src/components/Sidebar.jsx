@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard,
   FolderKanban,
@@ -22,6 +22,48 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
   const [currentWorkspaceId, setCurrentWorkspaceId] = useState('4163103')
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false)
+  const [sidebarWidth, setSidebarWidth] = useState(320)
+  const [isResizing, setIsResizing] = useState(false)
+  const sidebarRef = useRef(null)
+  const resizerRef = useRef(null)
+
+  // Handle sidebar resizing
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing) return
+
+      const newWidth = window.innerWidth - e.clientX
+      if (newWidth >= 250 && newWidth <= 500) {
+        setSidebarWidth(newWidth)
+        if (sidebarRef.current) {
+          sidebarRef.current.style.width = `${newWidth}px`
+        }
+      }
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = 'ew-resize'
+      document.body.style.userSelect = 'none'
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isResizing])
+
+  const handleResizerMouseDown = (e) => {
+    e.preventDefault()
+    setIsResizing(true)
+  }
 
   // Use mock data
   const allWorkspaces = mockWorkspaces
@@ -61,7 +103,18 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       )}
 
       {/* Sidebar */}
-      <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+      <aside
+        ref={sidebarRef}
+        className={`sidebar ${isOpen ? 'open' : 'closed'}`}
+        style={{ width: `${sidebarWidth}px` }}
+      >
+        {/* Resize Handle */}
+        <div
+          ref={resizerRef}
+          className={`sidebar-resizer ${isResizing ? 'resizing' : ''}`}
+          onMouseDown={handleResizerMouseDown}
+        />
+
         <div className="sidebar-header">
           <div className="sidebar-logo">
             <span className="logo-icon">📅</span>
