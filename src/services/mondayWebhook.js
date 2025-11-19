@@ -166,6 +166,47 @@ class MondayWebhookService {
   }
 
   /**
+   * إضافة أو تحديث رقم موظف في قاعدة البيانات
+   */
+  addOrUpdateLead(id, name, phone) {
+    const existingIndex = this.leadsDatabase.findIndex(lead => lead.id === id.toString())
+
+    const leadData = {
+      id: id.toString(),
+      name: name,
+      phone: phone
+    }
+
+    if (existingIndex !== -1) {
+      // تحديث موجود
+      this.leadsDatabase[existingIndex] = leadData
+      console.log('✅ Updated lead:', leadData)
+    } else {
+      // إضافة جديد
+      this.leadsDatabase.push(leadData)
+      console.log('✅ Added new lead:', leadData)
+    }
+
+    this.saveLeadsDatabase()
+    return leadData
+  }
+
+  /**
+   * الحصول على جميع Leads
+   */
+  getLeads() {
+    return this.leadsDatabase
+  }
+
+  /**
+   * حذف Lead
+   */
+  deleteLead(id) {
+    this.leadsDatabase = this.leadsDatabase.filter(lead => lead.id !== id.toString())
+    this.saveLeadsDatabase()
+  }
+
+  /**
    * حفظ قواعد الأتمتة إلى localStorage
    */
   saveAutomationRules() {
@@ -281,15 +322,19 @@ class MondayWebhookService {
    * استخراج رقم الهاتف من بيانات Monday
    */
   extractPhoneNumber(data) {
-    // يمكن أن يكون الرقم في عدة أماكن
-    // 1. في columnValue إذا كان النوع phone
-    // 2. في custom field
-    // 3. في user profile
+    console.log('🔍 Extracting phone number from data:', data)
 
-    if (data.phoneNumber) return data.phoneNumber
-    if (data.assigneePhone) return data.assigneePhone
+    // 1. محاولة استخراج رقم مباشر من البيانات
+    if (data.phoneNumber) {
+      console.log('✅ Found phoneNumber:', data.phoneNumber)
+      return data.phoneNumber
+    }
+    if (data.assigneePhone) {
+      console.log('✅ Found assigneePhone:', data.assigneePhone)
+      return data.assigneePhone
+    }
 
-    // محاولة استخراجه من column values
+    // 2. محاولة استخراجه من column values (عمود رقم الهاتف في Monday)
     if (data.columnValues) {
       const phoneCol = data.columnValues.find(col =>
         col.type === 'phone' ||
@@ -297,9 +342,55 @@ class MondayWebhookService {
         col.title?.toLowerCase().includes('واتساب') ||
         col.title?.toLowerCase().includes('جوال')
       )
-      if (phoneCol) return phoneCol.text || phoneCol.value
+      if (phoneCol) {
+        const phone = phoneCol.text || phoneCol.value
+        console.log('✅ Found phone in columnValues:', phone)
+        return phone
+      }
     }
 
+    // 3. محاولة استخراج userId ثم البحث في leads database
+    let userId = data.userId
+
+    // إذا لم يكن userId موجود، حاول استخراجه من column values
+    if (!userId && data.columnValues) {
+      const personCol = data.columnValues.find(col =>
+        col.type === 'multiple-person' || col.type === 'person'
+      )
+      if (personCol && personCol.value) {
+        try {
+          const parsed = JSON.parse(personCol.value)
+          if (parsed.personsAndTeams && parsed.personsAndTeams.length > 0) {
+            userId = parsed.personsAndTeams[0].id
+            console.log('📌 Extracted userId from person column:', userId)
+          }
+        } catch (e) {
+          console.log('⚠️ Failed to parse person column value')
+        }
+      }
+    }
+
+    // البحث في leads database باستخدام userId
+    if (userId) {
+      const lead = this.findLeadById(userId)
+      if (lead && lead.phone) {
+        console.log('✅ Found phone in leads database:', lead.phone, 'for user:', lead.name)
+        return lead.phone
+      } else {
+        console.log('⚠️ User found but no phone number in leads database for userId:', userId)
+      }
+    }
+
+    // 4. إذا كان في معرف المهمة (pulseId)، حاول البحث به
+    if (data.pulseId) {
+      const lead = this.findLeadById(data.pulseId)
+      if (lead && lead.phone) {
+        console.log('✅ Found phone using pulseId:', lead.phone)
+        return lead.phone
+      }
+    }
+
+    console.log('❌ No phone number found in any source')
     return null
   }
 
