@@ -8,6 +8,7 @@ import {
   Search,
   Filter,
   Calendar,
+  Clock,
   User,
   Trash2,
   X
@@ -24,6 +25,7 @@ export default function BoardView() {
   const [selectedItem, setSelectedItem] = useState(null)
   const [editingCell, setEditingCell] = useState(null)
   const [newItemGroupId, setNewItemGroupId] = useState(null)
+  const [dateTimePickerOpen, setDateTimePickerOpen] = useState(null)
 
   useEffect(() => {
     loadBoard()
@@ -83,6 +85,52 @@ export default function BoardView() {
 
   const handleCellClick = (itemId, field) => {
     setEditingCell({ itemId, field })
+  }
+
+  const handleUpdateDateTime = (itemId, type, value) => {
+    const item = Object.values(items).flat().find(i => i.id === itemId)
+    if (!item) return
+
+    let newDateTime = item.dueDate || ''
+
+    if (type === 'date') {
+      // تحديث التاريخ فقط
+      if (!value) {
+        newDateTime = ''
+      } else {
+        // احتفظ بالوقت إذا كان موجود
+        const existingTime = newDateTime.includes('T') ? newDateTime.split('T')[1] : null
+        newDateTime = existingTime ? `${value}T${existingTime}` : value
+      }
+    } else if (type === 'time') {
+      // تحديث الوقت فقط
+      const date = newDateTime.includes('T') ? newDateTime.split('T')[0] : newDateTime || new Date().toISOString().split('T')[0]
+
+      if (!value) {
+        // إذا مسح الوقت، احتفظ بالتاريخ فقط
+        newDateTime = date
+      } else {
+        // أضف الوقت
+        newDateTime = `${date}T${value}`
+      }
+    }
+
+    sundayDataStore.updateItem(itemId, { dueDate: newDateTime })
+    loadBoard()
+  }
+
+  const formatDateTime = (dateTimeStr) => {
+    if (!dateTimeStr) return null
+
+    try {
+      const dt = new Date(dateTimeStr)
+      const date = dt.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' })
+      const time = dt.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+
+      return { date, time, hasTime: dateTimeStr.includes('T') }
+    } catch {
+      return null
+    }
   }
 
   if (!board) {
@@ -253,29 +301,90 @@ export default function BoardView() {
 
                     {/* Date */}
                     <td className="col-date">
-                      {editingCell?.itemId === item.id && editingCell?.field === 'dueDate' ? (
-                        <input
-                          type="date"
-                          defaultValue={item.dueDate || ''}
-                          autoFocus
-                          onChange={(e) => handleUpdateItem(item.id, 'dueDate', e.target.value)}
-                          onBlur={() => setEditingCell(null)}
-                        />
-                      ) : (
+                      <div className="date-cell-wrapper">
+                        {dateTimePickerOpen?.itemId === item.id && (
+                          <div className="datetime-picker-popup">
+                            <div className="datetime-picker-header">
+                              <span>تحديد التاريخ والوقت</span>
+                              <button
+                                className="datetime-close-btn"
+                                onClick={() => setDateTimePickerOpen(null)}
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+
+                            <div className="datetime-picker-content">
+                              {/* Date Picker */}
+                              <div className="datetime-section">
+                                <label>
+                                  <Calendar size={14} />
+                                  <span>التاريخ</span>
+                                </label>
+                                <input
+                                  type="date"
+                                  value={item.dueDate?.split('T')[0] || ''}
+                                  onChange={(e) => handleUpdateDateTime(item.id, 'date', e.target.value)}
+                                />
+                              </div>
+
+                              {/* Time Picker (Optional) */}
+                              <div className="datetime-section">
+                                <label>
+                                  <Clock size={14} />
+                                  <span>الوقت (اختياري)</span>
+                                </label>
+                                <input
+                                  type="time"
+                                  value={item.dueDate?.includes('T') ? item.dueDate.split('T')[1]?.slice(0, 5) : ''}
+                                  onChange={(e) => handleUpdateDateTime(item.id, 'time', e.target.value)}
+                                />
+                              </div>
+                            </div>
+
+                            {item.dueDate && (
+                              <button
+                                className="datetime-clear-btn"
+                                onClick={() => {
+                                  handleUpdateItem(item.id, 'dueDate', '')
+                                  setDateTimePickerOpen(null)
+                                }}
+                              >
+                                مسح التاريخ
+                              </button>
+                            )}
+                          </div>
+                        )}
+
                         <div
                           className="cell-content date-cell"
-                          onClick={() => handleCellClick(item.id, 'dueDate')}
+                          onClick={() => setDateTimePickerOpen({ itemId: item.id })}
                         >
                           {item.dueDate ? (
                             <>
-                              <Calendar size={14} />
-                              <span>{new Date(item.dueDate).toLocaleDateString('ar-SA')}</span>
+                              {(() => {
+                                const formatted = formatDateTime(item.dueDate)
+                                if (!formatted) return <span className="empty-cell">-</span>
+
+                                return (
+                                  <div className="datetime-compact">
+                                    <Calendar size={14} />
+                                    <span>{formatted.date}</span>
+                                    {formatted.hasTime && (
+                                      <>
+                                        <Clock size={12} />
+                                        <span className="time-text">{formatted.time}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                )
+                              })()}
                             </>
                           ) : (
                             <span className="empty-cell">-</span>
                           )}
                         </div>
-                      )}
+                      </div>
                     </td>
 
                     {/* Actions */}

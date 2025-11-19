@@ -246,6 +246,124 @@
   color: #c5c7d0;
 }
 
+/* Date Cell Wrapper */
+.date-cell-wrapper {
+  position: relative;
+}
+
+/* DateTime Compact Display */
+.datetime-compact {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.datetime-compact .time-text {
+  font-size: 0.8125rem;
+  color: #8E8E93;
+}
+
+/* DateTime Picker Popup */
+.datetime-picker-popup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  min-width: 280px;
+  margin-top: 0.5rem;
+}
+
+.datetime-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e6e9ef;
+}
+
+.datetime-picker-header span {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.datetime-close-btn {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: #8E8E93;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.datetime-close-btn:hover {
+  background: #F5F5F7;
+  color: #5B4E9D;
+}
+
+.datetime-picker-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.datetime-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.datetime-section label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.datetime-section input {
+  width: 100%;
+  padding: 0.625rem;
+  border: 1px solid #e6e9ef;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.datetime-section input:focus {
+  border-color: #5B4E9D;
+  box-shadow: 0 0 0 3px rgba(91, 78, 157, 0.1);
+}
+
+.datetime-clear-btn {
+  width: 100%;
+  padding: 0.625rem;
+  margin-top: 0.75rem;
+  background: rgba(255, 59, 48, 0.05);
+  color: #FF3B30;
+  border: 1px solid rgba(255, 59, 48, 0.2);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.datetime-clear-btn:hover {
+  background: rgba(255, 59, 48, 0.1);
+  border-color: #FF3B30;
+}
+
 /* Status Cell */
 .status-cell {
   justify-content: center;
