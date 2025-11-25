@@ -2064,4 +2064,11 @@ const ActivityItem = ({ icon, color, title, description, time }) => (
   </div>
 );
 
-// SundayBoardPro component is now available globally
+// Make SundayBoardPro available globally for browser
+window.SundayBoardPro = SundayBoardPro;
+
+// Auto-render when loaded in browser
+if (typeof ReactDOM !== 'undefined' && document.getElementById('root')) {
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<SundayBoardPro />);
+}
