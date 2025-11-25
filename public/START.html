@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دليل بدء التشغيل - Sunday Board Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.8;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 20px;
+            border-right: 5px solid #667eea;
+            padding-right: 15px;
+        }
+
+        .step {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-right: 4px solid #667eea;
+        }
+
+        .step h3 {
+            color: #2d3748;
+            font-size: 22px;
+            margin-bottom: 15px;
+        }
+
+        .step p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .code {
+            background: #2d3748;
+            color: #00ff00;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            margin: 15px 0;
+            overflow-x: auto;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border: 2px solid #17a2b8;
+            color: #0c5460;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .links {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .link-btn {
+            display: block;
+            padding: 18px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .link-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 16px;
+            color: #2d3748;
+        }
+
+        .feature-list li:before {
+            content: "✅ ";
+            margin-left: 10px;
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .section h2 {
+                font-size: 22px;
+            }
+
+            .step h3 {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 دليل بدء التشغيل السريع</h1>
+            <p>Sunday Board Pro - نظام إدارة المشاريع الاحترافي</p>
+        </div>
+
+        <div class="content">
+            <!-- التحديثات الجديدة -->
+            <div class="success">
+                <h3 style="margin-bottom: 10px;">✨ تم إصلاح المشكلة!</h3>
+                <p style="margin: 0;">تم إصلاح مشكلة الصفحة البيضاء وتحديث جميع المسارات. الآن كل شيء يعمل بشكل صحيح!</p>
+            </div>
+
+            <!-- خطوات التشغيل -->
+            <div class="section">
+                <h2>📋 خطوات التشغيل</h2>
+
+                <div class="step">
+                    <h3>1️⃣ سحب آخر التحديثات</h3>
+                    <p>أولاً، تأكد من سحب آخر التحديثات من GitHub:</p>
+                    <div class="code">git pull origin claude/remove-freeze-bug-015NkSf4AWDQf9HZVb4dsYv7</div>
+                </div>
+
+                <div class="step">
+                    <h3>2️⃣ تثبيت Dependencies (أول مرة فقط)</h3>
+                    <p>إذا كانت هذه أول مرة، قم بتثبيت الحزم المطلوبة:</p>
+                    <div class="code">npm install</div>
+                    <div class="warning">
+                        <strong>ملاحظة:</strong> هذه الخطوة مطلوبة فقط في أول مرة أو بعد تحديث package.json
+                    </div>
+                </div>
+
+                <div class="step">
+                    <h3>3️⃣ تشغيل الخادم</h3>
+                    <p>شغّل خادم التطوير:</p>
+                    <div class="code">npm run dev</div>
+                    <div class="success">
+                        <strong>✅ سترى رسالة:</strong><br>
+                        VITE v5.4.21 ready in XXXX ms<br>
+                        ➜ Local: http://localhost:8080/sunday-management/
+                    </div>
+                </div>
+
+                <div class="step">
+                    <h3>4️⃣ فتح المتصفح</h3>
+                    <p>افتح أحد الروابط التالية في متصفحك:</p>
+                    <div class="links">
+                        <a href="http://localhost:8080/sunday-management/" class="link-btn">
+                            🏠 الصفحة الرئيسية (React App)
+                        </a>
+                        <a href="http://localhost:8080/sunday-management/test.html" class="link-btn">
+                            🧪 صفحة الاختبار
+                        </a>
+                        <a href="http://localhost:8080/sunday-management/board-pro.html" class="link-btn">
+                            🚀 النسخة المتقدمة (Pro)
+                        </a>
+                        <a href="http://localhost:8080/sunday-management/board-original.html" class="link-btn">
+                            📋 النسخة الأساسية
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- معلومات المشروع -->
+            <div class="section">
+                <h2>📊 معلومات المشروع</h2>
+
+                <div class="info">
+                    <h3 style="margin-bottom: 10px;">🎯 ما تم إنجازه:</h3>
+                    <ul class="feature-list">
+                        <li>نظام React + Vite احترافي مع 59 مكون</li>
+                        <li>نظام Authentication قوي مع JWT و Firebase</li>
+                        <li>نظام Multi-tenancy لدعم عدة شركات</li>
+                        <li>نظام الصلاحيات والأدوار (RBAC)</li>
+                        <li>Backend API كامل مع Express.js</li>
+                        <li>دعم MongoDB للبيانات</li>
+                        <li>نظام Subscription & Billing</li>
+                        <li>تحسينات أمان متقدمة</li>
+                        <li>14 نوع عمود قابل للتخصيص</li>
+                        <li>Dashboard للإحصائيات</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- استكشاف الأخطاء -->
+            <div class="section">
+                <h2>🔧 حل المشاكل الشائعة</h2>
+
+                <div class="step">
+                    <h3>❌ الصفحة بيضاء؟</h3>
+                    <p><strong>الحل:</strong></p>
+                    <ol style="margin-right: 20px; color: #666;">
+                        <li>أوقف الخادم (Ctrl + C)</li>
+                        <li>شغّل: <code style="background: #f0f0f0; padding: 2px 8px; border-radius: 4px;">git pull origin claude/remove-freeze-bug-015NkSf4AWDQf9HZVb4dsYv7</code></li>
+                        <li>شغّل الخادم مرة ثانية: <code style="background: #f0f0f0; padding: 2px 8px; border-radius: 4px;">npm run dev</code></li>
+                    </ol>
+                </div>
+
+                <div class="step">
+                    <h3>❌ npm: command not found؟</h3>
+                    <p><strong>الحل:</strong> تحتاج تثبيت Node.js من <a href="https://nodejs.org" target="_blank" style="color: #667eea;">nodejs.org</a></p>
+                </div>
+
+                <div class="step">
+                    <h3>❌ Port 8080 مشغول؟</h3>
+                    <p><strong>الحل:</strong> غيّر البورت في vite.config.js أو أوقف البرنامج الي شغّال على بورت 8080</p>
+                </div>
+            </div>
+
+            <!-- الخطوات التالية -->
+            <div class="section">
+                <h2>🎯 الخطوات التالية (اختياري)</h2>
+
+                <div class="step">
+                    <h3>1. إعداد MongoDB (اختياري)</h3>
+                    <p>إذا بغيت تحفظ البيانات بشكل دائم:</p>
+                    <ul style="margin-right: 20px; color: #666;">
+                        <li>سجّل حساب مجاني في <a href="https://www.mongodb.com/atlas" target="_blank" style="color: #667eea;">MongoDB Atlas</a></li>
+                        <li>أنشئ Cluster مجاني (M0)</li>
+                        <li>انسخ Connection String</li>
+                        <li>أضفه في ملف <code style="background: #f0f0f0; padding: 2px 8px; border-radius: 4px;">server/.env</code></li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <h3>2. تشغيل Backend Server (اختياري)</h3>
+                    <p>بعد إعداد MongoDB:</p>
+                    <div class="code">cd server<br>npm install<br>npm run dev</div>
+                </div>
+
+                <div class="step">
+                    <h3>3. النشر على الإنترنت (اختياري)</h3>
+                    <p>يمكنك نشر المشروع على:</p>
+                    <ul style="margin-right: 20px; color: #666;">
+                        <li><strong>Vercel:</strong> للـ Frontend (مجاني)</li>
+                        <li><strong>Railway/Render:</strong> للـ Backend (مجاني)</li>
+                        <li><strong>MongoDB Atlas:</strong> للـ Database (مجاني)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- الدعم -->
+            <div class="section">
+                <h2>💬 الدعم والمساعدة</h2>
+                <div class="info">
+                    <p><strong>📧 إذا واجهت أي مشكلة:</strong></p>
+                    <ol style="margin-right: 20px; margin-top: 10px;">
+                        <li>تأكد من تشغيل <code style="background: #f0f0f0; padding: 2px 8px; border-radius: 4px;">git pull</code> لسحب آخر التحديثات</li>
+                        <li>تأكد من تثبيت dependencies بـ <code style="background: #f0f0f0; padding: 2px 8px; border-radius: 4px;">npm install</code></li>
+                        <li>جرّب صفحة الاختبار أولاً: <a href="http://localhost:8080/sunday-management/test.html" style="color: #667eea;">test.html</a></li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 2px solid #e0e0e0;">
+                <p style="color: #999; font-size: 14px;">
+                    تم التطوير بـ ❤️ • Sunday Board Pro • نوفمبر 2024
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

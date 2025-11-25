@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار Ultra MSG - مباشر</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        .logs {
+            margin-top: 20px;
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-line {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 اختبار Ultra MSG</h1>
+        <p class="subtitle">Sunday Board Pro - WhatsApp Integration</p>
+
+        <form id="testForm">
+            <div class="form-group">
+                <label>API URL:</label>
+                <input type="text" id="apiUrl" placeholder="https://api.ultramsg.com/instanceXXXXX" required>
+            </div>
+
+            <div class="form-group">
+                <label>Instance ID:</label>
+                <input type="text" id="instanceId" placeholder="instanceXXXXX" required>
+            </div>
+
+            <div class="form-group">
+                <label>Token:</label>
+                <input type="text" id="token" placeholder="Your Ultra MSG Token" required>
+            </div>
+
+            <div class="form-group">
+                <label>رقم الجوال (مع كود الدولة بدون +):</label>
+                <input type="text" id="phone" placeholder="966501234567" required>
+            </div>
+
+            <div class="form-group">
+                <label>الرسالة:</label>
+                <textarea id="message" required>هلا وغلا! 😃✨
+
+هذه رسالة اختبار من Sunday Board Pro
+
+✅ Ultra MSG Integration Active
+🚀 النظام شغال 100%!
+
+تم الإرسال من صفحة الاختبار المباشرة</textarea>
+            </div>
+
+            <button type="submit" class="btn" id="sendBtn">
+                📤 إرسال الرسالة
+            </button>
+        </form>
+
+        <div id="result" class="result"></div>
+
+        <div class="logs" id="logs">
+            <div class="log-line">📋 جاهز للإرسال...</div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('testForm')
+        const sendBtn = document.getElementById('sendBtn')
+        const resultDiv = document.getElementById('result')
+        const logsDiv = document.getElementById('logs')
+
+        function addLog(message, color = '#00ff00') {
+            const logLine = document.createElement('div')
+            logLine.className = 'log-line'
+            logLine.style.color = color
+            logLine.textContent = `[${new Date().toLocaleTimeString('ar-SA')}] ${message}`
+            logsDiv.appendChild(logLine)
+            logsDiv.scrollTop = logsDiv.scrollHeight
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault()
+
+            const apiUrl = document.getElementById('apiUrl').value
+            const instanceId = document.getElementById('instanceId').value
+            const token = document.getElementById('token').value
+            const phone = document.getElementById('phone').value
+            const message = document.getElementById('message').value
+
+            sendBtn.disabled = true
+            sendBtn.textContent = '⏳ جاري الإرسال...'
+            resultDiv.style.display = 'none'
+
+            try {
+                addLog('📞 بدء عملية الإرسال...', '#00ff00')
+                addLog(`API URL: ${apiUrl}`, '#00aaff')
+                addLog(`Instance: ${instanceId}`, '#00aaff')
+                addLog(`Phone (original): ${phone}`, '#00aaff')
+
+                // Format phone number
+                let formattedPhone = phone.replace(/[^0-9]/g, '')
+                if (!formattedPhone.includes('@')) {
+                    formattedPhone = `${formattedPhone}@c.us`
+                }
+                addLog(`Phone (formatted): ${formattedPhone}`, '#00aaff')
+
+                const url = `${apiUrl}/messages/chat`
+                addLog(`Full URL: ${url}`, '#00aaff')
+
+                const requestBody = {
+                    token: token,
+                    to: formattedPhone,
+                    body: message,
+                    priority: '10'
+                }
+
+                addLog('📤 إرسال الطلب إلى Ultra MSG...', '#ffaa00')
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(requestBody)
+                })
+
+                addLog(`Response status: ${response.status}`, response.ok ? '#00ff00' : '#ff0000')
+
+                const data = await response.json()
+                addLog(`Response: ${JSON.stringify(data)}`, '#ffff00')
+
+                if (data.sent === 'true' || data.sent === true) {
+                    addLog('✅ تم إرسال الرسالة بنجاح!', '#00ff00')
+                    resultDiv.className = 'result success'
+                    resultDiv.textContent = '✅ تم إرسال الرسالة بنجاح!'
+                } else {
+                    const errorMsg = data.error || data.message || 'خطأ غير معروف'
+                    addLog(`❌ فشل الإرسال: ${errorMsg}`, '#ff0000')
+                    resultDiv.className = 'result error'
+                    resultDiv.textContent = `❌ فشل إرسال الرسالة: ${errorMsg}`
+                }
+
+            } catch (error) {
+                addLog(`❌ خطأ: ${error.message}`, '#ff0000')
+                resultDiv.className = 'result error'
+                resultDiv.textContent = `❌ خطأ في الاتصال: ${error.message}`
+            } finally {
+                sendBtn.disabled = false
+                sendBtn.textContent = '📤 إرسال الرسالة'
+            }
+        })
+
+        // Load saved config if exists
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('ultramsg_config')
+            if (saved) {
+                try {
+                    const config = JSON.parse(saved)
+                    document.getElementById('apiUrl').value = config.apiUrl || ''
+                    document.getElementById('instanceId').value = config.instanceId || ''
+                    document.getElementById('token').value = config.token || ''
+                    addLog('✅ تم تحميل البيانات المحفوظة', '#00ff00')
+                } catch (e) {
+                    addLog('⚠️  خطأ في تحميل البيانات المحفوظة', '#ffaa00')
+                }
+            }
+        })
+
+        // Save config on input
+        const inputs = ['apiUrl', 'instanceId', 'token']
+        inputs.forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                const config = {
+                    apiUrl: document.getElementById('apiUrl').value,
+                    instanceId: document.getElementById('instanceId').value,
+                    token: document.getElementById('token').value
+                }
+                localStorage.setItem('ultramsg_config', JSON.stringify(config))
+                addLog('💾 تم حفظ البيانات', '#00aaff')
+            })
+        })
+    </script>
+</body>
+</html>

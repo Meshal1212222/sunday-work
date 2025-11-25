@@ -1,0 +1,690 @@
+/**
+ * Monday.com Webhook Integration Service
+ * يستقبل التحديثات من Monday.com ويعالجها تلقائياً
+ */
+
+import ultraMsgService from './ultramsg'
+import { getItem, getBoards, getBoardItems } from './mondayService'
+
+class MondayWebhookService {
+  constructor() {
+    this.webhookUrl = null
+    this.automationRules = []
+    this.leadsDatabase = []
+    this.loadAutomationRules()
+    this.loadLeadsDatabase()
+  }
+
+  /**
+   * تحميل قواعد الأتمتة من localStorage
+   */
+  loadAutomationRules() {
+    try {
+      const saved = localStorage.getItem('whatsapp_automation_rules')
+      if (saved) {
+        this.automationRules = JSON.parse(saved)
+      } else {
+        // القواعد الافتراضية (نسخة من Zapier)
+        this.automationRules = [
+          {
+            id: 'wa-1',
+            name: 'إرسال واتساب عند تغيير الحالة',
+            trigger: 'column_changed',
+            triggerColumn: 'status',
+            condition: null,
+            action: 'send_whatsapp',
+            active: true,
+            messageTemplate: 'status_change'
+          },
+          {
+            id: 'wa-2',
+            name: 'إرسال واتساب عند تعيين موظف',
+            trigger: 'column_changed',
+            triggerColumn: 'person',
+            condition: null,
+            action: 'send_whatsapp',
+            active: true,
+            messageTemplate: 'task_assigned'
+          },
+          {
+            id: 'wa-3',
+            name: 'إرسال واتساب عند اقتراب الموعد',
+            trigger: 'date_approaching',
+            triggerColumn: 'date',
+            condition: { daysBefore: 1 },
+            action: 'send_whatsapp',
+            active: true,
+            messageTemplate: 'deadline_reminder'
+          },
+          {
+            id: 'wa-4',
+            name: 'إرسال واتساب عند التأخير',
+            trigger: 'column_changed',
+            triggerColumn: 'status',
+            condition: { statusValue: 'متأخر' },
+            action: 'send_whatsapp',
+            active: true,
+            messageTemplate: 'task_overdue'
+          },
+          {
+            id: 'wa-5',
+            name: 'إرسال واتساب عند إضافة ملف',
+            trigger: 'file_added',
+            triggerColumn: 'files',
+            condition: null,
+            action: 'send_whatsapp',
+            active: true,
+            messageTemplate: 'file_added'
+          },
+          {
+            id: 'wa-6',
+            name: 'إرسال واتساب عند تجاوز تاريخ التسليم',
+            trigger: 'date_overdue',
+            triggerColumn: 'date',
+            condition: null,
+            action: 'send_whatsapp',
+            active: true,
+            messageTemplate: 'date_overdue'
+          },
+          {
+            id: 'wa-7',
+            name: 'رسالة شكر عند إكمال المهمة',
+            trigger: 'status_completed',
+            triggerColumn: 'status',
+            condition: { statusValue: ['تم', 'مكتملة', 'Done', 'Completed', 'تم الإنجاز'] },
+            action: 'send_whatsapp',
+            active: true,
+            messageTemplate: 'task_completed'
+          }
+        ]
+        this.saveAutomationRules()
+      }
+    } catch (error) {
+      console.error('Error loading automation rules:', error)
+      this.automationRules = []
+    }
+  }
+
+  /**
+   * تحميل قاعدة بيانات Leads من localStorage
+   */
+  loadLeadsDatabase() {
+    try {
+      const saved = localStorage.getItem('leads_database')
+      if (saved) {
+        this.leadsDatabase = JSON.parse(saved)
+      } else {
+        // القائمة الافتراضية من Zapier
+        this.leadsDatabase = [
+          {"id": "66571417", "name": "Majed", "phone": "+966532263391"},
+          {"id": "66571878", "name": "meshal", "phone": "+966563652525"},
+          {"id": "66572630", "name": "رشا العتيبي", "phone": "+966537117373"},
+          {"id": "66717472", "name": "محمد مهنا", "phone": "+905355048722"},
+          {"id": "70103826", "name": "yazeed almutairi", "phone": "+966504439336"},
+          {"id": "70105644", "name": "Salma alz", "phone": "+538669473"},
+          {"id": "70155801", "name": "Abdulaziz", "phone": "+966551936042"},
+          {"id": "71376395", "name": "محمد سالم", "phone": "+966552389264"},
+          {"id": "72053194", "name": "أمل القرني", "phone": "+966558589721"},
+          {"id": "73877180", "name": "رغد العتيبي", "phone": "+966506282332"},
+          {"id": "73877204", "name": "Badr Anaam", "phone": "+966535379039"},
+          {"id": "75410617", "name": "مصعب نور", "phone": "+966534806762"},
+          {"id": "75801303", "name": "sami alnajjar", "phone": "+962795501720"},
+          {"id": "76045114", "name": "سليمان احمد", "phone": "+966553174481"},
+          {"id": "76465323", "name": "امل الزهراني", "phone": "+966550132910"},
+          {"id": "77569050", "name": "ياسر مهنا", "phone": "+905359423856"},
+          {"id": "78186226", "name": "انوار عبدالله العمار", "phone": "+966550729835"},
+          {"id": "78489860", "name": "محمد فهد الظاهري", "phone": "+966537805895"},
+          {"id": "80336009", "name": "منيرة القحطاني", "phone": "+966558335470"},
+          {"id": "82885846", "name": "Mohamed Yasser", "phone": "+201128015557"},
+          {"id": "87264553", "name": "MOHAMMED JAMAL", "phone": "+905538653177"},
+          {"id": "89474754", "name": "عبدالمجيد يحيى القحطاني", "phone": "+966508464097"},
+          {"id": "90149000", "name": "RokiaMeryem", "phone": "+212675971509"}
+        ]
+        this.saveLeadsDatabase()
+      }
+    } catch (error) {
+      console.error('Error loading leads database:', error)
+      this.leadsDatabase = []
+    }
+  }
+
+  /**
+   * حفظ قاعدة بيانات Leads إلى localStorage
+   */
+  saveLeadsDatabase() {
+    try {
+      localStorage.setItem('leads_database', JSON.stringify(this.leadsDatabase))
+    } catch (error) {
+      console.error('Error saving leads database:', error)
+    }
+  }
+
+  /**
+   * البحث عن Lead بالـ ID
+   */
+  findLeadById(id) {
+    return this.leadsDatabase.find(lead => lead.id === id.toString())
+  }
+
+  /**
+   * إضافة أو تحديث رقم موظف في قاعدة البيانات
+   */
+  addOrUpdateLead(id, name, phone) {
+    const existingIndex = this.leadsDatabase.findIndex(lead => lead.id === id.toString())
+
+    const leadData = {
+      id: id.toString(),
+      name: name,
+      phone: phone
+    }
+
+    if (existingIndex !== -1) {
+      // تحديث موجود
+      this.leadsDatabase[existingIndex] = leadData
+      console.log('✅ Updated lead:', leadData)
+    } else {
+      // إضافة جديد
+      this.leadsDatabase.push(leadData)
+      console.log('✅ Added new lead:', leadData)
+    }
+
+    this.saveLeadsDatabase()
+    return leadData
+  }
+
+  /**
+   * الحصول على جميع Leads
+   */
+  getLeads() {
+    return this.leadsDatabase
+  }
+
+  /**
+   * حذف Lead
+   */
+  deleteLead(id) {
+    this.leadsDatabase = this.leadsDatabase.filter(lead => lead.id !== id.toString())
+    this.saveLeadsDatabase()
+  }
+
+  /**
+   * سحب كل المهام من Monday وتحديث قاعدة بيانات الأرقام
+   * يستخرج أرقام الهاتف من كل المهام في كل البوردات
+   */
+  async syncLeadsFromMonday() {
+    try {
+      console.log('🔄 Starting sync from Monday.com...')
+
+      // جلب كل البوردات
+      const boards = await getBoards()
+      console.log(`📊 Found ${boards.length} boards`)
+
+      let totalItems = 0
+      let phonesFound = 0
+      const newLeads = []
+
+      // المرور على كل بورد
+      for (const board of boards) {
+        console.log(`📋 Syncing board: ${board.name} (${board.id})`)
+
+        // جلب مهام البورد
+        const items = await getBoardItems(board.id)
+        totalItems += items.length
+
+        // المرور على كل مهمة
+        for (const item of items) {
+          if (!item.column_values) continue
+
+          // البحث عن عمود الهاتف
+          const phoneCol = item.column_values.find(col =>
+            col.type === 'phone' ||
+            col.title?.toLowerCase().includes('phone') ||
+            col.title?.toLowerCase().includes('واتساب') ||
+            col.title?.toLowerCase().includes('جوال') ||
+            col.title?.toLowerCase().includes('whatsapp')
+          )
+
+          // البحث عن عمود الاسم أو استخدام اسم المهمة
+          const nameCol = item.column_values.find(col =>
+            col.type === 'text' ||
+            col.title?.toLowerCase().includes('name') ||
+            col.title?.toLowerCase().includes('اسم')
+          )
+
+          const name = nameCol?.text || item.name
+          const phone = phoneCol?.text || phoneCol?.value
+
+          if (phone && phone.trim()) {
+            // إضافة/تحديث Lead
+            this.addOrUpdateLead(item.id, name, phone.trim())
+            phonesFound++
+            newLeads.push({ id: item.id, name, phone: phone.trim() })
+          }
+        }
+      }
+
+      console.log(`✅ Sync completed!`)
+      console.log(`   📊 Total items: ${totalItems}`)
+      console.log(`   📞 Phone numbers found: ${phonesFound}`)
+
+      return {
+        success: true,
+        totalItems,
+        phonesFound,
+        leads: newLeads
+      }
+
+    } catch (error) {
+      console.error('❌ Sync failed:', error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+  }
+
+  /**
+   * حفظ قواعد الأتمتة إلى localStorage
+   */
+  saveAutomationRules() {
+    try {
+      localStorage.setItem('whatsapp_automation_rules', JSON.stringify(this.automationRules))
+    } catch (error) {
+      console.error('Error saving automation rules:', error)
+    }
+  }
+
+  /**
+   * معالجة webhook من Monday.com
+   * @param {Object} webhookData - البيانات الواردة من Monday
+   */
+  async processWebhook(webhookData) {
+    try {
+      console.log('📥 Monday Webhook Received:', webhookData)
+
+      const { event, pulseId, pulseName, boardId, columnId, columnType, value, userId } = webhookData
+
+      // البحث عن القواعد المطابقة
+      const matchingRules = this.automationRules.filter(rule => {
+        if (!rule.active) return false
+
+        // تحقق من نوع الحدث
+        if (rule.trigger === 'column_changed' && event === 'change_column_value') {
+          if (rule.triggerColumn === 'status' && columnType === 'color') return true
+          if (rule.triggerColumn === 'person' && columnType === 'multiple-person') return true
+          if (rule.triggerColumn === 'date' && columnType === 'date') return true
+        }
+
+        return false
+      })
+
+      console.log(`✅ Found ${matchingRules.length} matching rules`)
+
+      // تنفيذ كل قاعدة مطابقة
+      for (const rule of matchingRules) {
+        await this.executeRule(rule, webhookData)
+      }
+
+      return { success: true, rulesExecuted: matchingRules.length }
+    } catch (error) {
+      console.error('Error processing webhook:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * تنفيذ قاعدة أتمتة
+   * @param {Object} rule - القاعدة المراد تنفيذها
+   * @param {Object} data - بيانات الحدث
+   */
+  async executeRule(rule, data) {
+    try {
+      console.log(`🎯 Executing rule: ${rule.name}`)
+
+      if (rule.action === 'send_whatsapp') {
+        await this.sendWhatsAppNotification(rule, data)
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error(`Error executing rule ${rule.id}:`, error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * إرسال إشعار واتساب
+   * @param {Object} rule - قاعدة الأتمتة
+   * @param {Object} data - بيانات المهمة
+   */
+  async sendWhatsAppNotification(rule, data) {
+    try {
+      // استخراج رقم الموظف من البيانات (async now!)
+      const phoneNumber = await this.extractPhoneNumber(data)
+      if (!phoneNumber) {
+        console.log('⚠️  No phone number found, skipping WhatsApp send')
+        return { success: false, message: 'No phone number' }
+      }
+
+      // استخراج اسم الموظف
+      const assigneeName = this.extractAssigneeName(data)
+
+      // إنشاء الرسالة بناءً على القالب
+      const message = this.generateMessage(rule.messageTemplate, data, assigneeName)
+
+      // التحقق من إعدادات Ultra MSG
+      const config = this.getUltraMsgConfig()
+      if (!config) {
+        console.log('⚠️  Ultra MSG not configured')
+        return { success: false, message: 'Ultra MSG not configured' }
+      }
+
+      // تهيئة Ultra MSG
+      ultraMsgService.configure(config.apiUrl, config.instanceId, config.token)
+
+      // إرسال الرسالة
+      console.log(`📤 Sending WhatsApp to ${phoneNumber}`)
+      const response = await ultraMsgService.sendMessage(phoneNumber, message)
+
+      console.log('📨 WhatsApp Response:', response)
+      return response
+
+    } catch (error) {
+      console.error('Error sending WhatsApp notification:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * استخراج رقم الهاتف من بيانات Monday
+   * يستخدم Monday API لجلب بيانات المهمة كاملة إذا لم يكن الرقم موجود في webhook
+   */
+  async extractPhoneNumber(data) {
+    console.log('🔍 Extracting phone number from data:', data)
+
+    // 1. محاولة استخراج رقم مباشر من البيانات
+    if (data.phoneNumber) {
+      console.log('✅ Found phoneNumber:', data.phoneNumber)
+      return data.phoneNumber
+    }
+    if (data.assigneePhone) {
+      console.log('✅ Found assigneePhone:', data.assigneePhone)
+      return data.assigneePhone
+    }
+
+    // 2. محاولة استخراجه من column values (عمود رقم الهاتف في Monday)
+    if (data.columnValues) {
+      const phoneCol = data.columnValues.find(col =>
+        col.type === 'phone' ||
+        col.title?.toLowerCase().includes('phone') ||
+        col.title?.toLowerCase().includes('واتساب') ||
+        col.title?.toLowerCase().includes('جوال') ||
+        col.title?.toLowerCase().includes('whatsapp')
+      )
+      if (phoneCol) {
+        const phone = phoneCol.text || phoneCol.value
+        if (phone && phone.trim()) {
+          console.log('✅ Found phone in columnValues:', phone)
+          return phone.trim()
+        }
+      }
+    }
+
+    // 3. إذا لم نجد الرقم في webhook، نجيب بيانات المهمة من Monday API
+    if (data.pulseId || data.itemId) {
+      const itemId = data.pulseId || data.itemId
+      console.log('📡 Fetching full item data from Monday API for itemId:', itemId)
+
+      try {
+        const fullItem = await getItem(itemId)
+
+        if (fullItem && fullItem.column_values) {
+          // ابحث عن عمود الهاتف في البيانات الكاملة
+          const phoneCol = fullItem.column_values.find(col =>
+            col.type === 'phone' ||
+            col.title?.toLowerCase().includes('phone') ||
+            col.title?.toLowerCase().includes('واتساب') ||
+            col.title?.toLowerCase().includes('جوال') ||
+            col.title?.toLowerCase().includes('whatsapp')
+          )
+
+          if (phoneCol) {
+            const phone = phoneCol.text || phoneCol.value
+            if (phone && phone.trim()) {
+              console.log('✅ Found phone from Monday API:', phone)
+              return phone.trim()
+            }
+          }
+
+          console.log('⚠️ No phone column found in item. Available columns:',
+            fullItem.column_values.map(c => `${c.title} (${c.type})`).join(', '))
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch item from Monday API:', error)
+      }
+    }
+
+    // 4. محاولة استخراج userId ثم البحث في leads database (fallback)
+    let userId = data.userId
+
+    // إذا لم يكن userId موجود، حاول استخراجه من column values
+    if (!userId && data.columnValues) {
+      const personCol = data.columnValues.find(col =>
+        col.type === 'multiple-person' || col.type === 'person'
+      )
+      if (personCol && personCol.value) {
+        try {
+          const parsed = JSON.parse(personCol.value)
+          if (parsed.personsAndTeams && parsed.personsAndTeams.length > 0) {
+            userId = parsed.personsAndTeams[0].id
+            console.log('📌 Extracted userId from person column:', userId)
+          }
+        } catch (e) {
+          console.log('⚠️ Failed to parse person column value')
+        }
+      }
+    }
+
+    // البحث في leads database باستخدام userId
+    if (userId) {
+      const lead = this.findLeadById(userId)
+      if (lead && lead.phone) {
+        console.log('✅ Found phone in leads database:', lead.phone, 'for user:', lead.name)
+        return lead.phone
+      }
+    }
+
+    console.log('❌ No phone number found in any source')
+    return null
+  }
+
+  /**
+   * استخراج اسم الموظف من بيانات Monday
+   */
+  extractAssigneeName(data) {
+    if (data.assigneeName) return data.assigneeName
+    if (data.personName) return data.personName
+
+    // محاولة استخراجه من column values
+    if (data.columnValues) {
+      const personCol = data.columnValues.find(col =>
+        col.type === 'multiple-person' || col.type === 'person'
+      )
+      if (personCol) {
+        try {
+          const parsed = JSON.parse(personCol.value)
+          if (parsed.personsAndTeams && parsed.personsAndTeams.length > 0) {
+            return parsed.personsAndTeams[0].name
+          }
+        } catch (e) {
+          return personCol.text
+        }
+      }
+    }
+
+    return 'الموظف'
+  }
+
+  /**
+   * إنشاء رسالة بناءً على القالب
+   */
+  generateMessage(template, data, assigneeName) {
+    const taskName = data.pulseName || data.itemName || 'المهمة'
+    const boardName = data.boardName || 'البورد'
+    const status = data.statusText || data.value || 'غير محدد'
+
+    const templates = {
+      status_change: `هلا وغلا ${assigneeName} 😊✨
+
+في تحديث جديد على مهمتك:
+
+📋 المهمة: ${taskName}
+🏢 القسم: ${boardName}
+✅ الحالة الجديدة: ${status}
+
+شكراً على متابعتك المستمرة! 💪`,
+
+      task_assigned: `هلا وغلا ${assigneeName} 😃🎯
+
+تم تعيينك على مهمة جديدة! نحن واثقين من قدرتك على إنجازها بتميز 💪✨
+
+📋 المهمة: ${taskName}
+🏢 اللوحة: ${boardName}
+📁 المجموعة: ${data.group || 'غير محدد'}
+⏰ تاريخ التسليم: ${data.dueDate || 'غير محدد'}
+✅ الحالة: ${status}
+
+بالتوفيق! نحن معك 🚀`,
+
+      deadline_reminder: `مرحباً ${assigneeName} ⏰✨
+
+تذكير ودي: موعد تسليم مهمتك غداً!
+
+📋 المهمة: ${taskName}
+🏢 القسم: ${boardName}
+⏰ باقي: يوم واحد فقط
+
+إذا تحتاج أي مساعدة، لا تتردد! 🤝
+نثق في قدرتك على الإنجاز 💪`,
+
+      task_overdue: `عزيزي ${assigneeName} ⚠️
+
+نود تذكيرك بمهمة متأخرة تحتاج لمتابعتك:
+
+📋 المهمة: ${taskName}
+🏢 القسم: ${boardName}
+🎨 الحالة: ${status}
+
+نعلم أن لديك التزامات كثيرة، لكن هذه المهمة مهمة 🔴
+إذا تواجه أي صعوبات، تواصل معنا!
+
+نحن هنا لدعمك 🤝`,
+
+      file_added: `مرحباً ${assigneeName} 📎✨
+
+تم إضافة ملف جديد لمهمتك من قِبل ${data.uploadedBy || 'أحد الأعضاء'}:
+
+📋 المهمة: ${taskName}
+🏢 القسم: ${boardName}
+📁 المجموعة: ${data.group || 'غير محدد'}
+📄 الملف: ${data.fileUrl || 'رابط الملف'}
+
+ياليت تطلع عليه وقت تقدر 👀`,
+
+      date_overdue: `${assigneeName} العزيز 🚨
+
+للأسف، مهمتك تجاوزت تاريخ التسليم المحدد:
+
+📋 المهمة: ${taskName}
+📂 القسم: ${boardName}
+⏰ متأخرة بـ: ${data.daysOverdue || '1'} ${data.daysOverdue === 1 ? 'يوم' : 'أيام'}
+🎨 الحالة: ${status}
+
+⚠️ التأخير يؤثر على سير العمل الجماعي
+نتمنى المتابعة السريعة قدر الإمكان
+
+إذا تحتاج مساعدة، نحن هنا! 🤝`,
+
+      task_completed: `أحسنت ${assigneeName}! 🎉✨
+
+تم إنجاز المهمة بنجاح! نفتخر بإنجازك 💪🌟
+
+📋 المهمة: ${taskName}
+🏢 القسم: ${boardName}
+✅ الحالة: مكتملة
+📅 تم الإنجاز: ${new Date().toLocaleDateString('ar-SA')}
+
+شكراً على جهودك وتفانيك!
+أنت عضو قيّم في الفريق 🚀❤️
+
+إلى الأمام نحو مزيد من الإنجازات! 💫`
+    }
+
+    return templates[template] || templates.status_change
+  }
+
+  /**
+   * الحصول على إعدادات Ultra MSG
+   */
+  getUltraMsgConfig() {
+    try {
+      const config = localStorage.getItem('ultramsg_config')
+      return config ? JSON.parse(config) : null
+    } catch (error) {
+      return null
+    }
+  }
+
+  /**
+   * إضافة قاعدة أتمتة جديدة
+   */
+  addRule(rule) {
+    this.automationRules.push({
+      ...rule,
+      id: `wa-${Date.now()}`
+    })
+    this.saveAutomationRules()
+  }
+
+  /**
+   * تحديث قاعدة أتمتة
+   */
+  updateRule(ruleId, updates) {
+    const index = this.automationRules.findIndex(r => r.id === ruleId)
+    if (index !== -1) {
+      this.automationRules[index] = { ...this.automationRules[index], ...updates }
+      this.saveAutomationRules()
+    }
+  }
+
+  /**
+   * حذف قاعدة أتمتة
+   */
+  deleteRule(ruleId) {
+    this.automationRules = this.automationRules.filter(r => r.id !== ruleId)
+    this.saveAutomationRules()
+  }
+
+  /**
+   * تفعيل/تعطيل قاعدة
+   */
+  toggleRule(ruleId) {
+    const rule = this.automationRules.find(r => r.id === ruleId)
+    if (rule) {
+      rule.active = !rule.active
+      this.saveAutomationRules()
+    }
+  }
+
+  /**
+   * الحصول على جميع القواعد
+   */
+  getRules() {
+    return this.automationRules
+  }
+}
+
+// إنشاء instance واحد
+const mondayWebhookService = new MondayWebhookService()
+
+export default mondayWebhookService
