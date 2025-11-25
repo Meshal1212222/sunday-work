@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Bot, Power, Key, UserPlus, Trash2, MessageCircle, CheckCircle, AlertCircle, Download, RefreshCw } from 'lucide-react'
 import whatsappBot from '../services/whatsappBot'
 import sundayDataStore from '../services/sundayDataStore'
-import localDataStore from '../services/localDataStore'
 import './WhatsAppBot.css'
 
 export default function WhatsAppBot() {
@@ -48,29 +47,15 @@ export default function WhatsAppBot() {
     loadSettings()
   }
 
-  const handleImportFromMonday = async () => {
+  const handleBackupToFirebase = async () => {
     setImporting(true)
     try {
-      // سحب البيانات من Monday أولاً
-      const syncResult = await localDataStore.syncAllDataFromMonday()
-
-      if (syncResult.success) {
-        // استيراد البيانات إلى Sunday
-        const mondayData = {
-          boards: localDataStore.getBoards(),
-          items: localDataStore.getItems()
-        }
-
-        const importResult = await sundayDataStore.importFromMonday(mondayData)
-
-        if (importResult.success) {
-          alert(`✅ تم الاستيراد بنجاح!\n📊 بوردات: ${importResult.boardsImported}\n📋 مهام: ${importResult.itemsImported}`)
-          loadSettings()
-        } else {
-          alert(`❌ فشل الاستيراد: ${importResult.error}`)
-        }
+      const result = await sundayDataStore.manualBackupToFirebase()
+      if (result.success) {
+        alert('✅ تم النسخ الاحتياطي بنجاح!')
+        loadSettings()
       } else {
-        alert(`❌ فشل السحب من Monday: ${syncResult.error}`)
+        alert(`❌ فشل النسخ الاحتياطي: ${result.error}`)
       }
     } catch (error) {
       alert(`❌ خطأ: ${error.message}`)
@@ -178,23 +163,23 @@ export default function WhatsAppBot() {
 
       {/* Import from Monday */}
       <div className="config-card">
-        <h3><Download size={20} /> استيراد بيانات Monday</h3>
-        <p>سحب كل البوردات والمهام من Monday قبل إقفال API</p>
+        <h3><Download size={20} /> نسخ احتياطي للبيانات</h3>
+        <p>حفظ نسخة احتياطية من البيانات في Firebase</p>
 
         <button
           className="import-btn"
-          onClick={handleImportFromMonday}
+          onClick={handleBackupToFirebase}
           disabled={importing}
         >
           {importing ? (
             <>
               <RefreshCw size={20} className="spin" />
-              <span>جاري الاستيراد...</span>
+              <span>جاري النسخ الاحتياطي...</span>
             </>
           ) : (
             <>
               <Download size={20} />
-              <span>استيراد من Monday الآن</span>
+              <span>نسخ احتياطي الآن</span>
             </>
           )}
         </button>
