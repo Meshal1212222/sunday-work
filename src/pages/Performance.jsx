@@ -1,83 +1,214 @@
 import { useState, useEffect, useMemo } from 'react'
 import { database } from '../firebase/config'
-import { ref, get } from 'firebase/database'
+import { ref, get, set } from 'firebase/database'
 import {
   BarChart3,
   TrendingUp,
-  TrendingDown,
   Users,
   CheckCircle,
   Clock,
   AlertCircle,
   Filter,
-  Calendar,
   RefreshCw,
   Target,
   Award,
   Zap,
-  PieChart
+  PieChart,
+  Download
 } from 'lucide-react'
 import './Performance.css'
 
+const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
+const MONDAY_API_URL = 'https://api.monday.com/v2'
+
 export default function Performance() {
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
   const [data, setData] = useState({ boards: {}, archives: {} })
   const [selectedBoard, setSelectedBoard] = useState('all')
   const [selectedEmployee, setSelectedEmployee] = useState('all')
-  const [selectedPeriod, setSelectedPeriod] = useState('all')
   const [employees, setEmployees] = useState([])
   const [boards, setBoards] = useState([])
+  const [rawStats, setRawStats] = useState(null)
 
   useEffect(() => {
     loadAllData()
   }, [])
 
+  // سحب البيانات مباشرة من Monday.com
+  const fetchFromMonday = async () => {
+    setSyncing(true)
+    try {
+      // سحب كل البوردات
+      const boardsQuery = `
+        query {
+          boards(limit: 50) {
+            id
+            name
+            items_count
+            groups {
+              id
+              title
+            }
+            items_page(limit: 500) {
+              items {
+                id
+                name
+                state
+                created_at
+                group {
+                  id
+                  title
+                }
+                column_values {
+                  id
+                  type
+                  text
+                  value
+                }
+              }
+            }
+          }
+        }
+      `
+
+      const response = await fetch(MONDAY_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': MONDAY_API_TOKEN
+        },
+        body: JSON.stringify({ query: boardsQuery })
+      })
+
+      const result = await response.json()
+      if (result.errors) throw new Error(result.errors[0].message)
+
+      const mondayBoards = result.data.boards
+      const processedData = {}
+      const allEmployees = new Set()
+      let totalTasks = 0, completedTasks = 0, inProgressTasks = 0, stuckTasks = 0
+
+      mondayBoards.forEach(board => {
+        const boardStats = {
+          id: board.id,
+          name: board.name,
+          total: 0,
+          completed: 0,
+          inProgress: 0,
+          stuck: 0,
+          items: []
+        }
+
+        board.items_page?.items?.forEach(item => {
+          // استخراج الحالة
+          const statusCol = item.column_values?.find(c =>
+            c.type === 'status' || c.type === 'color'
+          )
+          const statusText = statusCol?.text?.toLowerCase() || ''
+
+          // استخراج الشخص المسؤول
+          const personCol = item.column_values?.find(c =>
+            c.type === 'multiple-person' || c.type === 'person'
+          )
+          if (personCol?.text) {
+            personCol.text.split(',').forEach(name => {
+              allEmployees.add(name.trim())
+            })
+          }
+
+          boardStats.total++
+          totalTasks++
+
+          if (statusText.includes('done') || statusText.includes('مكتمل') || statusText.includes('تم')) {
+            boardStats.completed++
+            completedTasks++
+          } else if (statusText.includes('working') || statusText.includes('قيد') || statusText.includes('جاري')) {
+            boardStats.inProgress++
+            inProgressTasks++
+          } else if (statusText.includes('stuck') || statusText.includes('معلق') || statusText.includes('متوقف')) {
+            boardStats.stuck++
+            stuckTasks++
+          }
+
+          boardStats.items.push({
+            id: item.id,
+            name: item.name,
+            status: statusCol?.text || 'جديد',
+            assignee: personCol?.text || 'غير معين',
+            createdAt: item.created_at
+          })
+        })
+
+        processedData[board.id] = boardStats
+      })
+
+      // حفظ في Firebase
+      const performanceRef = ref(database, 'performance')
+      await set(performanceRef, {
+        boards: processedData,
+        summary: {
+          total: totalTasks,
+          completed: completedTasks,
+          inProgress: inProgressTasks,
+          stuck: stuckTasks,
+          productivity: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+        },
+        lastUpdated: Date.now()
+      })
+
+      setRawStats({
+        total: totalTasks,
+        completed: completedTasks,
+        inProgress: inProgressTasks,
+        stuck: stuckTasks,
+        productivity: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+        boardsData: processedData
+      })
+
+      setBoards(mondayBoards.map(b => ({ id: b.id, name: b.name })))
+      setEmployees(Array.from(allEmployees))
+
+      console.log('✅ تم سحب البيانات من Monday.com')
+
+    } catch (err) {
+      console.error('Error fetching from Monday:', err)
+    }
+    setSyncing(false)
+    setLoading(false)
+  }
+
   const loadAllData = async () => {
     try {
       setLoading(true)
 
-      // تحميل البوردات
-      const boardsRef = ref(database, 'boards')
-      const boardsSnapshot = await get(boardsRef)
-      const boardsData = boardsSnapshot.exists() ? boardsSnapshot.val() : {}
+      // محاولة تحميل من Firebase أولاً
+      const performanceRef = ref(database, 'performance')
+      const snapshot = await get(performanceRef)
 
-      // تحميل الأرشيف
-      const archivesRef = ref(database, 'archives')
-      const archivesSnapshot = await get(archivesRef)
-      const archivesData = archivesSnapshot.exists() ? archivesSnapshot.val() : {}
+      if (snapshot.exists()) {
+        const perfData = snapshot.val()
+        setRawStats({
+          ...perfData.summary,
+          boardsData: perfData.boards
+        })
+        setBoards(Object.values(perfData.boards || {}).map(b => ({ id: b.id, name: b.name })))
 
-      setData({ boards: boardsData, archives: archivesData })
-
-      // استخراج قائمة البوردات
-      const boardsList = Object.entries(boardsData)
-        .filter(([key]) => key !== 'lastUpdated')
-        .map(([id, data]) => ({
-          id,
-          name: data.board?.name || `بورد ${id}`
-        }))
-      setBoards(boardsList)
-
-      // استخراج قائمة الموظفين
-      const employeesSet = new Set()
-      Object.values(boardsData).forEach(boardData => {
-        if (boardData.itemsByGroup) {
-          Object.values(boardData.itemsByGroup).forEach(items => {
-            if (Array.isArray(items)) {
-              items.forEach(item => {
-                const personCol = item.columnValues?.find(c =>
-                  c.type === 'multiple-person' || c.type === 'person'
-                )
-                if (personCol?.text) {
-                  employeesSet.add(personCol.text)
-                }
-              })
+        // استخراج الموظفين
+        const allEmployees = new Set()
+        Object.values(perfData.boards || {}).forEach(board => {
+          board.items?.forEach(item => {
+            if (item.assignee && item.assignee !== 'غير معين') {
+              item.assignee.split(',').forEach(name => allEmployees.add(name.trim()))
             }
           })
-        }
-      })
-      setEmployees(Array.from(employeesSet))
-
-      setLoading(false)
+        })
+        setEmployees(Array.from(allEmployees))
+        setLoading(false)
+      } else {
+        // لا توجد بيانات - سحب من Monday مباشرة
+        await fetchFromMonday()
+      }
     } catch (err) {
       console.error('Error loading data:', err)
       setLoading(false)
@@ -85,94 +216,65 @@ export default function Performance() {
   }
 
   // حساب الإحصائيات المفلترة
-  const stats = useMemo(() => {
+  const filteredStats = useMemo(() => {
+    if (!rawStats?.boardsData) return rawStats
+
     let total = 0, completed = 0, inProgress = 0, stuck = 0
     const employeeStats = {}
-    const boardStats = {}
-    const monthlyTrend = {}
+    const filteredBoards = []
 
-    // معالجة البوردات الحالية
-    Object.entries(data.boards).forEach(([boardId, boardData]) => {
-      if (boardId === 'lastUpdated') return
-      if (selectedBoard !== 'all' && boardId !== selectedBoard) return
+    Object.values(rawStats.boardsData).forEach(board => {
+      if (selectedBoard !== 'all' && board.id !== selectedBoard) return
 
-      const boardName = boardData.board?.name || `بورد ${boardId}`
-      if (!boardStats[boardId]) {
-        boardStats[boardId] = { name: boardName, total: 0, completed: 0, inProgress: 0, stuck: 0 }
-      }
+      let boardTotal = 0, boardCompleted = 0, boardInProgress = 0, boardStuck = 0
 
-      if (boardData.itemsByGroup) {
-        Object.values(boardData.itemsByGroup).forEach(items => {
-          if (Array.isArray(items)) {
-            items.forEach(item => {
-              // فلترة بالموظف
-              const personCol = item.columnValues?.find(c =>
-                c.type === 'multiple-person' || c.type === 'person'
-              )
-              const assignee = personCol?.text || 'غير معين'
+      board.items?.forEach(item => {
+        // فلترة بالموظف
+        if (selectedEmployee !== 'all' && !item.assignee?.includes(selectedEmployee)) return
 
-              if (selectedEmployee !== 'all' && assignee !== selectedEmployee) return
+        const statusLower = item.status?.toLowerCase() || ''
 
-              // إحصائيات الموظف
-              if (!employeeStats[assignee]) {
-                employeeStats[assignee] = { total: 0, completed: 0, inProgress: 0, stuck: 0 }
-              }
+        boardTotal++
+        total++
 
-              const statusCol = item.columnValues?.find(c => c.type === 'status' || c.type === 'color')
-              const status = statusCol?.text?.toLowerCase() || ''
+        if (statusLower.includes('done') || statusLower.includes('مكتمل') || statusLower.includes('تم')) {
+          boardCompleted++
+          completed++
+        } else if (statusLower.includes('working') || statusLower.includes('قيد') || statusLower.includes('جاري')) {
+          boardInProgress++
+          inProgress++
+        } else if (statusLower.includes('stuck') || statusLower.includes('معلق')) {
+          boardStuck++
+          stuck++
+        }
 
-              total++
-              boardStats[boardId].total++
-              employeeStats[assignee].total++
-
-              if (status.includes('done') || status.includes('مكتمل')) {
-                completed++
-                boardStats[boardId].completed++
-                employeeStats[assignee].completed++
-              } else if (status.includes('working') || status.includes('قيد')) {
-                inProgress++
-                boardStats[boardId].inProgress++
-                employeeStats[assignee].inProgress++
-              } else if (status.includes('stuck') || status.includes('معلق')) {
-                stuck++
-                boardStats[boardId].stuck++
-                employeeStats[assignee].stuck++
-              }
-            })
+        // إحصائيات الموظفين
+        const assignees = item.assignee?.split(',') || ['غير معين']
+        assignees.forEach(emp => {
+          const name = emp.trim()
+          if (!employeeStats[name]) {
+            employeeStats[name] = { total: 0, completed: 0, inProgress: 0, stuck: 0 }
+          }
+          employeeStats[name].total++
+          if (statusLower.includes('done') || statusLower.includes('مكتمل')) {
+            employeeStats[name].completed++
           }
         })
-      }
+      })
+
+      filteredBoards.push({
+        ...board,
+        total: boardTotal,
+        completed: boardCompleted,
+        inProgress: boardInProgress,
+        stuck: boardStuck,
+        productivity: boardTotal > 0 ? Math.round((boardCompleted / boardTotal) * 100) : 0
+      })
     })
-
-    // معالجة الأرشيف للـ trend
-    Object.entries(data.archives).forEach(([monthKey, monthData]) => {
-      if (monthKey === 'lastUpdated') return
-
-      let monthTotal = 0, monthCompleted = 0
-
-      if (monthData.boards) {
-        Object.values(monthData.boards).forEach(board => {
-          if (selectedBoard !== 'all' && board.id !== selectedBoard) return
-          monthTotal += board.stats?.total || 0
-          monthCompleted += board.stats?.completed || 0
-        })
-      }
-
-      if (monthTotal > 0) {
-        monthlyTrend[monthKey] = {
-          month: monthData.monthName,
-          year: monthData.year,
-          total: monthTotal,
-          completed: monthCompleted,
-          productivity: Math.round((monthCompleted / monthTotal) * 100)
-        }
-      }
-    })
-
-    const productivity = total > 0 ? Math.round((completed / total) * 100) : 0
 
     // ترتيب الموظفين حسب الإنتاجية
     const topEmployees = Object.entries(employeeStats)
+      .filter(([name]) => name !== 'غير معين')
       .map(([name, stats]) => ({
         name,
         ...stats,
@@ -181,30 +283,16 @@ export default function Performance() {
       .sort((a, b) => b.productivity - a.productivity)
       .slice(0, 10)
 
-    // ترتيب البوردات حسب المهام
-    const topBoards = Object.entries(boardStats)
-      .map(([id, stats]) => ({
-        id,
-        ...stats,
-        productivity: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0
-      }))
-      .sort((a, b) => b.total - a.total)
-
     return {
       total,
       completed,
       inProgress,
       stuck,
-      productivity,
+      productivity: total > 0 ? Math.round((completed / total) * 100) : 0,
       topEmployees,
-      topBoards,
-      monthlyTrend: Object.values(monthlyTrend).sort((a, b) => {
-        const dateA = `${a.year}-${a.month}`
-        const dateB = `${b.year}-${b.month}`
-        return dateB.localeCompare(dateA)
-      })
+      topBoards: filteredBoards.sort((a, b) => b.total - a.total)
     }
-  }, [data, selectedBoard, selectedEmployee])
+  }, [rawStats, selectedBoard, selectedEmployee])
 
   if (loading) {
     return (
@@ -214,6 +302,8 @@ export default function Performance() {
       </div>
     )
   }
+
+  const stats = filteredStats || { total: 0, completed: 0, inProgress: 0, stuck: 0, productivity: 0, topEmployees: [], topBoards: [] }
 
   return (
     <div className="performance-page">
@@ -255,8 +345,13 @@ export default function Performance() {
             </select>
           </div>
 
-          <button className="refresh-btn" onClick={loadAllData}>
-            <RefreshCw size={18} />
+          <button
+            className="sync-btn"
+            onClick={fetchFromMonday}
+            disabled={syncing}
+          >
+            {syncing ? <RefreshCw className="spinning" size={18} /> : <Download size={18} />}
+            <span>{syncing ? 'جاري السحب...' : 'تحديث البيانات'}</span>
           </button>
         </div>
       </div>
@@ -346,10 +441,10 @@ export default function Performance() {
             <h2>أفضل الموظفين</h2>
           </div>
           <div className="employees-list">
-            {stats.topEmployees.length === 0 ? (
-              <p className="empty-message">لا توجد بيانات</p>
+            {stats.topEmployees?.length === 0 ? (
+              <p className="empty-message">لا توجد بيانات - اضغط "تحديث البيانات"</p>
             ) : (
-              stats.topEmployees.map((emp, index) => (
+              stats.topEmployees?.map((emp, index) => (
                 <div key={emp.name} className="employee-item">
                   <div className="employee-rank">
                     {index < 3 ? (
@@ -389,10 +484,10 @@ export default function Performance() {
             <h2>أداء البوردات</h2>
           </div>
           <div className="boards-list">
-            {stats.topBoards.length === 0 ? (
-              <p className="empty-message">لا توجد بيانات</p>
+            {stats.topBoards?.length === 0 ? (
+              <p className="empty-message">لا توجد بيانات - اضغط "تحديث البيانات"</p>
             ) : (
-              stats.topBoards.map(board => (
+              stats.topBoards?.map(board => (
                 <div key={board.id} className="board-item">
                   <div className="board-name">{board.name}</div>
                   <div className="board-progress">
@@ -417,34 +512,6 @@ export default function Performance() {
                   <div className="board-numbers">
                     <span>{board.completed}/{board.total}</span>
                     <span className="productivity">{board.productivity}%</span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Monthly Trend */}
-        <div className="performance-section trend-section">
-          <div className="section-header">
-            <TrendingUp size={20} />
-            <h2>الأداء الشهري</h2>
-          </div>
-          <div className="trend-chart">
-            {stats.monthlyTrend.length === 0 ? (
-              <p className="empty-message">لا توجد بيانات. اذهب للأرشيف لسحب البيانات.</p>
-            ) : (
-              stats.monthlyTrend.slice(0, 6).map((month, index) => (
-                <div key={`${month.year}-${month.month}`} className="trend-bar">
-                  <div className="trend-bar-container">
-                    <div
-                      className="trend-bar-fill"
-                      style={{ height: `${month.productivity}%` }}
-                    />
-                  </div>
-                  <div className="trend-label">
-                    <span className="month-name">{month.month}</span>
-                    <span className="month-value">{month.productivity}%</span>
                   </div>
                 </div>
               ))
