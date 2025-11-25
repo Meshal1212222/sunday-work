@@ -107,6 +107,65 @@ const DEFAULT_COLUMNS = [
   { id: 'email', title: 'البريد', type: COLUMN_TYPES.EMAIL, width: 180, visible: false }
 ];
 
+// ==================== 🔥 FIREBASE CONFIG ====================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyACk3UhHouKfGsOu3ZJfa0hqLqucumn2UQ",
+  authDomain: "sunday-fb28c.firebaseapp.com",
+  databaseURL: "https://sunday-fb28c-default-rtdb.firebaseio.com",
+  projectId: "sunday-fb28c",
+  storageBucket: "sunday-fb28c.firebasestorage.app",
+  messagingSenderId: "24752239756",
+  appId: "1:24752239756:web:386c2c72624eb67ba337a9"
+};
+
+// Initialize Firebase (if not already)
+let firebaseApp = null;
+let firebaseDb = null;
+
+function initFirebase() {
+  if (!firebaseApp && typeof firebase !== 'undefined') {
+    firebaseApp = firebase.initializeApp(FIREBASE_CONFIG);
+    firebaseDb = firebase.database();
+    console.log('🔥 Firebase initialized');
+  }
+}
+
+// حفظ البيانات في Firebase
+async function saveBoardToFirebase(boardId, data) {
+  try {
+    initFirebase();
+    if (!firebaseDb) return;
+
+    await firebaseDb.ref(`boards/${boardId}`).set({
+      ...data,
+      lastUpdated: Date.now()
+    });
+    console.log('💾 تم حفظ البيانات في Firebase');
+  } catch (error) {
+    console.error('❌ خطأ في حفظ Firebase:', error);
+  }
+}
+
+// تحميل البيانات من Firebase
+async function loadBoardFromFirebase(boardId) {
+  try {
+    initFirebase();
+    if (!firebaseDb) return null;
+
+    const snapshot = await firebaseDb.ref(`boards/${boardId}`).once('value');
+    const data = snapshot.val();
+
+    if (data) {
+      console.log('📦 تم تحميل البيانات من Firebase');
+      return data;
+    }
+    return null;
+  } catch (error) {
+    console.error('❌ خطأ في تحميل Firebase:', error);
+    return null;
+  }
+}
+
 // ==================== 🔗 MONDAY.COM API ====================
 const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I';
 const MONDAY_API_URL = 'https://api.monday.com/v2';
@@ -307,27 +366,64 @@ const SundayBoardPro = () => {
   const [error, setError] = useState(null);
   const [showBoardSelector, setShowBoardSelector] = useState(false);
   const [groups, setGroups] = useState([]);
+  const [dataSource, setDataSource] = useState(''); // 'firebase' or 'monday'
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  // Load board from Monday.com
-  const loadBoardFromMonday = async (boardId) => {
+  // Load board - Firebase first, then Monday.com
+  const loadBoard = async (boardId, forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
-      console.log('📥 جاري سحب البيانات من Monday.com...', boardId);
 
+      // 1. Try Firebase first (unless force refresh)
+      if (!forceRefresh) {
+        console.log('📦 جاري تحميل البيانات من Firebase...');
+        const cachedData = await loadBoardFromFirebase(boardId);
+
+        if (cachedData && cachedData.groups) {
+          console.log('✅ تم تحميل البيانات من Firebase');
+          setGroups(cachedData.groups);
+          setBoardName(cachedData.name);
+          setSelectedBoardId(boardId);
+          setDataSource('firebase');
+          setLastUpdated(cachedData.lastUpdated);
+          setLoading(false);
+          setShowBoardSelector(false);
+          return;
+        }
+      }
+
+      // 2. Fetch from Monday.com
+      console.log('📥 جاري سحب البيانات من Monday.com...', boardId);
       const mondayBoard = await fetchBoardFromMonday(boardId);
-      console.log('✅ تم سحب البيانات:', mondayBoard);
+      console.log('✅ تم سحب البيانات من Monday:', mondayBoard);
 
       const transformedGroups = transformMondayData(mondayBoard);
+
+      // 3. Save to Firebase
+      await saveBoardToFirebase(boardId, {
+        name: mondayBoard.name,
+        groups: transformedGroups
+      });
+
       setGroups(transformedGroups);
       setBoardName(mondayBoard.name);
       setSelectedBoardId(boardId);
+      setDataSource('monday');
+      setLastUpdated(Date.now());
       setLoading(false);
       setShowBoardSelector(false);
     } catch (err) {
       console.error('❌ خطأ في التحميل:', err);
       setError(err.message);
       setLoading(false);
+    }
+  };
+
+  // Refresh from Monday.com
+  const refreshFromMonday = () => {
+    if (selectedBoardId) {
+      loadBoard(selectedBoardId, true);
     }
   };
 
@@ -394,7 +490,7 @@ const SundayBoardPro = () => {
           {AVAILABLE_BOARDS.map(board => (
             <button
               key={board.id}
-              onClick={() => loadBoardFromMonday(board.id)}
+              onClick={() => loadBoard(board.id)}
               style={{
                 padding: '16px 20px',
                 border: '1px solid #e5e7eb',
