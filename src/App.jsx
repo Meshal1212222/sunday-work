@@ -18,6 +18,7 @@ import WhatsAppGroupsTest from './pages/WhatsAppGroupsTest'
 import ZapierImport from './pages/ZapierImport'
 import ManualZapCopy from './pages/ManualZapCopy'
 import DataSync from './pages/DataSync'
+import SyncAll from './pages/SyncAll'
 import WhatsAppBot from './pages/WhatsAppBot'
 import MyWork from './pages/MyWork'
 
@@ -60,6 +61,7 @@ function AppRoutes() {
           <Route path="/zapier-import" element={<ZapierImport />} />
           <Route path="/manual-zap-copy" element={<ManualZapCopy />} />
           <Route path="/data-sync" element={<DataSync />} />
+          <Route path="/sync-all" element={<SyncAll />} />
           <Route path="/help" element={<Help />} />
         </Route>
 
