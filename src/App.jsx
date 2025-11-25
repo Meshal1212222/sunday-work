@@ -21,6 +21,8 @@ import DataSync from './pages/DataSync'
 import SyncAll from './pages/SyncAll'
 import WhatsAppBot from './pages/WhatsAppBot'
 import MyWork from './pages/MyWork'
+import Archive from './pages/Archive'
+import Performance from './pages/Performance'
 
 // Layouts
 import MainLayout from './layouts/MainLayout'
@@ -62,6 +64,8 @@ function AppRoutes() {
           <Route path="/manual-zap-copy" element={<ManualZapCopy />} />
           <Route path="/data-sync" element={<DataSync />} />
           <Route path="/sync-all" element={<SyncAll />} />
+          <Route path="/archive" element={<Archive />} />
+          <Route path="/performance" element={<Performance />} />
           <Route path="/help" element={<Help />} />
         </Route>
 

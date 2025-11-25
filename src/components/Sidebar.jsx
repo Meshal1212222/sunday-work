@@ -17,7 +17,9 @@ import {
   Copy,
   Database,
   Bot,
-  CheckSquare
+  CheckSquare,
+  Archive,
+  BarChart3
 } from 'lucide-react'
 import { mockWorkspaces, mockBoards } from '../data/mockData'
 import './Sidebar.css'
@@ -92,16 +94,14 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   const navItems = [
     { icon: LayoutDashboard, label: 'لوحة التحكم', path: '/dashboard' },
+    { icon: BarChart3, label: 'مراقبة الأداء', path: '/performance' },
     { icon: CheckSquare, label: 'مهامي', path: '/my-work' },
+    { icon: Archive, label: 'الأرشيف الشهري', path: '/archive' },
     { icon: Bot, label: 'WhatsApp AI Bot', path: '/whatsapp-bot' },
     { icon: Zap, label: 'الأتمتة', path: '/automations' },
-    { icon: Download, label: 'استيراد من Zapier', path: '/zapier-import' },
-    { icon: Copy, label: 'نسخ Zap يدوياً', path: '/manual-zap-copy' },
-    { icon: Database, label: 'الأرشيف والمزامنة', path: '/data-sync' },
+    { icon: Database, label: 'سحب كل البيانات', path: '/sync-all' },
     { icon: Users, label: 'الفريق', path: '/team' },
     { icon: Settings, label: 'الإعدادات', path: '/settings' },
-    { icon: MessageCircle, label: 'اختبار واتساب', path: '/whatsapp-test' },
-    { icon: Users, label: 'مجموعات واتساب', path: '/whatsapp-groups' },
     { icon: HelpCircle, label: 'المساعدة', path: '/help' },
   ]
 
