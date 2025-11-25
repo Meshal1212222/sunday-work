@@ -1,10 +1,12 @@
-import { Menu, Bell, Search, MessageSquare, LogOut, Trash2 } from 'lucide-react'
+import { Menu, Bell, Search, MessageSquare, LogOut, Trash2, Zap, Layout } from 'lucide-react'
 import { useAuth, forceCompleteLogout } from '../contexts/AuthContext'
+import { useTheme, THEMES } from '../contexts/ThemeContext'
 import { logoutUser } from '../firebase/auth'
 import './Header.css'
 
 export default function Header({ toggleSidebar }) {
   const { userData } = useAuth()
+  const { theme, toggleTheme, isPro } = useTheme()
 
   const handleLogout = async () => {
     if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
@@ -52,6 +54,16 @@ export default function Header({ toggleSidebar }) {
       </div>
 
       <div className="header-left">
+        {/* Theme Toggle Button */}
+        <button
+          className={`theme-toggle-btn ${isPro ? 'pro' : 'classic'}`}
+          onClick={toggleTheme}
+          title={isPro ? 'التبديل إلى Classic' : 'التبديل إلى Pro'}
+        >
+          {isPro ? <Zap size={16} /> : <Layout size={16} />}
+          <span>{isPro ? 'Pro' : 'Classic'}</span>
+        </button>
+
         <button className="icon-button" title="الرسائل">
           <MessageSquare size={20} />
           <span className="notification-badge">3</span>

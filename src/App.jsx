@@ -27,6 +27,7 @@ import MainLayout from './layouts/MainLayout'
 // Context
 import { WorkspaceProvider } from './context/WorkspaceContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 
 function AppRoutes() {
   const { isAuthenticated } = useAuth()
@@ -76,11 +77,13 @@ function App() {
   }
 
   return (
-    <AuthProvider>
-      <WorkspaceProvider>
-        <AppRoutes />
-      </WorkspaceProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <WorkspaceProvider>
+          <AppRoutes />
+        </WorkspaceProvider>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 
