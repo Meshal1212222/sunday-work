@@ -11,14 +11,46 @@ import {
   Clock,
   User,
   Trash2,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react'
+import { database } from '../firebase/config'
+import { ref, get, set } from 'firebase/database'
 import sundayDataStore from '../services/sundayDataStore'
 import { getBoardItems } from '../services/mondayService'
 import './BoardView.css'
 
 const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
 const MONDAY_API_URL = 'https://api.monday.com/v2'
+
+// ==================== Firebase Functions ====================
+async function saveBoardToFirebase(boardId, data) {
+  try {
+    const boardRef = ref(database, `boards/${boardId}`)
+    await set(boardRef, {
+      ...data,
+      lastUpdated: Date.now()
+    })
+    console.log('💾 تم حفظ البيانات في Firebase')
+  } catch (error) {
+    console.error('❌ خطأ في حفظ Firebase:', error)
+  }
+}
+
+async function loadBoardFromFirebase(boardId) {
+  try {
+    const boardRef = ref(database, `boards/${boardId}`)
+    const snapshot = await get(boardRef)
+    if (snapshot.exists()) {
+      console.log('📦 تم تحميل البيانات من Firebase')
+      return snapshot.val()
+    }
+    return null
+  } catch (error) {
+    console.error('❌ خطأ في تحميل Firebase:', error)
+    return null
+  }
+}
 
 async function fetchBoardFromMonday(boardId) {
   const query = `
@@ -87,17 +119,36 @@ export default function BoardView() {
   const [dateTimePickerOpen, setDateTimePickerOpen] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [dataSource, setDataSource] = useState('') // 'firebase' or 'monday'
+  const [lastUpdated, setLastUpdated] = useState(null)
 
   useEffect(() => {
     loadBoard()
   }, [boardId])
 
-  const loadBoard = async () => {
+  const loadBoard = async (forceRefresh = false) => {
     try {
       setLoading(true)
       setError(null)
 
-      // جلب البيانات من Monday
+      // 1. جرب Firebase أولاً (إذا مو force refresh)
+      if (!forceRefresh) {
+        console.log('📦 جاري تحميل البيانات من Firebase...')
+        const cachedData = await loadBoardFromFirebase(boardId)
+
+        if (cachedData && cachedData.board && cachedData.itemsByGroup) {
+          console.log('✅ تم تحميل البيانات من Firebase')
+          setBoard(cachedData.board)
+          setGroups(cachedData.board.groups || [])
+          setItems(cachedData.itemsByGroup)
+          setDataSource('firebase')
+          setLastUpdated(cachedData.lastUpdated)
+          setLoading(false)
+          return
+        }
+      }
+
+      // 2. جلب البيانات من Monday
       console.log('📥 جاري سحب البيانات من Monday...', boardId)
       const mondayBoard = await fetchBoardFromMonday(boardId)
 
@@ -188,12 +239,20 @@ export default function BoardView() {
       storeData.items[mondayBoard.id] = allBoardItems
       sundayDataStore.saveData()
 
+      // 3. حفظ في Firebase
+      await saveBoardToFirebase(boardId, {
+        board: transformedBoard,
+        itemsByGroup
+      })
+
       setBoard(transformedBoard)
       setGroups(transformedBoard.groups)
       setItems(itemsByGroup)
+      setDataSource('monday')
+      setLastUpdated(Date.now())
       setLoading(false)
 
-      console.log('✅ تم حفظ البيانات محلياً')
+      console.log('✅ تم حفظ البيانات في Firebase')
 
     } catch (error) {
       console.error('❌ خطأ في تحميل البورد:', error)
@@ -370,6 +429,15 @@ export default function BoardView() {
         </div>
 
         <div className="board-actions">
+          {/* Data Source Indicator */}
+          <div className="data-source-badge" title={lastUpdated ? `آخر تحديث: ${new Date(lastUpdated).toLocaleString('ar-SA')}` : ''}>
+            {dataSource === 'firebase' ? '📦 Firebase' : '☁️ Monday'}
+          </div>
+
+          <button className="board-action-btn" onClick={() => loadBoard(true)} title="تحديث من Monday.com">
+            <RefreshCw size={18} />
+            <span>تحديث</span>
+          </button>
           <button className="board-action-btn">
             <Search size={18} />
             <span>بحث</span>

@@ -46,6 +46,18 @@
 .board-actions {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
+}
+
+/* Data Source Badge */
+.data-source-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
 }
 
 .board-action-btn {
