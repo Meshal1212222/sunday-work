@@ -188,7 +188,10 @@ class SundayDataStore {
       groupId,
       assignee,
       status = 'جديدة',
-      dueDate = null
+      dueDate = null,
+      createdBy = null,
+      createdAt = null,
+      source = 'app'
     } = itemData
 
     const newItem = {
@@ -199,7 +202,9 @@ class SundayDataStore {
       assignee: assignee,
       status: status,
       dueDate: dueDate,
-      created_at: new Date().toISOString(),
+      createdBy: createdBy, // { name, phone, avatar }
+      source: source, // 'app', 'whatsapp', etc
+      created_at: createdAt || new Date().toISOString(),
       updated_at: new Date().toISOString(),
       state: 'active'
     }
@@ -211,7 +216,7 @@ class SundayDataStore {
     this.data.items[boardId].push(newItem)
     this.saveData()
 
-    console.log('✅ Created new item:', newItem.name)
+    console.log('✅ Created new item:', newItem.name, createdBy ? `by ${createdBy.name}` : '')
     return newItem
   }
 

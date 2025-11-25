@@ -120,6 +120,7 @@ class WhatsAppBot {
       const from = webhookData.from // e.g., "966XXXXXXXXX@c.us"
       const message = webhookData.body
       const messageType = webhookData.type
+      const senderName = webhookData.notifyName || webhookData.pushName || 'مستخدم'
 
       // تجاهل الرسائل غير النصية
       if (messageType !== 'chat') {
@@ -134,9 +135,9 @@ class WhatsAppBot {
         return { success: false, message: 'Number not allowed' }
       }
 
-      // معالجة الرسالة
-      console.log(`🤖 Processing message from ${from}: "${message}"`)
-      const response = await this.processMessage(from, message)
+      // معالجة الرسالة مع معلومات المرسل
+      console.log(`🤖 Processing message from ${from} (${senderName}): "${message}"`)
+      const response = await this.processMessage(from, message, senderName)
 
       // إرسال الرد
       if (response.reply) {
@@ -173,12 +174,18 @@ class WhatsAppBot {
   /**
    * معالجة الرسالة بالذكاء الاصطناعي
    */
-  async processMessage(from, message) {
+  async processMessage(from, message, senderName = 'مستخدم') {
     try {
       // تحليل الرسالة بالذكاء الاصطناعي
       const intent = await this.parseMessageWithAI(message)
 
       console.log('🧠 AI Intent:', intent)
+
+      // إضافة معلومات المرسل
+      intent.createdBy = {
+        phone: from.replace('@c.us', ''),
+        name: senderName
+      }
 
       // تنفيذ الأمر بناءً على النية
       let result
@@ -416,7 +423,7 @@ class WhatsAppBot {
    */
   async executeAddTask(intent) {
     try {
-      const { board: boardName, group: groupName, assignee: assigneeName, taskName } = intent
+      const { board: boardName, group: groupName, assignee: assigneeName, taskName, createdBy } = intent
 
       if (!taskName) {
         return {
@@ -449,21 +456,26 @@ class WhatsAppBot {
         }
       }
 
-      // إضافة المهمة
+      // إضافة المهمة مع معلومات المنشئ
       const newItem = sundayDataStore.addItem(board.id, {
         name: taskName,
         groupId: group.id,
         assignee: assigneeName || null,
-        status: 'جديدة'
+        status: 'جديدة',
+        createdBy: createdBy || null,
+        createdAt: new Date().toISOString(),
+        source: 'whatsapp'
       })
+
+      const creatorInfo = createdBy ? `\n👤 *أضافها:* ${createdBy.name}` : ''
 
       return {
         reply: `✅ تم إضافة المهمة بنجاح!
 
 📋 *البورد:* ${board.name}
 📁 *المجموعة:* ${group.title}
-${assigneeName ? `👤 *معين لـ:* ${assigneeName}` : ''}
-✍️ *المهمة:* ${taskName}
+${assigneeName ? `🎯 *معين لـ:* ${assigneeName}` : ''}
+✍️ *المهمة:* ${taskName}${creatorInfo}
 
 🆔 رقم المهمة: ${newItem.id}`
       }
