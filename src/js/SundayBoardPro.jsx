@@ -107,6 +107,41 @@ const DEFAULT_COLUMNS = [
   { id: 'email', title: 'البريد', type: COLUMN_TYPES.EMAIL, width: 180, visible: false }
 ];
 
+// ==================== 🎨 GLOBAL STYLES ====================
+const THEME = {
+  colors: {
+    primary: '#6366f1',
+    primaryDark: '#4f46e5',
+    secondary: '#ec4899',
+    success: '#10b981',
+    warning: '#f59e0b',
+    danger: '#ef4444',
+    dark: '#1e1b4b',
+    light: '#f8fafc',
+    glass: 'rgba(255, 255, 255, 0.85)',
+  },
+  gradients: {
+    primary: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)',
+    secondary: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
+    success: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+    dark: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+    glass: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)',
+    mesh: 'radial-gradient(at 40% 20%, hsla(253,100%,74%,0.3) 0px, transparent 50%), radial-gradient(at 80% 0%, hsla(328,100%,74%,0.3) 0px, transparent 50%), radial-gradient(at 0% 50%, hsla(253,100%,74%,0.2) 0px, transparent 50%)',
+  },
+  shadows: {
+    sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+    md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+    lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+    xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+    glow: '0 0 40px rgba(99, 102, 241, 0.3)',
+    glowPink: '0 0 40px rgba(236, 72, 153, 0.3)',
+  },
+  animations: {
+    bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+    smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  }
+};
+
 // ==================== 🚀 SUNDAY PRO BOARD ====================
 const SundayBoardPro = () => {
   const [selectedView, setSelectedView] = useState('board');
@@ -117,6 +152,7 @@ const SundayBoardPro = () => {
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [columns, setColumns] = useState(DEFAULT_COLUMNS);
+  const [darkMode, setDarkMode] = useState(false);
 
   // Keyboard shortcuts
   useEffect(() => {
