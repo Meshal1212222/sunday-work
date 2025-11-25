@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { ref, onValue, set } from 'firebase/database'
-import { database } from '../firebase'
+import { database } from '../firebase/config'
 import {
   RefreshCw,
   Search,
@@ -48,6 +48,7 @@ import {
   List,
   LayoutGrid
 } from 'lucide-react'
+import BoardChat from '../components/BoardChat'
 import './BoardPro.css'
 
 const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ2MzU3MDU0MSwiYWFpIjoxMSwidWlkIjo3MTc0OTc3MCwiaWFkIjoiMjAyNS0wMS0wOFQxMTo1NjozNC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6Mjc0NjA4NDMsInJnbiI6ImV1YzEifQ.LMpcLUJqpccHB7UVJJKlLiMg5k-4cxPVVmEHOvjQj1M'
@@ -944,6 +945,9 @@ export default function BoardPro() {
           </div>
         </div>
       )}
+
+      {/* Board Chat */}
+      <BoardChat boardId={actualBoardId} boardName={board?.name} />
     </div>
   )
 }
