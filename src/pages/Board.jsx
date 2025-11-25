@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import React from 'react'
-import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun, User, Copy, Check, Mail, MessageCircle, FileText, Activity } from 'lucide-react'
+import { Loader2, ExternalLink, Plus, Settings, ChevronDown, X, Trash2, Moon, Sun, User, Copy, Check, Mail, MessageCircle, FileText, Activity, RefreshCw } from 'lucide-react'
 import TaskModal from '../components/TaskModal'
 import { mockTeamMembers } from '../data/mockData'
 import { initializePresence, subscribeToPresence, generateUserColor, getUserInitials } from '../firebase/presence'
@@ -12,10 +12,41 @@ import { useAuth } from '../contexts/AuthContext'
 import MentionDropdown from '../components/MentionDropdown'
 import ActivityLog from '../components/ActivityLog'
 import WhatsAppNotification from '../components/WhatsAppNotification'
+import { database } from '../firebase/config'
+import { ref, get, set } from 'firebase/database'
 import './Board.css'
 
 const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
 const MONDAY_API_URL = 'https://api.monday.com/v2'
+
+// ==================== Firebase Functions ====================
+async function loadBoardFromFirebase(boardId) {
+  try {
+    const boardRef = ref(database, `mondayBoards/${boardId}`)
+    const snapshot = await get(boardRef)
+    if (snapshot.exists()) {
+      console.log('📦 تم تحميل البيانات من Firebase')
+      return snapshot.val()
+    }
+    return null
+  } catch (error) {
+    console.error('❌ خطأ في تحميل Firebase:', error)
+    return null
+  }
+}
+
+async function saveBoardToFirebase(boardId, data) {
+  try {
+    const boardRef = ref(database, `mondayBoards/${boardId}`)
+    await set(boardRef, {
+      ...data,
+      lastUpdated: Date.now()
+    })
+    console.log('💾 تم حفظ البيانات في Firebase')
+  } catch (error) {
+    console.error('❌ خطأ في حفظ Firebase:', error)
+  }
+}
 
 async function fetchBoardData(boardId) {
   const query = `
@@ -136,19 +167,40 @@ export default function Board() {
   // Activity Log state
   const [showActivityLog, setShowActivityLog] = useState(false)
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true)
-        setError(null)
-        const data = await fetchBoardData(id)
-        setBoard(data)
-      } catch (err) {
-        setError(err.message || 'حدث خطأ')
-      } finally {
-        setLoading(false)
+  const [dataSource, setDataSource] = useState('') // 'firebase' or 'monday'
+
+  const loadData = async (forceRefresh = false) => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // 1. جرب Firebase أولاً
+      if (!forceRefresh) {
+        const cachedData = await loadBoardFromFirebase(id)
+        if (cachedData) {
+          setBoard(cachedData)
+          setDataSource('firebase')
+          setLoading(false)
+          return
+        }
       }
+
+      // 2. سحب من Monday.com
+      const data = await fetchBoardData(id)
+      setBoard(data)
+      setDataSource('monday')
+
+      // 3. حفظ في Firebase
+      await saveBoardToFirebase(id, data)
+
+    } catch (err) {
+      setError(err.message || 'حدث خطأ')
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     loadData()
   }, [id])
 

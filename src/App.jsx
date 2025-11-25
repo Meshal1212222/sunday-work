@@ -50,8 +50,8 @@ function AppRoutes() {
           <Route path="/my-work" element={<MyWork />} />
           <Route path="/workspaces" element={<Workspaces />} />
           <Route path="/workspace/:id" element={<WorkspaceView />} />
-          <Route path="/board/:id" element={<BoardView />} />
-          <Route path="/board-old/:id" element={<Board />} />
+          <Route path="/board/:id" element={<Board />} />
+          <Route path="/board-simple/:id" element={<BoardView />} />
           <Route path="/automations" element={<Automations />} />
           <Route path="/team" element={<Team />} />
           <Route path="/settings" element={<Settings />} />
