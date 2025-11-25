@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { ref, onValue, set } from 'firebase/database'
 import { database } from '../firebase'
@@ -15,6 +15,7 @@ import {
   Loader2,
   MoreVertical,
   ChevronRight,
+  ChevronDown,
   Zap,
   Target,
   TrendingUp,
@@ -32,7 +33,20 @@ import {
   Circle,
   PlayCircle,
   PauseCircle,
-  XCircle
+  XCircle,
+  Settings,
+  Bot,
+  Wand2,
+  SortAsc,
+  Columns,
+  PlusCircle,
+  Replace,
+  Puzzle,
+  Type,
+  Code,
+  Table,
+  List,
+  LayoutGrid
 } from 'lucide-react'
 import './BoardPro.css'
 
@@ -47,9 +61,11 @@ export default function BoardPro() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [selectedPerson, setSelectedPerson] = useState('all')
-  const [viewMode, setViewMode] = useState('timeline') // timeline, kanban, table
+  const [viewMode, setViewMode] = useState('table') // timeline, kanban, table
   const [selectedTask, setSelectedTask] = useState(null)
   const [showTaskPanel, setShowTaskPanel] = useState(false)
+  const [activeColumnMenu, setActiveColumnMenu] = useState(null) // لإظهار قائمة العمود
+  const [collapsedColumns, setCollapsedColumns] = useState([]) // الأعمدة المطوية
 
   // Fetch from Monday.com
   const fetchFromMonday = useCallback(async () => {
@@ -277,6 +293,26 @@ export default function BoardPro() {
     setShowTaskPanel(true)
   }
 
+  // Get cell class based on column type and value
+  const getCellClass = (type, text) => {
+    if (type === 'status' || type === 'color') {
+      const t = text?.toLowerCase() || ''
+      if (t.includes('done') || t.includes('تم') || t.includes('مكتمل')) return 'status-done'
+      if (t.includes('working') || t.includes('قيد') || t.includes('جاري')) return 'status-working'
+      if (t.includes('stuck') || t.includes('معلق') || t.includes('متوقف')) return 'status-stuck'
+    }
+    return ''
+  }
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setActiveColumnMenu(null)
+    if (activeColumnMenu) {
+      document.addEventListener('click', handleClickOutside)
+    }
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [activeColumnMenu])
+
   if (loading) {
     return (
       <div className="board-pro loading">
@@ -431,16 +467,25 @@ export default function BoardPro() {
 
           <div className="view-modes">
             <button
+              className={`view-mode ${viewMode === 'table' ? 'active' : ''}`}
+              onClick={() => setViewMode('table')}
+              title="عرض الجدول"
+            >
+              <Table size={18} />
+            </button>
+            <button
               className={`view-mode ${viewMode === 'timeline' ? 'active' : ''}`}
               onClick={() => setViewMode('timeline')}
+              title="عرض Timeline"
             >
-              <TrendingUp size={18} />
+              <List size={18} />
             </button>
             <button
               className={`view-mode ${viewMode === 'kanban' ? 'active' : ''}`}
               onClick={() => setViewMode('kanban')}
+              title="عرض Kanban"
             >
-              <BarChart3 size={18} />
+              <LayoutGrid size={18} />
             </button>
           </div>
         </div>
@@ -448,7 +493,246 @@ export default function BoardPro() {
 
       {/* Main Content */}
       <main className="pro-content">
-        {viewMode === 'timeline' ? (
+        {viewMode === 'table' ? (
+          <div className="table-view">
+            {getGroupedItems().map(group => (
+              <div key={group.id} className="table-group">
+                <div className="table-group-header" style={{ '--group-color': group.color }}>
+                  <div className="group-indicator" />
+                  <ChevronDown size={18} />
+                  <h3>{group.title}</h3>
+                  <span className="group-count">{group.items.length} مهام</span>
+                </div>
+
+                <div className="table-wrapper">
+                  <table className="pro-table">
+                    <thead>
+                      <tr>
+                        <th className="col-checkbox">
+                          <input type="checkbox" />
+                        </th>
+                        <th className="col-name">
+                          <span>المهمة</span>
+                        </th>
+                        {board.columns?.filter(col =>
+                          !['name', 'subitems'].includes(col.id) &&
+                          !collapsedColumns.includes(col.id)
+                        ).slice(0, 6).map(column => (
+                          <th key={column.id} className="col-data">
+                            <div className="column-header-cell">
+                              <span>{column.title}</span>
+                              <button
+                                className="column-menu-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setActiveColumnMenu(activeColumnMenu === column.id ? null : column.id)
+                                }}
+                              >
+                                <MoreVertical size={16} />
+                              </button>
+
+                              {/* Column Settings Menu */}
+                              {activeColumnMenu === column.id && (
+                                <div className="column-menu" onClick={(e) => e.stopPropagation()}>
+                                  <div className="menu-header">
+                                    <Code size={14} />
+                                    <span>Column ID: {column.id}</span>
+                                  </div>
+
+                                  <div className="menu-divider" />
+
+                                  <button className="menu-item">
+                                    <Settings size={16} />
+                                    <span>تخصيص عمود {column.title}</span>
+                                  </button>
+
+                                  <button className="menu-item">
+                                    <Type size={16} />
+                                    <span>إضافة وصف</span>
+                                  </button>
+
+                                  <div className="menu-divider" />
+
+                                  <button className="menu-item">
+                                    <Bot size={16} />
+                                    <span>إجراءات الذكاء الاصطناعي</span>
+                                  </button>
+
+                                  <button className="menu-item">
+                                    <Wand2 size={16} />
+                                    <span>تعبئة تلقائية لهذا العمود</span>
+                                  </button>
+
+                                  <div className="menu-divider" />
+
+                                  <button className="menu-item">
+                                    <Filter size={16} />
+                                    <span>تصفية</span>
+                                  </button>
+
+                                  <button className="menu-item">
+                                    <SortAsc size={16} />
+                                    <span>ترتيب</span>
+                                  </button>
+
+                                  <button className="menu-item" onClick={() => {
+                                    setCollapsedColumns([...collapsedColumns, column.id])
+                                    setActiveColumnMenu(null)
+                                  }}>
+                                    <ChevronRight size={16} />
+                                    <span>طي العمود</span>
+                                  </button>
+
+                                  <button className="menu-item">
+                                    <Columns size={16} />
+                                    <span>تجميع حسب</span>
+                                  </button>
+
+                                  <div className="menu-divider" />
+
+                                  <button className="menu-item">
+                                    <Star size={16} />
+                                    <span>تعيين العمود كمطلوب</span>
+                                  </button>
+
+                                  <button className="menu-item">
+                                    <Calendar size={16} />
+                                    <span>تعيين كموعد نهائي</span>
+                                  </button>
+
+                                  <button className="menu-item">
+                                    <Clock size={16} />
+                                    <span>إضافة/تعديل تذكيرات</span>
+                                  </button>
+
+                                  <div className="menu-divider" />
+
+                                  <button className="menu-item">
+                                    <Eye size={16} />
+                                    <span>تقييد عرض العمود</span>
+                                  </button>
+
+                                  <button className="menu-item">
+                                    <Edit3 size={16} />
+                                    <span>تقييد تعديل العمود</span>
+                                  </button>
+
+                                  <button className="menu-item">
+                                    <BarChart3 size={16} />
+                                    <span>إظهار ملخص العمود</span>
+                                  </button>
+
+                                  <div className="menu-divider" />
+
+                                  <button className="menu-item">
+                                    <Copy size={16} />
+                                    <span>تكرار العمود</span>
+                                  </button>
+
+                                  <button className="menu-item">
+                                    <PlusCircle size={16} />
+                                    <span>إضافة عمود على اليمين</span>
+                                  </button>
+
+                                  <button className="menu-item">
+                                    <Replace size={16} />
+                                    <span>تغيير نوع العمود</span>
+                                  </button>
+
+                                  <button className="menu-item">
+                                    <Puzzle size={16} />
+                                    <span>إضافات العمود</span>
+                                  </button>
+
+                                  <div className="menu-divider" />
+
+                                  <button className="menu-item">
+                                    <Sparkles size={16} />
+                                    <span>حفظ كقالب</span>
+                                  </button>
+
+                                  <button className="menu-item">
+                                    <Type size={16} />
+                                    <span>إعادة تسمية</span>
+                                  </button>
+
+                                  <button className="menu-item danger">
+                                    <Trash2 size={16} />
+                                    <span>حذف</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </th>
+                        ))}
+                        <th className="col-add">
+                          <button className="add-column-btn">
+                            <Plus size={16} />
+                          </button>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.items.map(item => (
+                        <tr key={item.id} onClick={() => openTaskPanel(item)}>
+                          <td className="col-checkbox">
+                            <input type="checkbox" onClick={(e) => e.stopPropagation()} />
+                          </td>
+                          <td className="col-name">
+                            <span className="task-name-cell">{item.name}</span>
+                          </td>
+                          {board.columns?.filter(col =>
+                            !['name', 'subitems'].includes(col.id) &&
+                            !collapsedColumns.includes(col.id)
+                          ).slice(0, 6).map(column => {
+                            const colValue = item.column_values?.find(cv => cv.id === column.id)
+                            const cellClass = getCellClass(column.type, colValue?.text)
+
+                            return (
+                              <td key={column.id} className={`col-data ${cellClass}`}>
+                                <span className="cell-value">{colValue?.text || '-'}</span>
+                              </td>
+                            )
+                          })}
+                          <td className="col-add"></td>
+                        </tr>
+                      ))}
+                      {/* Add new task row */}
+                      <tr className="add-task-row">
+                        <td className="col-checkbox"></td>
+                        <td className="col-name" colSpan={board.columns?.length + 1 || 7}>
+                          <button className="add-task-btn">
+                            <Plus size={16} />
+                            <span>إضافة مهمة</span>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Collapsed columns indicator */}
+                {collapsedColumns.length > 0 && (
+                  <div className="collapsed-columns">
+                    {collapsedColumns.map(colId => {
+                      const col = board.columns?.find(c => c.id === colId)
+                      return col ? (
+                        <button
+                          key={colId}
+                          className="collapsed-col-btn"
+                          onClick={() => setCollapsedColumns(collapsedColumns.filter(id => id !== colId))}
+                          title={`إظهار ${col.title}`}
+                        >
+                          {col.title.charAt(0)}
+                        </button>
+                      ) : null
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : viewMode === 'timeline' ? (
           <div className="timeline-view">
             {getGroupedItems().map(group => (
               <div key={group.id} className="timeline-group">

@@ -895,6 +895,360 @@
   color: #ef4444;
 }
 
+/* ===== Table View ===== */
+.table-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.table-group {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.table-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.table-group-header .group-indicator {
+  width: 6px;
+  height: 24px;
+  background: var(--group-color, #6366f1);
+  border-radius: 3px;
+}
+
+.table-group-header h3 {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.table-group-header .group-count {
+  padding: 0.25rem 0.75rem;
+  background: rgba(99, 102, 241, 0.15);
+  color: #8b5cf6;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 12px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.pro-table {
+  width: 100%;
+  border-collapse: collapse;
+  direction: rtl;
+}
+
+.pro-table th,
+.pro-table td {
+  padding: 0.75rem 1rem;
+  text-align: right;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.pro-table thead th {
+  background: rgba(255, 255, 255, 0.03);
+  color: #a0a0b0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  position: relative;
+}
+
+.pro-table tbody tr {
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.pro-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.col-checkbox {
+  width: 40px;
+  text-align: center !important;
+}
+
+.col-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #6366f1;
+  cursor: pointer;
+}
+
+.col-name {
+  min-width: 250px;
+}
+
+.task-name-cell {
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.col-data {
+  min-width: 130px;
+}
+
+.cell-value {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #a0a0b0;
+}
+
+.col-data.status-done .cell-value {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.col-data.status-working .cell-value {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.col-data.status-stuck .cell-value {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.col-add {
+  width: 50px;
+}
+
+.add-column-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #6e6e7e;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-column-btn:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: #6366f1;
+  color: #8b5cf6;
+}
+
+/* Column Header Cell */
+.column-header-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.column-menu-btn {
+  padding: 0.25rem;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #4e4e5e;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.column-header-cell:hover .column-menu-btn {
+  opacity: 1;
+}
+
+.column-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #a0a0b0;
+}
+
+/* Column Menu Dropdown */
+.column-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 280px;
+  background: #1a1a24;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  padding: 0.5rem 0;
+  animation: menuSlide 0.2s ease;
+}
+
+@keyframes menuSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menu-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: #6e6e7e;
+  font-size: 0.75rem;
+  font-family: monospace;
+  background: rgba(255, 255, 255, 0.03);
+  margin: 0 0.5rem 0.5rem;
+  border-radius: 8px;
+}
+
+.menu-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0.5rem 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  background: transparent;
+  border: none;
+  color: #a0a0b0;
+  font-size: 0.9rem;
+  text-align: right;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.menu-item:hover {
+  background: rgba(99, 102, 241, 0.1);
+  color: #ffffff;
+}
+
+.menu-item svg {
+  flex-shrink: 0;
+  color: #6e6e7e;
+}
+
+.menu-item:hover svg {
+  color: #8b5cf6;
+}
+
+.menu-item.danger {
+  color: #ef4444;
+}
+
+.menu-item.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.menu-item.danger svg {
+  color: #ef4444;
+}
+
+/* Submenu */
+.menu-item.has-submenu {
+  position: relative;
+}
+
+.menu-item.has-submenu::after {
+  content: '◂';
+  margin-right: auto;
+  color: #4e4e5e;
+  font-size: 0.7rem;
+}
+
+.submenu {
+  position: absolute;
+  right: 100%;
+  top: 0;
+  width: 240px;
+  background: #1a1a24;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  padding: 0.5rem 0;
+  display: none;
+}
+
+.menu-item.has-submenu:hover .submenu {
+  display: block;
+}
+
+/* Add Task Row */
+.add-task-row {
+  background: transparent !important;
+}
+
+.add-task-row:hover {
+  background: transparent !important;
+}
+
+.add-task-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  color: #6e6e7e;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-task-btn:hover {
+  color: #8b5cf6;
+}
+
+/* Collapsed Columns */
+.collapsed-columns {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.collapsed-col-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 8px;
+  color: #8b5cf6;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.collapsed-col-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  transform: scale(1.1);
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 1200px) {
   .stats-bar {
