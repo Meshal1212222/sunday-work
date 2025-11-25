@@ -9,6 +9,9 @@ import Workspaces from './pages/Workspaces'
 import WorkspaceView from './pages/WorkspaceView'
 import Board from './pages/Board'
 import BoardView from './pages/BoardView'
+import BoardWrapper from './pages/BoardWrapper'
+import BoardPro from './pages/BoardPro'
+import BoardClassic from './pages/BoardClassic'
 import Automations from './pages/Automations'
 import Team from './pages/Team'
 import Settings from './pages/Settings'
@@ -52,7 +55,10 @@ function AppRoutes() {
           <Route path="/my-work" element={<MyWork />} />
           <Route path="/workspaces" element={<Workspaces />} />
           <Route path="/workspace/:id" element={<WorkspaceView />} />
-          <Route path="/board/:id" element={<Board />} />
+          <Route path="/board/:boardId" element={<BoardWrapper />} />
+          <Route path="/board-pro/:boardId" element={<BoardPro />} />
+          <Route path="/board-classic/:boardId" element={<BoardClassic />} />
+          <Route path="/board-legacy/:id" element={<Board />} />
           <Route path="/board-simple/:id" element={<BoardView />} />
           <Route path="/automations" element={<Automations />} />
           <Route path="/team" element={<Team />} />
