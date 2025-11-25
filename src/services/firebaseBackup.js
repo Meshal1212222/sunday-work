@@ -3,7 +3,7 @@
  * حفظ واسترجاع البيانات من Firebase Firestore
  */
 
-import { db } from './firebase'
+import { firestore as db } from '../firebase/config'
 import {
   collection,
   doc,
