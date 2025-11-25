@@ -107,6 +107,152 @@ const DEFAULT_COLUMNS = [
   { id: 'email', title: 'البريد', type: COLUMN_TYPES.EMAIL, width: 180, visible: false }
 ];
 
+// ==================== 🔗 MONDAY.COM API ====================
+const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I';
+const MONDAY_API_URL = 'https://api.monday.com/v2';
+
+// البوردات الحقيقية من Monday.com
+const AVAILABLE_BOARDS = [
+  { id: '1933939383', name: 'مبيعات الشركات', icon: '💰' },
+  { id: '1929435129', name: 'CRM Sales 2', icon: '📊' },
+  { id: '2082909220', name: 'Brandizzer clients', icon: '👥' },
+  { id: '5004046796', name: 'العملاء - المنجزين', icon: '✅' },
+  { id: '5004064987', name: 'العملاء الجدد', icon: '🆕' },
+  { id: '2080809360', name: 'Golden Ticket-Managemnt', icon: '🎫' },
+  { id: '2080807883', name: 'Golden Host - Managemnt', icon: '🏨' },
+  { id: '1937035902', name: 'Golden Ticket-الاحداث', icon: '🎉' },
+  { id: '1937038882', name: 'Level UP - Managemnt', icon: '📈' },
+  { id: '1937040156', name: 'النمو والتطوير والشراكات', icon: '🚀' }
+];
+
+// جلب البيانات من Monday.com
+async function fetchBoardFromMonday(boardId) {
+  const query = `
+    query ($boardId: ID!) {
+      boards(ids: [$boardId]) {
+        id
+        name
+        groups {
+          id
+          title
+          color
+        }
+        items_page(limit: 500) {
+          items {
+            id
+            name
+            group {
+              id
+              title
+            }
+            column_values {
+              id
+              type
+              text
+              value
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await fetch(MONDAY_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': MONDAY_API_TOKEN
+    },
+    body: JSON.stringify({ query, variables: { boardId } })
+  });
+
+  const result = await response.json();
+  if (result.errors) {
+    throw new Error(result.errors[0].message);
+  }
+
+  return result.data.boards[0];
+}
+
+// تحويل بيانات Monday إلى صيغة Sunday
+function transformMondayData(mondayBoard) {
+  const groupColors = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #5FD4A0 0%, #3FB87E 100%)',
+    'linear-gradient(135deg, #FFB84D 0%, #FF9E2C 100%)',
+    'linear-gradient(135deg, #5DD4D4 0%, #3DBABA 100%)'
+  ];
+
+  const groups = mondayBoard.groups.map((group, index) => {
+    const groupItems = mondayBoard.items_page.items
+      .filter(item => item.group.id === group.id)
+      .map(item => {
+        // استخراج البيانات من الأعمدة
+        const personCol = item.column_values.find(c => c.type === 'multiple-person' || c.type === 'people');
+        const statusCol = item.column_values.find(c => c.type === 'status');
+        const dateCol = item.column_values.find(c => c.type === 'date');
+
+        let statusLabel = 'جديد';
+        let statusColor = '#c4c4c4';
+        if (statusCol?.text) {
+          statusLabel = statusCol.text;
+          // تحديد اللون بناء على الحالة
+          if (statusLabel.includes('تم') || statusLabel.includes('مكتمل') || statusLabel.toLowerCase().includes('done')) {
+            statusColor = '#00c875';
+          } else if (statusLabel.includes('قيد') || statusLabel.toLowerCase().includes('working')) {
+            statusColor = '#fdab3d';
+          } else if (statusLabel.includes('متأخر') || statusLabel.toLowerCase().includes('stuck')) {
+            statusColor = '#e44258';
+          }
+        }
+
+        let dueDate = null;
+        if (dateCol?.value) {
+          try {
+            const dateValue = JSON.parse(dateCol.value);
+            dueDate = dateValue.date;
+          } catch (e) {}
+        }
+
+        return {
+          id: item.id,
+          name: item.name,
+          status: { label: statusLabel, color: statusColor },
+          priority: { label: 'متوسطة', color: '#fdab3d', level: 2 },
+          assignee: personCol?.text ? {
+            name: personCol.text,
+            avatar: '👤',
+            color: '#667eea'
+          } : null,
+          dueDate: dueDate,
+          timeline: dueDate ? { start: dueDate, end: dueDate } : null,
+          progress: statusLabel.includes('تم') || statusLabel.includes('مكتمل') ? 100 :
+                   statusLabel.includes('قيد') ? 50 : 0,
+          budget: 0,
+          rating: 0,
+          tags: [],
+          comments: 0,
+          files: 0,
+          link: '',
+          location: '',
+          email: '',
+          checklist: { done: 0, total: 0 }
+        };
+      });
+
+    return {
+      id: group.id,
+      title: group.title,
+      gradient: groupColors[index % groupColors.length],
+      color: group.color || '#667eea',
+      items: groupItems
+    };
+  });
+
+  return groups;
+}
+
 // ==================== 🎨 GLOBAL STYLES ====================
 const THEME = {
   colors: {
@@ -154,6 +300,37 @@ const SundayBoardPro = () => {
   const [columns, setColumns] = useState(DEFAULT_COLUMNS);
   const [darkMode, setDarkMode] = useState(false);
 
+  // Monday.com Integration States
+  const [selectedBoardId, setSelectedBoardId] = useState(null);
+  const [boardName, setBoardName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [showBoardSelector, setShowBoardSelector] = useState(false);
+  const [groups, setGroups] = useState([]);
+
+  // Load board from Monday.com
+  const loadBoardFromMonday = async (boardId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('📥 جاري سحب البيانات من Monday.com...', boardId);
+
+      const mondayBoard = await fetchBoardFromMonday(boardId);
+      console.log('✅ تم سحب البيانات:', mondayBoard);
+
+      const transformedGroups = transformMondayData(mondayBoard);
+      setGroups(transformedGroups);
+      setBoardName(mondayBoard.name);
+      setSelectedBoardId(boardId);
+      setLoading(false);
+      setShowBoardSelector(false);
+    } catch (err) {
+      console.error('❌ خطأ في التحميل:', err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -165,125 +342,12 @@ const SundayBoardPro = () => {
         setShowCommandPalette(false);
         setShowActivityFeed(false);
         setShowColumnSettings(false);
+        setShowBoardSelector(false);
       }
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
-
-  const [groups, setGroups] = useState([
-    {
-      id: 1,
-      title: 'إدارة مشاريع الاستضافة',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: '#667eea',
-      items: [
-        {
-          id: 1,
-          name: 'تحديث البنية الاستضافية',
-          status: { label: 'قيد التنفيذ', color: '#00c875' },
-          priority: { label: 'عالية', color: '#e44258', level: 1 },
-          assignee: { name: 'Ahmed', avatar: '👨‍💻', color: '#667eea' },
-          dueDate: '2024-11-30',
-          timeline: { start: '2024-11-15', end: '2024-11-30' },
-          progress: 75,
-          budget: 15000,
-          rating: 4,
-          tags: ['urgent', 'backend'],
-          comments: 5,
-          files: 3,
-          link: 'https://github.com/project',
-          location: 'الرياض',
-          email: 'ahmed@sunday.com',
-          checklist: { done: 6, total: 8 }
-        },
-        {
-          id: 2,
-          name: 'تخطيط تحسين التشغيل والأداء',
-          status: { label: 'مراجعة', color: '#fdab3d' },
-          priority: { label: 'متوسطة', color: '#fdab3d', level: 2 },
-          assignee: { name: 'Sara', avatar: '👩‍💼', color: '#F85A76' },
-          dueDate: '2024-11-25',
-          timeline: { start: '2024-11-10', end: '2024-11-25' },
-          progress: 45,
-          budget: 8500,
-          rating: 3,
-          tags: ['optimization'],
-          comments: 2,
-          files: 1,
-          link: '',
-          location: 'جدة',
-          email: 'sara@sunday.com',
-          checklist: { done: 3, total: 6 }
-        },
-        {
-          id: 3,
-          name: 'إعادة تصميم واجهة المستخدم',
-          status: { label: 'متأخر', color: '#e44258' },
-          priority: { label: 'عالية', color: '#e44258', level: 1 },
-          assignee: { name: 'Mohammed', avatar: '👨‍🎨', color: '#5FD4A0' },
-          dueDate: '2024-11-20',
-          timeline: { start: '2024-11-01', end: '2024-11-20' },
-          progress: 20,
-          budget: 12000,
-          rating: 5,
-          tags: ['design', 'ui'],
-          comments: 8,
-          files: 5,
-          link: 'https://figma.com/design',
-          location: 'دبي',
-          email: 'mohammed@sunday.com',
-          checklist: { done: 2, total: 10 }
-        }
-      ]
-    },
-    {
-      id: 2,
-      title: 'خطة نوفمبر',
-      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      color: '#f093fb',
-      items: [
-        {
-          id: 4,
-          name: 'إطلاق الميزة الجديدة',
-          status: { label: 'تم الإنجاز', color: '#00c875' },
-          priority: { label: 'منخفضة', color: '#00c875', level: 3 },
-          assignee: { name: 'Layla', avatar: '👩‍💻', color: '#FFB84D' },
-          dueDate: '2024-11-15',
-          timeline: { start: '2024-11-01', end: '2024-11-15' },
-          progress: 100,
-          budget: 20000,
-          rating: 5,
-          tags: ['launch'],
-          comments: 12,
-          files: 8,
-          link: 'https://app.sunday.com',
-          location: 'أبوظبي',
-          email: 'layla@sunday.com',
-          checklist: { done: 10, total: 10 }
-        },
-        {
-          id: 5,
-          name: 'تحديث المحتوى التسويقي',
-          status: { label: 'جديد', color: '#c4c4c4' },
-          priority: { label: 'متوسطة', color: '#fdab3d', level: 2 },
-          assignee: { name: 'Khalid', avatar: '👨‍💼', color: '#5DD4D4' },
-          dueDate: '2024-12-05',
-          timeline: { start: '2024-11-20', end: '2024-12-05' },
-          progress: 0,
-          budget: 5000,
-          rating: 0,
-          tags: ['marketing'],
-          comments: 0,
-          files: 0,
-          link: '',
-          location: 'الدمام',
-          email: 'khalid@sunday.com',
-          checklist: { done: 0, total: 5 }
-        }
-      ]
-    }
-  ]);
 
   const totalTasks = groups.reduce((sum, g) => sum + g.items.length, 0);
   const completedTasks = groups.reduce((sum, g) =>
@@ -301,12 +365,152 @@ const SundayBoardPro = () => {
 
   const visibleColumns = columns.filter(col => col.visible);
 
+  // Board Selector Modal Component
+  const BoardSelectorModal = () => (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.5)',
+      backdropFilter: 'blur(4px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '20px',
+        padding: '32px',
+        width: '500px',
+        maxHeight: '80vh',
+        overflow: 'auto',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+      }}>
+        <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', color: '#1e1b4b' }}>اختر البورد</h2>
+        <p style={{ margin: '0 0 24px 0', color: '#64748b', fontSize: '14px' }}>
+          اختر بورد من Monday.com لعرض المهام
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {AVAILABLE_BOARDS.map(board => (
+            <button
+              key={board.id}
+              onClick={() => loadBoardFromMonday(board.id)}
+              style={{
+                padding: '16px 20px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '12px',
+                background: selectedBoardId === board.id ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
+                color: selectedBoardId === board.id ? 'white' : '#1e1b4b',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                fontSize: '15px',
+                fontWeight: '500',
+                transition: 'all 0.2s',
+                textAlign: 'right'
+              }}
+            >
+              <span style={{ fontSize: '20px' }}>{board.icon}</span>
+              <span>{board.name}</span>
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setShowBoardSelector(false)}
+          style={{
+            marginTop: '20px',
+            padding: '12px 24px',
+            background: '#f1f5f9',
+            border: 'none',
+            borderRadius: '10px',
+            cursor: 'pointer',
+            width: '100%',
+            color: '#64748b'
+          }}
+        >
+          إلغاء
+        </button>
+      </div>
+    </div>
+  );
+
+  // Loading Component
+  const LoadingScreen = () => (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '60vh',
+      gap: '20px'
+    }}>
+      <div style={{
+        width: '50px',
+        height: '50px',
+        border: '4px solid #e5e7eb',
+        borderTopColor: '#6366f1',
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite'
+      }} />
+      <p style={{ color: '#64748b', fontSize: '16px' }}>جاري سحب البيانات من Monday.com...</p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+
+  // No Board Selected Screen
+  const NoBoardScreen = () => (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '60vh',
+      gap: '24px',
+      textAlign: 'center'
+    }}>
+      <div style={{ fontSize: '64px' }}>📋</div>
+      <h2 style={{ margin: 0, fontSize: '28px', color: '#1e1b4b' }}>اختر بورد للبدء</h2>
+      <p style={{ margin: 0, color: '#64748b', maxWidth: '400px' }}>
+        اختر بورد من Monday.com لعرض المهام بالتصميم الجديد
+      </p>
+      <button
+        onClick={() => setShowBoardSelector(true)}
+        style={{
+          padding: '16px 32px',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '14px',
+          fontSize: '16px',
+          fontWeight: '600',
+          cursor: 'pointer',
+          boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)',
+          transition: 'all 0.2s'
+        }}
+      >
+        🔗 اختر بورد من Monday.com
+      </button>
+      <a href="index.html" style={{
+        color: '#6366f1',
+        textDecoration: 'none',
+        fontSize: '14px',
+        marginTop: '10px'
+      }}>
+        ← العودة للصفحة الرئيسية
+      </a>
+    </div>
+  );
+
   return (
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
       fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, sans-serif'
     }}>
+      {/* Board Selector Modal */}
+      {showBoardSelector && <BoardSelectorModal />}
+
       {/* 🎯 Top Bar */}
       <div style={{
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -321,7 +525,7 @@ const SundayBoardPro = () => {
             <SundayLogo size="medium" color="white" />
             <div style={{ display: 'flex', gap: '8px' }}>
               <TopNavButton active>🏠 Home</TopNavButton>
-              <TopNavButton>📊 Analytics</TopNavButton>
+              <TopNavButton onClick={() => setShowBoardSelector(true)}>📊 Boards</TopNavButton>
               <TopNavButton>⚡ Automations</TopNavButton>
             </div>
           </div>
@@ -349,6 +553,12 @@ const SundayBoardPro = () => {
         </div>
       </div>
 
+      {/* Show Loading, No Board, or Content */}
+      {loading ? (
+        <LoadingScreen />
+      ) : !selectedBoardId ? (
+        <NoBoardScreen />
+      ) : (
       <div style={{ display: 'flex', minHeight: 'calc(100vh - 80px)' }}>
         {/* 📂 Sidebar */}
         {showSidebar && (
@@ -379,7 +589,7 @@ const SundayBoardPro = () => {
                   margin: 0,
                   marginBottom: '12px'
                 }}>
-                  Golden Host - Management
+                  {boardName || 'Sunday Pro'}
                 </h1>
                 <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <StatsChip icon="📋" label={`${totalTasks} مهام`} color="#667eea" />
@@ -480,6 +690,7 @@ const SundayBoardPro = () => {
           </button>
         </div>
       </div>
+      )}
 
       {/* Command Palette */}
       {showCommandPalette && (
