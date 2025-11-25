@@ -163,7 +163,7 @@ class ZapierImportService {
   /**
    * استيراد جميع Zaps المتعلقة بـ Monday + WhatsApp
    */
-  async importMonday WhatsAppZaps() {
+  async importMondayWhatsAppZaps() {
     try {
       const zaps = await this.fetchZaps()
 
