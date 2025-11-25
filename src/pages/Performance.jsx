@@ -107,12 +107,40 @@ export default function Performance() {
           )
           const statusText = statusCol?.text?.toLowerCase() || ''
 
-          // استخراج الشخص المسؤول
+          // استخراج الشخص المسؤول - جرب كل الطرق الممكنة
           const personCol = item.column_values?.find(c =>
-            c.type === 'multiple-person' || c.type === 'person'
+            c.type === 'multiple-person' ||
+            c.type === 'person' ||
+            c.type === 'people' ||
+            c.id?.includes('person') ||
+            c.id?.includes('people')
           )
-          if (personCol?.text) {
-            personCol.text.split(',').forEach(name => {
+
+          let assigneeName = 'غير معين'
+          if (personCol) {
+            // جرب text أولاً
+            if (personCol.text && personCol.text.trim()) {
+              assigneeName = personCol.text
+            }
+            // جرب value إذا text فارغ
+            else if (personCol.value) {
+              try {
+                const parsed = JSON.parse(personCol.value)
+                if (parsed.personsAndTeams) {
+                  const names = parsed.personsAndTeams.map(p => p.name || p.id).filter(Boolean)
+                  if (names.length > 0) assigneeName = names.join(', ')
+                }
+              } catch (e) {
+                // value مو JSON
+                if (typeof personCol.value === 'string' && personCol.value.trim()) {
+                  assigneeName = personCol.value
+                }
+              }
+            }
+          }
+
+          if (assigneeName !== 'غير معين') {
+            assigneeName.split(',').forEach(name => {
               allEmployees.add(name.trim())
             })
           }
@@ -135,7 +163,7 @@ export default function Performance() {
             id: item.id,
             name: item.name,
             status: statusCol?.text || 'جديد',
-            assignee: personCol?.text || 'غير معين',
+            assignee: assigneeName,
             createdAt: item.created_at
           })
         })

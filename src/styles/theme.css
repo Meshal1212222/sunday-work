@@ -89,6 +89,134 @@
   --z-tooltip: 1070;
 }
 
+/* === Pro Theme (Modern/Binance Style) === */
+body.theme-pro {
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  --primary-rgb: 99, 102, 241;
+
+  --bg-primary: #0f0f14;
+  --bg-secondary: #1a1a24;
+  --bg-tertiary: #252532;
+  --bg-hover: #2d2d3d;
+  --bg-item: #1e1e2a;
+
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0b0;
+  --text-tertiary: #6e6e7e;
+  --text-inverse: #ffffff;
+
+  --border-color: #2d2d3d;
+  --border-light: #252532;
+  --border-dark: #3d3d4d;
+
+  --sidebar-bg: #0d0d12;
+  --header-bg: #14141c;
+  --card-bg: #1a1a24;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+body.theme-pro .sidebar {
+  background: linear-gradient(180deg, #0d0d12 0%, #14141c 100%);
+  border-color: #2d2d3d;
+}
+
+body.theme-pro .header {
+  background: rgba(20, 20, 28, 0.95);
+  backdrop-filter: blur(10px);
+  border-color: #2d2d3d;
+}
+
+body.theme-pro .main-content {
+  background: #0f0f14;
+}
+
+body.theme-pro .card,
+body.theme-pro .board-card,
+body.theme-pro .performance-section,
+body.theme-pro .overview-card {
+  background: #1a1a24;
+  border-color: #2d2d3d;
+}
+
+body.theme-pro .nav-item:hover,
+body.theme-pro .board-item:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+body.theme-pro .nav-item.active {
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.2), transparent);
+  border-right: 3px solid #6366f1;
+}
+
+/* === Classic Theme (Light/Monday Style) === */
+body.theme-classic {
+  --primary: #0073ea;
+  --primary-light: #0086ff;
+  --primary-dark: #0060c0;
+  --primary-rgb: 0, 115, 234;
+
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f7fb;
+  --bg-tertiary: #edeef2;
+  --bg-hover: #e6e9ef;
+  --bg-item: #fafbfc;
+
+  --text-primary: #323338;
+  --text-secondary: #676879;
+  --text-tertiary: #9699a6;
+  --text-inverse: #ffffff;
+
+  --border-color: #e6e9ef;
+  --border-light: #edeef2;
+  --border-dark: #d0d4e4;
+
+  --sidebar-bg: #ffffff;
+  --header-bg: #ffffff;
+  --card-bg: #ffffff;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+body.theme-classic .sidebar {
+  background: #ffffff;
+  border-color: #e6e9ef;
+}
+
+body.theme-classic .header {
+  background: #ffffff;
+  border-color: #e6e9ef;
+}
+
+body.theme-classic .main-content {
+  background: #f6f7fb;
+}
+
+body.theme-classic .card,
+body.theme-classic .board-card,
+body.theme-classic .performance-section,
+body.theme-classic .overview-card {
+  background: #ffffff;
+  border-color: #e6e9ef;
+}
+
+body.theme-classic .nav-item:hover,
+body.theme-classic .board-item:hover {
+  background: #f0f3ff;
+}
+
+body.theme-classic .nav-item.active {
+  background: linear-gradient(90deg, rgba(0, 115, 234, 0.1), transparent);
+  border-right: 3px solid #0073ea;
+  color: #0073ea;
+}
+
 /* === Dark Mode === */
 body.dark-mode {
   --bg-primary: #000000;
