@@ -1,0 +1,22 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "whatsapp_tasks": {
+      ".read": true,
+      ".write": true
+    },
+    "boards": {
+      ".read": true,
+      ".write": true
+    },
+    "sunday_data": {
+      ".read": true,
+      ".write": true
+    },
+    "team": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
