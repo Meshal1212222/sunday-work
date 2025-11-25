@@ -11,8 +11,8 @@ admin.initializeApp()
 const db = admin.database()
 
 // إعدادات Ultra MSG
-const ULTRAMSG_TOKEN = 'YOUR_ULTRAMSG_TOKEN' // غيّرها
-const ULTRAMSG_INSTANCE = 'YOUR_INSTANCE_ID' // غيّرها
+const ULTRAMSG_TOKEN = '21jybm4xten03x21'
+const ULTRAMSG_INSTANCE = 'instance117440'
 
 /**
  * التحقق من صلاحية الرقم
