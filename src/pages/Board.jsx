@@ -13,20 +13,58 @@ import MentionDropdown from '../components/MentionDropdown'
 import ActivityLog from '../components/ActivityLog'
 import WhatsAppNotification from '../components/WhatsAppNotification'
 import { database } from '../firebase/config'
-import { ref, get, set } from 'firebase/database'
+import { ref, get, set, onValue, off } from 'firebase/database'
 import './Board.css'
 
 const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
 const MONDAY_API_URL = 'https://api.monday.com/v2'
 
 // ==================== Firebase Functions ====================
+// مسار Firebase موحد مع SyncAll.jsx
+const FIREBASE_BOARDS_PATH = 'boards'
+
 async function loadBoardFromFirebase(boardId) {
   try {
-    const boardRef = ref(database, `mondayBoards/${boardId}`)
+    const boardRef = ref(database, `${FIREBASE_BOARDS_PATH}/${boardId}`)
     const snapshot = await get(boardRef)
     if (snapshot.exists()) {
       console.log('📦 تم تحميل البيانات من Firebase')
-      return snapshot.val()
+      const data = snapshot.val()
+      // SyncAll يحفظ البيانات بصيغة { board, itemsByGroup, itemsCount }
+      // نحتاج تحويلها لصيغة Board.jsx
+      if (data.board && data.itemsByGroup) {
+        // تحويل من صيغة SyncAll إلى صيغة Board
+        const allItems = []
+        Object.values(data.itemsByGroup).forEach(groupItems => {
+          if (Array.isArray(groupItems)) {
+            groupItems.forEach(item => {
+              // تحويل column_values
+              const columnValues = item.columnValues || []
+              allItems.push({
+                id: item.id,
+                name: item.name,
+                group: { id: item.groupId },
+                column_values: columnValues.map(cv => ({
+                  id: cv.id,
+                  type: cv.type,
+                  text: cv.text,
+                  value: cv.value
+                })),
+                created_at: item.created_at || new Date().toISOString()
+              })
+            })
+          }
+        })
+
+        return {
+          id: data.board.id,
+          name: data.board.name,
+          columns: data.board.columns || [],
+          groups: data.board.groups || [],
+          items_page: { items: allItems }
+        }
+      }
+      return data
     }
     return null
   } catch (error) {
@@ -37,9 +75,38 @@ async function loadBoardFromFirebase(boardId) {
 
 async function saveBoardToFirebase(boardId, data) {
   try {
-    const boardRef = ref(database, `mondayBoards/${boardId}`)
+    const boardRef = ref(database, `${FIREBASE_BOARDS_PATH}/${boardId}`)
+
+    // حفظ بصيغة متوافقة مع SyncAll
+    const itemsByGroup = {}
+    data.groups?.forEach(group => {
+      itemsByGroup[group.id] = []
+    })
+
+    data.items_page?.items?.forEach(item => {
+      const groupId = item.group?.id || 'other'
+      if (!itemsByGroup[groupId]) {
+        itemsByGroup[groupId] = []
+      }
+      itemsByGroup[groupId].push({
+        id: item.id,
+        name: item.name,
+        boardId: boardId,
+        groupId: groupId,
+        columnValues: item.column_values,
+        state: 'active'
+      })
+    })
+
     await set(boardRef, {
-      ...data,
+      board: {
+        id: data.id,
+        name: data.name,
+        columns: data.columns,
+        groups: data.groups
+      },
+      itemsByGroup,
+      itemsCount: data.items_page?.items?.length || 0,
       lastUpdated: Date.now()
     })
     console.log('💾 تم حفظ البيانات في Firebase')
@@ -200,9 +267,86 @@ export default function Board() {
     }
   }
 
+  // Real-time sync - تحديث مباشر لكل الموظفين
   useEffect(() => {
+    if (!id) return
+
+    const boardRef = ref(database, `${FIREBASE_BOARDS_PATH}/${id}`)
+
+    // أول تحميل
     loadData()
+
+    // الاستماع للتغييرات اللحظية
+    const unsubscribe = onValue(boardRef, (snapshot) => {
+      if (snapshot.exists() && !loading) {
+        const data = snapshot.val()
+        console.log('🔄 تحديث لحظي من Firebase')
+
+        // تحويل البيانات إذا جاءت من SyncAll
+        if (data.board && data.itemsByGroup) {
+          const allItems = []
+          Object.values(data.itemsByGroup).forEach(groupItems => {
+            if (Array.isArray(groupItems)) {
+              groupItems.forEach(item => {
+                const columnValues = item.columnValues || []
+                allItems.push({
+                  id: item.id,
+                  name: item.name,
+                  group: { id: item.groupId },
+                  column_values: columnValues.map(cv => ({
+                    id: cv.id,
+                    type: cv.type,
+                    text: cv.text,
+                    value: cv.value
+                  })),
+                  created_at: item.created_at || new Date().toISOString()
+                })
+              })
+            }
+          })
+
+          setBoard({
+            id: data.board.id,
+            name: data.board.name,
+            columns: data.board.columns || [],
+            groups: data.board.groups || [],
+            items_page: { items: allItems }
+          })
+        } else if (data.items_page) {
+          setBoard(data)
+        }
+        setDataSource('firebase-live')
+      }
+    }, (error) => {
+      console.error('❌ خطأ في الاستماع للتغييرات:', error)
+    })
+
+    // تنظيف عند مغادرة الصفحة
+    return () => {
+      off(boardRef)
+    }
   }, [id])
+
+  // Auto-save - حفظ تلقائي عند أي تعديل (يظهر للموظفين الآخرين مباشرة)
+  const [lastSavedBoard, setLastSavedBoard] = useState(null)
+
+  useEffect(() => {
+    // لا تحفظ إذا:
+    // - البورد فاضي
+    // - أول تحميل
+    // - نفس البيانات المحفوظة سابقاً
+    if (!board || loading || !id) return
+    if (JSON.stringify(board) === JSON.stringify(lastSavedBoard)) return
+
+    // تأخير قصير لتجنب الحفظ المتكرر
+    const saveTimeout = setTimeout(async () => {
+      console.log('💾 حفظ تلقائي...')
+      await saveBoardToFirebase(id, board)
+      setLastSavedBoard(board)
+    }, 1000)
+
+    return () => clearTimeout(saveTimeout)
+  }, [board, id, loading])
 
   // Initialize column widths based on board columns
   useEffect(() => {
