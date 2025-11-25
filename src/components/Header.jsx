@@ -1,6 +1,6 @@
 import { Menu, Bell, Search, MessageSquare, LogOut, Trash2, Zap, Layout } from 'lucide-react'
 import { useAuth, forceCompleteLogout } from '../contexts/AuthContext'
-import { useTheme, THEMES } from '../contexts/ThemeContext'
+import { useTheme } from '../contexts/ThemeContext'
 import { logoutUser } from '../firebase/auth'
 import './Header.css'
 
