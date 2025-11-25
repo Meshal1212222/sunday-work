@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { database } from '../firebase/config'
-import { ref, get, set, onValue } from 'firebase/database'
+import { ref, get, onValue } from 'firebase/database'
 import {
   ChevronRight,
   Search,
@@ -17,9 +17,6 @@ import {
   RefreshCw
 } from 'lucide-react'
 import './BoardClassic.css'
-
-const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
-const MONDAY_API_URL = 'https://api.monday.com/v2'
 
 export default function BoardClassic() {
   const { boardId, id } = useParams()
@@ -37,17 +34,21 @@ export default function BoardClassic() {
   const loadBoard = async () => {
     setLoading(true)
     try {
-      // جرب Firebase أولاً
+      // تحميل من Firebase فقط
       const boardRef = ref(database, `boards/${actualBoardId}`)
       const snapshot = await get(boardRef)
 
       if (snapshot.exists()) {
         const data = snapshot.val()
-        if (data.board) {
-          // تحويل البيانات
-          const items = []
-          Object.entries(data.itemsByGroup || {}).forEach(([groupId, groupItems]) => {
-            const group = data.board.groups?.find(g => g.id === groupId)
+
+        // تحويل البيانات من الهيكل المحفوظ
+        let items = []
+
+        // إذا كانت البيانات بالهيكل القديم (itemsByGroup)
+        if (data.itemsByGroup) {
+          Object.entries(data.itemsByGroup).forEach(([groupId, groupItems]) => {
+            const group = data.board?.groups?.find(g => g.id === groupId) ||
+                         data.groups?.find(g => g.id === groupId)
             if (Array.isArray(groupItems)) {
               groupItems.forEach(item => {
                 items.push({
@@ -58,74 +59,37 @@ export default function BoardClassic() {
               })
             }
           })
-          setBoard({ ...data.board, items })
+          setBoard({ ...(data.board || data), items })
         }
-      } else {
-        // سحب من Monday
-        await fetchFromMonday()
+        // إذا كانت البيانات بالهيكل الجديد (items_page)
+        else if (data.items_page?.items) {
+          items = data.items_page.items.map(item => {
+            const statusCol = item.column_values?.find(c => c.type === 'status' || c.type === 'color')
+            const personCol = item.column_values?.find(c => c.type === 'multiple-person' || c.type === 'person')
+            const dateCol = item.column_values?.find(c => c.type === 'date')
+
+            return {
+              id: item.id,
+              name: item.name,
+              status: statusCol?.text || 'جديد',
+              assignee: personCol?.text || 'غير معين',
+              dueDate: dateCol?.text || null,
+              groupName: item.group?.title || 'مهام',
+              groupColor: data.groups?.find(g => g.id === item.group?.id)?.color || '#0073ea',
+              columnValues: item.column_values
+            }
+          })
+          setBoard({ ...data, items })
+        }
+        // إذا كانت items موجودة مباشرة
+        else if (data.items) {
+          setBoard(data)
+        }
       }
     } catch (err) {
       console.error('Error loading board:', err)
     }
     setLoading(false)
-  }
-
-  const fetchFromMonday = async () => {
-    const query = `
-      query ($boardId: ID!) {
-        boards(ids: [$boardId]) {
-          id
-          name
-          groups { id title color }
-          items_page(limit: 200) {
-            items {
-              id
-              name
-              created_at
-              group { id title }
-              column_values {
-                id
-                type
-                text
-                value
-              }
-            }
-          }
-        }
-      }
-    `
-
-    const response = await fetch(MONDAY_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': MONDAY_API_TOKEN
-      },
-      body: JSON.stringify({ query, variables: { boardId: actualBoardId } })
-    })
-
-    const result = await response.json()
-    if (result.data?.boards?.[0]) {
-      const boardData = result.data.boards[0]
-      const items = boardData.items_page?.items?.map(item => {
-        const statusCol = item.column_values?.find(c => c.type === 'status' || c.type === 'color')
-        const personCol = item.column_values?.find(c => c.type === 'multiple-person' || c.type === 'person')
-        const dateCol = item.column_values?.find(c => c.type === 'date')
-
-        return {
-          id: item.id,
-          name: item.name,
-          status: statusCol?.text || 'جديد',
-          assignee: personCol?.text || 'غير معين',
-          dueDate: dateCol?.text || null,
-          groupName: item.group?.title || 'مهام',
-          groupColor: boardData.groups?.find(g => g.id === item.group?.id)?.color || '#0073ea',
-          columnValues: item.column_values
-        }
-      }) || []
-
-      setBoard({ ...boardData, items })
-    }
   }
 
   const getStatusIcon = (status) => {

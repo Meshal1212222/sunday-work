@@ -19,9 +19,6 @@ import {
 } from 'lucide-react'
 import './Archive.css'
 
-const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
-const MONDAY_API_URL = 'https://api.monday.com/v2'
-
 // أسماء الأشهر بالعربي
 const ARABIC_MONTHS = [
   'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
@@ -34,7 +31,6 @@ export default function Archive() {
   const [syncing, setSyncing] = useState(false)
   const [expandedMonth, setExpandedMonth] = useState(null)
   const [expandedBoard, setExpandedBoard] = useState(null)
-  const [selectedMonth, setSelectedMonth] = useState(null)
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -50,6 +46,9 @@ export default function Archive() {
 
       if (snapshot.exists()) {
         setArchives(snapshot.val())
+      } else {
+        // إذا لم يكن هناك أرشيف، نُنشئ من البيانات الموجودة
+        await buildArchiveFromBoards()
       }
       setLoading(false)
     } catch (err) {
@@ -58,96 +57,54 @@ export default function Archive() {
     }
   }
 
-  // سحب كل البيانات من Monday وتنظيمها بالأشهر
-  const syncAllData = async () => {
+  // بناء الأرشيف من البوردات المحفوظة في Firebase
+  const buildArchiveFromBoards = async () => {
     setSyncing(true)
     setError(null)
 
     try {
-      // 1. سحب كل البوردات
-      const boardsQuery = `
-        query {
-          boards(limit: 100) {
-            id
-            name
-            items_count
-          }
-        }
-      `
+      const boardsRef = ref(database, 'boards')
+      const boardsSnapshot = await get(boardsRef)
 
-      const boardsResponse = await fetch(MONDAY_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': MONDAY_API_TOKEN
-        },
-        body: JSON.stringify({ query: boardsQuery })
-      })
+      if (!boardsSnapshot.exists()) {
+        setSyncing(false)
+        return
+      }
 
-      const boardsResult = await boardsResponse.json()
-      if (boardsResult.errors) throw new Error(boardsResult.errors[0].message)
-
-      const boards = boardsResult.data.boards
+      const boardsData = boardsSnapshot.val()
       const archiveData = {}
 
-      // 2. سحب كل مهمة من كل بورد
-      for (const board of boards) {
-        console.log(`📥 جاري سحب: ${board.name}`)
+      Object.entries(boardsData).forEach(([boardId, boardData]) => {
+        const boardName = boardData.name || boardData.board?.name || `Board ${boardId}`
+        const columns = boardData.columns || boardData.board?.columns || []
+        const groups = boardData.groups || boardData.board?.groups || []
 
-        const itemsQuery = `
-          query ($boardId: ID!) {
-            boards(ids: [$boardId]) {
-              id
-              name
-              columns {
-                id
-                title
-                type
-              }
-              groups {
-                id
-                title
-                color
-              }
-              items_page(limit: 500) {
-                items {
-                  id
-                  name
-                  created_at
-                  group {
-                    id
-                    title
-                  }
-                  column_values {
-                    id
-                    type
-                    text
-                    value
-                  }
-                }
-              }
+        // استخراج المهام من الهيكل المختلف
+        let items = []
+
+        if (boardData.items_page?.items) {
+          items = boardData.items_page.items
+        } else if (boardData.itemsByGroup) {
+          Object.values(boardData.itemsByGroup).forEach(groupItems => {
+            if (Array.isArray(groupItems)) {
+              items = [...items, ...groupItems]
             }
+          })
+        } else if (boardData.items && Array.isArray(boardData.items)) {
+          items = boardData.items
+        }
+
+        items.forEach(item => {
+          // تحديد التاريخ
+          let createdAt
+          if (item.created_at) {
+            createdAt = new Date(item.created_at)
+          } else if (item.createdAt) {
+            createdAt = new Date(item.createdAt)
+          } else {
+            createdAt = new Date()
           }
-        `
 
-        const itemsResponse = await fetch(MONDAY_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': MONDAY_API_TOKEN
-          },
-          body: JSON.stringify({ query: itemsQuery, variables: { boardId: board.id } })
-        })
-
-        const itemsResult = await itemsResponse.json()
-        if (itemsResult.errors) continue
-
-        const boardData = itemsResult.data.boards[0]
-        if (!boardData) continue
-
-        // تنظيم المهام بالأشهر
-        boardData.items_page?.items?.forEach(item => {
-          const createdAt = new Date(item.created_at)
           const monthKey = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`
 
           if (!archiveData[monthKey]) {
@@ -159,12 +116,12 @@ export default function Archive() {
             }
           }
 
-          if (!archiveData[monthKey].boards[board.id]) {
-            archiveData[monthKey].boards[board.id] = {
-              id: board.id,
-              name: board.name,
-              columns: boardData.columns,
-              groups: boardData.groups,
+          if (!archiveData[monthKey].boards[boardId]) {
+            archiveData[monthKey].boards[boardId] = {
+              id: boardId,
+              name: boardName,
+              columns: columns,
+              groups: groups,
               items: [],
               stats: {
                 total: 0,
@@ -176,36 +133,38 @@ export default function Archive() {
           }
 
           // استخراج الحالة
-          const statusCol = item.column_values.find(c => c.type === 'status' || c.type === 'color')
-          const status = statusCol?.text?.toLowerCase() || ''
+          let statusText = ''
+          if (item.column_values) {
+            const statusCol = item.column_values.find(c => c.type === 'status' || c.type === 'color')
+            statusText = (statusCol?.text || '').toLowerCase()
+          } else if (item.status) {
+            statusText = item.status.toLowerCase()
+          }
 
           const itemData = {
             id: item.id,
             name: item.name,
-            createdAt: item.created_at,
-            groupId: item.group?.id,
-            groupName: item.group?.title,
-            status: statusCol?.text || 'جديد',
-            columnValues: item.column_values
+            createdAt: item.created_at || item.createdAt || new Date().toISOString(),
+            groupId: item.group?.id || item.groupId,
+            groupName: item.group?.title || item.groupName,
+            status: statusText || 'جديد',
+            columnValues: item.column_values || item.columnValues
           }
 
-          archiveData[monthKey].boards[board.id].items.push(itemData)
-          archiveData[monthKey].boards[board.id].stats.total++
+          archiveData[monthKey].boards[boardId].items.push(itemData)
+          archiveData[monthKey].boards[boardId].stats.total++
 
-          if (status.includes('done') || status.includes('مكتمل')) {
-            archiveData[monthKey].boards[board.id].stats.completed++
-          } else if (status.includes('working') || status.includes('قيد')) {
-            archiveData[monthKey].boards[board.id].stats.inProgress++
-          } else if (status.includes('stuck') || status.includes('معلق')) {
-            archiveData[monthKey].boards[board.id].stats.stuck++
+          if (statusText.includes('done') || statusText.includes('مكتمل') || statusText.includes('تم')) {
+            archiveData[monthKey].boards[boardId].stats.completed++
+          } else if (statusText.includes('working') || statusText.includes('قيد') || statusText.includes('جاري')) {
+            archiveData[monthKey].boards[boardId].stats.inProgress++
+          } else if (statusText.includes('stuck') || statusText.includes('معلق')) {
+            archiveData[monthKey].boards[boardId].stats.stuck++
           }
         })
+      })
 
-        // تأخير لتجنب rate limiting
-        await new Promise(resolve => setTimeout(resolve, 300))
-      }
-
-      // 3. حفظ في Firebase
+      // حفظ في Firebase
       const archiveRef = ref(database, 'archives')
       await set(archiveRef, {
         ...archiveData,
@@ -213,7 +172,7 @@ export default function Archive() {
       })
 
       setArchives(archiveData)
-      console.log('✅ تم حفظ الأرشيف بنجاح')
+      console.log('✅ تم بناء الأرشيف بنجاح')
 
     } catch (err) {
       setError(err.message)
@@ -265,11 +224,11 @@ export default function Archive() {
 
         <button
           className="sync-archive-btn"
-          onClick={syncAllData}
+          onClick={buildArchiveFromBoards}
           disabled={syncing}
         >
           <RefreshCw className={syncing ? 'spinning' : ''} size={20} />
-          <span>{syncing ? 'جاري السحب...' : 'سحب كل البيانات'}</span>
+          <span>{syncing ? 'جاري التحديث...' : 'تحديث الأرشيف'}</span>
         </button>
       </div>
 
@@ -284,7 +243,7 @@ export default function Archive() {
         <div className="archive-empty">
           <Folder size={64} />
           <h2>لا توجد بيانات في الأرشيف</h2>
-          <p>اضغط على "سحب كل البيانات" لتحميل جميع المهام من Monday.com</p>
+          <p>اضغط على "تحديث الأرشيف" لتنظيم المهام الموجودة</p>
         </div>
       ) : (
         <div className="archive-content">
@@ -419,7 +378,7 @@ export default function Archive() {
                                               item.status.includes('قيد') || item.status.toLowerCase().includes('working') ? 'in-progress' :
                                               item.status.includes('معلق') || item.status.toLowerCase().includes('stuck') ? 'stuck' : ''
                                             }`}>
-                                              {item.status}
+                                              {item.status || 'جديد'}
                                             </span>
                                           </td>
                                           <td>{new Date(item.createdAt).toLocaleDateString('ar-SA')}</td>

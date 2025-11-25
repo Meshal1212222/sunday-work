@@ -16,9 +16,6 @@ import { database } from '../firebase/config'
 import { ref, get, set, onValue, off } from 'firebase/database'
 import './Board.css'
 
-const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
-const MONDAY_API_URL = 'https://api.monday.com/v2'
-
 // ==================== Firebase Functions ====================
 // مسار Firebase موحد مع SyncAll.jsx
 const FIREBASE_BOARDS_PATH = 'boards'
@@ -115,71 +112,6 @@ async function saveBoardToFirebase(boardId, data) {
   }
 }
 
-async function fetchBoardData(boardId) {
-  const query = `
-    query ($boardId: ID!) {
-      boards(ids: [$boardId]) {
-        id
-        name
-        columns {
-          id
-          title
-          type
-          settings_str
-        }
-        groups {
-          id
-          title
-          color
-        }
-        items_page(limit: 500) {
-          items {
-            id
-            name
-            group {
-              id
-            }
-            creator {
-              id
-              name
-            }
-            created_at
-            column_values {
-              id
-              text
-              type
-              value
-            }
-          }
-        }
-      }
-    }
-  `
-
-  const response = await fetch(MONDAY_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': MONDAY_API_TOKEN
-    },
-    body: JSON.stringify({
-      query,
-      variables: { boardId: String(boardId) }
-    })
-  })
-
-  const data = await response.json()
-
-  if (data.errors) {
-    throw new Error(data.errors[0]?.message || 'فشل تحميل البيانات')
-  }
-
-  if (!data.data?.boards?.[0]) {
-    throw new Error('البورد غير موجود')
-  }
-
-  return data.data.boards[0]
-}
 
 export default function Board() {
   const { id } = useParams()
@@ -241,24 +173,14 @@ export default function Board() {
       setLoading(true)
       setError(null)
 
-      // 1. جرب Firebase أولاً
-      if (!forceRefresh) {
-        const cachedData = await loadBoardFromFirebase(id)
-        if (cachedData) {
-          setBoard(cachedData)
-          setDataSource('firebase')
-          setLoading(false)
-          return
-        }
+      // تحميل من Firebase
+      const cachedData = await loadBoardFromFirebase(id)
+      if (cachedData) {
+        setBoard(cachedData)
+        setDataSource('firebase')
+      } else {
+        setError('البورد غير موجود')
       }
-
-      // 2. سحب من Monday.com
-      const data = await fetchBoardData(id)
-      setBoard(data)
-      setDataSource('monday')
-
-      // 3. حفظ في Firebase
-      await saveBoardToFirebase(id, data)
 
     } catch (err) {
       setError(err.message || 'حدث خطأ')

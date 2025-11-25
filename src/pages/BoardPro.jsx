@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { ref, onValue, set } from 'firebase/database'
+import { ref, onValue, get } from 'firebase/database'
 import { database } from '../firebase/config'
 import {
   RefreshCw,
@@ -51,9 +51,6 @@ import {
 import BoardChat from '../components/BoardChat'
 import './BoardPro.css'
 
-const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ2MzU3MDU0MSwiYWFpIjoxMSwidWlkIjo3MTc0OTc3MCwiaWFkIjoiMjAyNS0wMS0wOFQxMTo1NjozNC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6Mjc0NjA4NDMsInJnbiI6ImV1YzEifQ.LMpcLUJqpccHB7UVJJKlLiMg5k-4cxPVVmEHOvjQj1M'
-const MONDAY_API_URL = 'https://api.monday.com/v2'
-
 export default function BoardPro() {
   const { boardId, id } = useParams()
   const actualBoardId = boardId || id  // دعم كلا المسارين
@@ -68,104 +65,31 @@ export default function BoardPro() {
   const [activeColumnMenu, setActiveColumnMenu] = useState(null) // لإظهار قائمة العمود
   const [collapsedColumns, setCollapsedColumns] = useState([]) // الأعمدة المطوية
 
-  // Fetch from Monday.com
-  const fetchFromMonday = useCallback(async () => {
-    if (!actualBoardId) return null
-
-    const query = `
-      query {
-        boards(ids: [${actualBoardId}]) {
-          id
-          name
-          description
-          columns {
-            id
-            title
-            type
-            settings_str
-          }
-          groups {
-            id
-            title
-            color
-          }
-          items_page(limit: 500) {
-            items {
-              id
-              name
-              group {
-                id
-                title
-                color
-              }
-              column_values {
-                id
-                type
-                text
-                value
-              }
-              created_at
-              updated_at
-            }
-          }
-        }
-      }
-    `
-
-    try {
-      const response = await fetch(MONDAY_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': MONDAY_API_TOKEN
-        },
-        body: JSON.stringify({ query })
-      })
-
-      const result = await response.json()
-      if (result.data?.boards?.[0]) {
-        const boardData = result.data.boards[0]
-        // Save to Firebase
-        await set(ref(database, `boards/${actualBoardId}`), {
-          ...boardData,
-          lastSync: new Date().toISOString()
-        })
-        return boardData
-      }
-    } catch (error) {
-      console.error('Error fetching from Monday:', error)
-    }
-    return null
-  }, [actualBoardId])
-
-  // Load data
+  // Load data from Firebase only
   useEffect(() => {
     if (!actualBoardId) return
 
     const boardRef = ref(database, `boards/${actualBoardId}`)
 
-    const unsubscribe = onValue(boardRef, async (snapshot) => {
+    const unsubscribe = onValue(boardRef, (snapshot) => {
       const data = snapshot.val()
-
       if (data) {
         setBoard(data)
-        setLoading(false)
-      } else {
-        // Fetch from Monday if not in Firebase
-        const mondayData = await fetchFromMonday()
-        if (mondayData) {
-          setBoard(mondayData)
-        }
-        setLoading(false)
       }
+      setLoading(false)
     })
 
     return () => unsubscribe()
-  }, [actualBoardId, fetchFromMonday])
+  }, [actualBoardId])
 
   const handleRefresh = async () => {
     setLoading(true)
-    await fetchFromMonday()
+    // إعادة تحميل من Firebase
+    const boardRef = ref(database, `boards/${actualBoardId}`)
+    const snapshot = await get(boardRef)
+    if (snapshot.exists()) {
+      setBoard(snapshot.val())
+    }
     setLoading(false)
   }
 

@@ -17,11 +17,7 @@ import {
 import { database } from '../firebase/config'
 import { ref, get, set } from 'firebase/database'
 import sundayDataStore from '../services/sundayDataStore'
-import { getBoardItems } from '../services/mondayService'
 import './BoardView.css'
-
-const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
-const MONDAY_API_URL = 'https://api.monday.com/v2'
 
 // ==================== Firebase Functions ====================
 async function saveBoardToFirebase(boardId, data) {
@@ -52,61 +48,6 @@ async function loadBoardFromFirebase(boardId) {
   }
 }
 
-async function fetchBoardFromMonday(boardId) {
-  const query = `
-    query ($boardId: ID!) {
-      boards(ids: [$boardId]) {
-        id
-        name
-        columns {
-          id
-          title
-          type
-        }
-        groups {
-          id
-          title
-        }
-        items_page(limit: 500) {
-          items {
-            id
-            name
-            group {
-              id
-              title
-            }
-            column_values {
-              id
-              type
-              text
-              value
-            }
-          }
-        }
-      }
-    }
-  `
-
-  const response = await fetch(MONDAY_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': MONDAY_API_TOKEN
-    },
-    body: JSON.stringify({
-      query,
-      variables: { boardId }
-    })
-  })
-
-  const result = await response.json()
-  if (result.errors) {
-    throw new Error(result.errors[0].message)
-  }
-
-  return result.data.boards[0]
-}
-
 export default function BoardView() {
   const { id: boardId } = useParams() // تصحيح: الراوتر يستخدم :id
   const [board, setBoard] = useState(null)
@@ -131,128 +72,65 @@ export default function BoardView() {
       setLoading(true)
       setError(null)
 
-      // 1. جرب Firebase أولاً (إذا مو force refresh)
-      if (!forceRefresh) {
-        console.log('📦 جاري تحميل البيانات من Firebase...')
-        const cachedData = await loadBoardFromFirebase(boardId)
+      // تحميل من Firebase
+      console.log('📦 جاري تحميل البيانات من Firebase...')
+      const cachedData = await loadBoardFromFirebase(boardId)
 
-        if (cachedData && cachedData.board && cachedData.itemsByGroup) {
-          console.log('✅ تم تحميل البيانات من Firebase')
-          setBoard(cachedData.board)
-          setGroups(cachedData.board.groups || [])
-          setItems(cachedData.itemsByGroup)
-          setDataSource('firebase')
-          setLastUpdated(cachedData.lastUpdated)
-          setLoading(false)
-          return
-        }
-      }
+      if (cachedData) {
+        // التعامل مع هياكل البيانات المختلفة
+        let boardData = cachedData.board || cachedData
+        let itemsData = cachedData.itemsByGroup || {}
 
-      // 2. جلب البيانات من Monday
-      console.log('📥 جاري سحب البيانات من Monday...', boardId)
-      const mondayBoard = await fetchBoardFromMonday(boardId)
-
-      if (!mondayBoard) {
-        throw new Error('البورد غير موجود')
-      }
-
-      console.log('✅ تم سحب البيانات من Monday:', mondayBoard)
-
-      // تحويل بيانات Monday إلى صيغة Sunday
-      const transformedBoard = {
-        id: mondayBoard.id,
-        name: mondayBoard.name,
-        groups: mondayBoard.groups.map(g => ({
-          id: g.id,
-          title: g.title
-        }))
-      }
-
-      // حفظ البورد في sundayDataStore
-      const storeData = sundayDataStore.data
-      const boardIndex = storeData.boards.findIndex(b => b.id === mondayBoard.id)
-
-      if (boardIndex >= 0) {
-        storeData.boards[boardIndex] = transformedBoard
-      } else {
-        storeData.boards.push(transformedBoard)
-      }
-
-      // تهيئة items للبورد
-      if (!storeData.items[mondayBoard.id]) {
-        storeData.items[mondayBoard.id] = []
-      }
-
-      // تحويل المهام
-      const itemsByGroup = {}
-      mondayBoard.groups.forEach(group => {
-        itemsByGroup[group.id] = []
-      })
-
-      const allBoardItems = []
-
-      mondayBoard.items_page.items.forEach(item => {
-        // استخراج البيانات من الأعمدة
-        const personCol = item.column_values.find(c => c.type === 'multiple-person' || c.type === 'people')
-        const statusCol = item.column_values.find(c => c.type === 'status')
-        const dateCol = item.column_values.find(c => c.type === 'date')
-
-        let assignee = null
-        if (personCol?.text) {
-          assignee = personCol.text
-        }
-
-        let status = 'جديدة'
-        if (statusCol?.text) {
-          status = statusCol.text
-        }
-
-        let dueDate = null
-        if (dateCol?.value) {
-          try {
-            const dateValue = JSON.parse(dateCol.value)
-            dueDate = dateValue.date || null
-            if (dateValue.time) {
-              dueDate = `${dateValue.date}T${dateValue.time}`
-            }
-          } catch (e) {
-            console.warn('Failed to parse date:', e)
+        // إذا كانت البيانات بصيغة items_page
+        if (cachedData.items_page?.items) {
+          boardData = {
+            id: cachedData.id,
+            name: cachedData.name,
+            groups: cachedData.groups || []
           }
+
+          // تحويل items_page إلى itemsByGroup
+          itemsData = {}
+          boardData.groups?.forEach(g => {
+            itemsData[g.id] = []
+          })
+
+          cachedData.items_page.items.forEach(item => {
+            const groupId = item.group?.id || 'default'
+            if (!itemsData[groupId]) {
+              itemsData[groupId] = []
+            }
+
+            // استخراج البيانات
+            const personCol = item.column_values?.find(c => c.type === 'multiple-person' || c.type === 'person')
+            const statusCol = item.column_values?.find(c => c.type === 'status')
+            const dateCol = item.column_values?.find(c => c.type === 'date')
+
+            itemsData[groupId].push({
+              id: item.id,
+              name: item.name,
+              boardId: cachedData.id,
+              groupId: groupId,
+              assignee: personCol?.text || null,
+              status: statusCol?.text || 'جديدة',
+              dueDate: dateCol?.text || null,
+              state: 'active'
+            })
+          })
         }
 
-        const transformedItem = {
-          id: item.id,
-          name: item.name,
-          boardId: mondayBoard.id,
-          groupId: item.group.id,
-          assignee,
-          status,
-          dueDate,
-          state: 'active'
-        }
+        setBoard(boardData)
+        setGroups(boardData.groups || [])
+        setItems(itemsData)
+        setDataSource('firebase')
+        setLastUpdated(cachedData.lastUpdated || cachedData.lastSync)
+        setLoading(false)
+        return
+      }
 
-        itemsByGroup[item.group.id].push(transformedItem)
-        allBoardItems.push(transformedItem)
-      })
-
-      // حفظ كل المهام للبورد
-      storeData.items[mondayBoard.id] = allBoardItems
-      sundayDataStore.saveData()
-
-      // 3. حفظ في Firebase
-      await saveBoardToFirebase(boardId, {
-        board: transformedBoard,
-        itemsByGroup
-      })
-
-      setBoard(transformedBoard)
-      setGroups(transformedBoard.groups)
-      setItems(itemsByGroup)
-      setDataSource('monday')
-      setLastUpdated(Date.now())
+      // لا توجد بيانات
+      setError('البورد غير موجود')
       setLoading(false)
-
-      console.log('✅ تم حفظ البيانات في Firebase')
 
     } catch (error) {
       console.error('❌ خطأ في تحميل البورد:', error)
@@ -434,7 +312,7 @@ export default function BoardView() {
             {dataSource === 'firebase' ? '📦 Firebase' : '☁️ Monday'}
           </div>
 
-          <button className="board-action-btn" onClick={() => loadBoard(true)} title="تحديث من Monday.com">
+          <button className="board-action-btn" onClick={() => loadBoard(true)} title="تحديث البيانات">
             <RefreshCw size={18} />
             <span>تحديث</span>
           </button>

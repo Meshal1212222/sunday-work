@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { database } from '../firebase/config'
-import { ref, get, set } from 'firebase/database'
+import { ref, get, onValue } from 'firebase/database'
 import {
   BarChart3,
   TrendingUp,
@@ -18,13 +18,9 @@ import {
 } from 'lucide-react'
 import './Performance.css'
 
-const MONDAY_API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
-const MONDAY_API_URL = 'https://api.monday.com/v2'
-
 export default function Performance() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
-  const [data, setData] = useState({ boards: {}, archives: {} })
   const [selectedBoard, setSelectedBoard] = useState('all')
   const [selectedEmployee, setSelectedEmployee] = useState('all')
   const [employees, setEmployees] = useState([])
@@ -35,187 +31,17 @@ export default function Performance() {
     loadAllData()
   }, [])
 
-  // سحب البيانات مباشرة من Monday.com
-  const fetchFromMonday = async () => {
-    setSyncing(true)
-    try {
-      // سحب كل البوردات
-      const boardsQuery = `
-        query {
-          boards(limit: 50) {
-            id
-            name
-            items_count
-            groups {
-              id
-              title
-            }
-            items_page(limit: 500) {
-              items {
-                id
-                name
-                state
-                created_at
-                group {
-                  id
-                  title
-                }
-                column_values {
-                  id
-                  type
-                  text
-                  value
-                }
-              }
-            }
-          }
-        }
-      `
-
-      const response = await fetch(MONDAY_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': MONDAY_API_TOKEN
-        },
-        body: JSON.stringify({ query: boardsQuery })
-      })
-
-      const result = await response.json()
-      if (result.errors) throw new Error(result.errors[0].message)
-
-      const mondayBoards = result.data.boards
-      const processedData = {}
-      const allEmployees = new Set()
-      let totalTasks = 0, completedTasks = 0, inProgressTasks = 0, stuckTasks = 0
-
-      mondayBoards.forEach(board => {
-        const boardStats = {
-          id: board.id,
-          name: board.name,
-          total: 0,
-          completed: 0,
-          inProgress: 0,
-          stuck: 0,
-          items: []
-        }
-
-        board.items_page?.items?.forEach(item => {
-          // استخراج الحالة
-          const statusCol = item.column_values?.find(c =>
-            c.type === 'status' || c.type === 'color'
-          )
-          const statusText = statusCol?.text?.toLowerCase() || ''
-
-          // استخراج الشخص المسؤول - جرب كل الطرق الممكنة
-          const personCol = item.column_values?.find(c =>
-            c.type === 'multiple-person' ||
-            c.type === 'person' ||
-            c.type === 'people' ||
-            c.id?.includes('person') ||
-            c.id?.includes('people')
-          )
-
-          let assigneeName = 'غير معين'
-          if (personCol) {
-            // جرب text أولاً
-            if (personCol.text && personCol.text.trim()) {
-              assigneeName = personCol.text
-            }
-            // جرب value إذا text فارغ
-            else if (personCol.value) {
-              try {
-                const parsed = JSON.parse(personCol.value)
-                if (parsed.personsAndTeams) {
-                  const names = parsed.personsAndTeams.map(p => p.name || p.id).filter(Boolean)
-                  if (names.length > 0) assigneeName = names.join(', ')
-                }
-              } catch (e) {
-                // value مو JSON
-                if (typeof personCol.value === 'string' && personCol.value.trim()) {
-                  assigneeName = personCol.value
-                }
-              }
-            }
-          }
-
-          if (assigneeName !== 'غير معين') {
-            assigneeName.split(',').forEach(name => {
-              allEmployees.add(name.trim())
-            })
-          }
-
-          boardStats.total++
-          totalTasks++
-
-          if (statusText.includes('done') || statusText.includes('مكتمل') || statusText.includes('تم')) {
-            boardStats.completed++
-            completedTasks++
-          } else if (statusText.includes('working') || statusText.includes('قيد') || statusText.includes('جاري')) {
-            boardStats.inProgress++
-            inProgressTasks++
-          } else if (statusText.includes('stuck') || statusText.includes('معلق') || statusText.includes('متوقف')) {
-            boardStats.stuck++
-            stuckTasks++
-          }
-
-          boardStats.items.push({
-            id: item.id,
-            name: item.name,
-            status: statusCol?.text || 'جديد',
-            assignee: assigneeName,
-            createdAt: item.created_at
-          })
-        })
-
-        processedData[board.id] = boardStats
-      })
-
-      // حفظ في Firebase
-      const performanceRef = ref(database, 'performance')
-      await set(performanceRef, {
-        boards: processedData,
-        summary: {
-          total: totalTasks,
-          completed: completedTasks,
-          inProgress: inProgressTasks,
-          stuck: stuckTasks,
-          productivity: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
-        },
-        lastUpdated: Date.now()
-      })
-
-      setRawStats({
-        total: totalTasks,
-        completed: completedTasks,
-        inProgress: inProgressTasks,
-        stuck: stuckTasks,
-        productivity: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
-        boardsData: processedData
-      })
-
-      setBoards(mondayBoards.map(b => ({ id: b.id, name: b.name })))
-      setEmployees(Array.from(allEmployees))
-
-      console.log('✅ تم سحب البيانات من Monday.com')
-
-    } catch (err) {
-      console.error('Error fetching from Monday:', err)
-    }
-    setSyncing(false)
-    setLoading(false)
-  }
-
+  // تحميل البيانات من Firebase
   const loadAllData = async () => {
     try {
       setLoading(true)
 
-      // محاولة تحميل من Firebase أولاً
+      // تحميل إحصائيات الأداء المحفوظة
       const performanceRef = ref(database, 'performance')
-      const snapshot = await get(performanceRef)
+      const perfSnapshot = await get(performanceRef)
 
-      if (snapshot.exists()) {
-        const perfData = snapshot.val()
+      if (perfSnapshot.exists()) {
+        const perfData = perfSnapshot.val()
         setRawStats({
           ...perfData.summary,
           boardsData: perfData.boards
@@ -233,14 +59,143 @@ export default function Performance() {
         })
         setEmployees(Array.from(allEmployees))
         setLoading(false)
-      } else {
-        // لا توجد بيانات - سحب من Monday مباشرة
-        await fetchFromMonday()
+        return
       }
+
+      // إذا لم توجد إحصائيات محفوظة، حمّل من boards مباشرة
+      const boardsRef = ref(database, 'boards')
+      const boardsSnapshot = await get(boardsRef)
+
+      if (boardsSnapshot.exists()) {
+        const boardsData = boardsSnapshot.val()
+        processFirebaseData(boardsData)
+      }
+
+      setLoading(false)
     } catch (err) {
       console.error('Error loading data:', err)
       setLoading(false)
     }
+  }
+
+  // معالجة بيانات Firebase وتحويلها لإحصائيات
+  const processFirebaseData = (boardsData) => {
+    const processedData = {}
+    const allEmployees = new Set()
+    let totalTasks = 0, completedTasks = 0, inProgressTasks = 0, stuckTasks = 0
+
+    Object.entries(boardsData).forEach(([boardId, boardData]) => {
+      const boardName = boardData.name || boardData.board?.name || `Board ${boardId}`
+      const boardStats = {
+        id: boardId,
+        name: boardName,
+        total: 0,
+        completed: 0,
+        inProgress: 0,
+        stuck: 0,
+        items: []
+      }
+
+      // استخراج المهام من الهيكل المختلف
+      let items = []
+
+      if (boardData.items_page?.items) {
+        items = boardData.items_page.items
+      } else if (boardData.itemsByGroup) {
+        Object.values(boardData.itemsByGroup).forEach(groupItems => {
+          if (Array.isArray(groupItems)) {
+            items = [...items, ...groupItems]
+          }
+        })
+      } else if (boardData.items && Array.isArray(boardData.items)) {
+        items = boardData.items
+      }
+
+      items.forEach(item => {
+        // استخراج الحالة
+        let statusText = ''
+        if (item.column_values) {
+          const statusCol = item.column_values.find(c =>
+            c.type === 'status' || c.type === 'color' || c.id?.includes('status')
+          )
+          statusText = (statusCol?.text || '').toLowerCase()
+        } else if (item.status) {
+          statusText = item.status.toLowerCase()
+        }
+
+        // استخراج الشخص المسؤول
+        let assigneeName = 'غير معين'
+        if (item.column_values) {
+          const personCol = item.column_values.find(c =>
+            c.type === 'multiple-person' || c.type === 'person' || c.type === 'people'
+          )
+          if (personCol?.text) {
+            assigneeName = personCol.text
+          } else if (personCol?.value) {
+            try {
+              const parsed = JSON.parse(personCol.value)
+              if (parsed.personsAndTeams) {
+                const names = parsed.personsAndTeams.map(p => p.name).filter(Boolean)
+                if (names.length > 0) assigneeName = names.join(', ')
+              }
+            } catch {}
+          }
+        } else if (item.assignee) {
+          assigneeName = item.assignee
+        }
+
+        if (assigneeName !== 'غير معين') {
+          assigneeName.split(',').forEach(name => {
+            allEmployees.add(name.trim())
+          })
+        }
+
+        boardStats.total++
+        totalTasks++
+
+        if (statusText.includes('done') || statusText.includes('مكتمل') || statusText.includes('تم')) {
+          boardStats.completed++
+          completedTasks++
+        } else if (statusText.includes('working') || statusText.includes('قيد') || statusText.includes('جاري')) {
+          boardStats.inProgress++
+          inProgressTasks++
+        } else if (statusText.includes('stuck') || statusText.includes('معلق') || statusText.includes('متوقف')) {
+          boardStats.stuck++
+          stuckTasks++
+        }
+
+        boardStats.items.push({
+          id: item.id,
+          name: item.name,
+          status: statusText || 'جديد',
+          assignee: assigneeName,
+          createdAt: item.created_at
+        })
+      })
+
+      if (boardStats.total > 0) {
+        processedData[boardId] = boardStats
+      }
+    })
+
+    setRawStats({
+      total: totalTasks,
+      completed: completedTasks,
+      inProgress: inProgressTasks,
+      stuck: stuckTasks,
+      productivity: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+      boardsData: processedData
+    })
+
+    setBoards(Object.values(processedData).map(b => ({ id: b.id, name: b.name })))
+    setEmployees(Array.from(allEmployees))
+  }
+
+  // إعادة تحميل البيانات من Firebase
+  const refreshData = async () => {
+    setSyncing(true)
+    await loadAllData()
+    setSyncing(false)
   }
 
   // حساب الإحصائيات المفلترة
@@ -375,11 +330,11 @@ export default function Performance() {
 
           <button
             className="sync-btn"
-            onClick={fetchFromMonday}
+            onClick={refreshData}
             disabled={syncing}
           >
-            {syncing ? <RefreshCw className="spinning" size={18} /> : <Download size={18} />}
-            <span>{syncing ? 'جاري السحب...' : 'تحديث البيانات'}</span>
+            {syncing ? <RefreshCw className="spinning" size={18} /> : <RefreshCw size={18} />}
+            <span>{syncing ? 'جاري التحديث...' : 'تحديث البيانات'}</span>
           </button>
         </div>
       </div>
@@ -470,7 +425,7 @@ export default function Performance() {
           </div>
           <div className="employees-list">
             {stats.topEmployees?.length === 0 ? (
-              <p className="empty-message">لا توجد بيانات - اضغط "تحديث البيانات"</p>
+              <p className="empty-message">لا توجد بيانات</p>
             ) : (
               stats.topEmployees?.map((emp, index) => (
                 <div key={emp.name} className="employee-item">
@@ -513,7 +468,7 @@ export default function Performance() {
           </div>
           <div className="boards-list">
             {stats.topBoards?.length === 0 ? (
-              <p className="empty-message">لا توجد بيانات - اضغط "تحديث البيانات"</p>
+              <p className="empty-message">لا توجد بيانات</p>
             ) : (
               stats.topBoards?.map(board => (
                 <div key={board.id} className="board-item">

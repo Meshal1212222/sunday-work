@@ -17,11 +17,7 @@ import Team from './pages/Team'
 import Settings from './pages/Settings'
 import Help from './pages/Help'
 import WhatsAppTest from './pages/WhatsAppTest'
-import WhatsAppGroupsTest from './pages/WhatsAppGroupsTest'
-import ZapierImport from './pages/ZapierImport'
-import ManualZapCopy from './pages/ManualZapCopy'
 import DataSync from './pages/DataSync'
-import SyncAll from './pages/SyncAll'
 import WhatsAppBot from './pages/WhatsAppBot'
 import MyWork from './pages/MyWork'
 import Archive from './pages/Archive'
@@ -64,12 +60,8 @@ function AppRoutes() {
           <Route path="/team" element={<Team />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/whatsapp-test" element={<WhatsAppTest />} />
-          <Route path="/whatsapp-groups" element={<WhatsAppGroupsTest />} />
           <Route path="/whatsapp-bot" element={<WhatsAppBot />} />
-          <Route path="/zapier-import" element={<ZapierImport />} />
-          <Route path="/manual-zap-copy" element={<ManualZapCopy />} />
           <Route path="/data-sync" element={<DataSync />} />
-          <Route path="/sync-all" element={<SyncAll />} />
           <Route path="/archive" element={<Archive />} />
           <Route path="/performance" element={<Performance />} />
           <Route path="/help" element={<Help />} />
