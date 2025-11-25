@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+const { useState, useEffect } = React;
 
 // ==================== 🎨 SUNDAY LOGO ====================
 const SundayLogo = ({ size = 'medium', color = 'default' }) => {
@@ -1721,4 +1721,4 @@ const ActivityItem = ({ icon, color, title, description, time }) => (
   </div>
 );
 
-export default SundayBoardPro;
+// SundayBoardPro component is now available globally
