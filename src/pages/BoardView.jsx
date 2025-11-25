@@ -108,7 +108,7 @@ async function fetchBoardFromMonday(boardId) {
 }
 
 export default function BoardView() {
-  const { boardId } = useParams()
+  const { id: boardId } = useParams() // تصحيح: الراوتر يستخدم :id
   const [board, setBoard] = useState(null)
   const [groups, setGroups] = useState([])
   const [items, setItems] = useState({})
