@@ -710,7 +710,11 @@ export default function BoardPro() {
                             {isExpanded && (
                               <>
                                 {subitems.map((subitem, subIndex) => (
-                                  <tr key={subitem.id} className="subtask-row">
+                                  <tr
+                                    key={subitem.id}
+                                    className="subtask-row"
+                                    style={{ animationDelay: `${subIndex * 0.05}s` }}
+                                  >
                                     <td className="col-checkbox">
                                       <input type="checkbox" onClick={(e) => e.stopPropagation()} />
                                     </td>
@@ -719,6 +723,9 @@ export default function BoardPro() {
                                         <div className="tree-connector">
                                           <span className={`tree-line ${subIndex === subitems.length - 1 ? 'last' : ''}`}></span>
                                         </div>
+                                        <span className="subtask-icon">
+                                          <Circle size={8} />
+                                        </span>
                                         <span className="subtask-name" onClick={() => openTaskPanel(subitem)}>
                                           {subitem.name}
                                         </span>

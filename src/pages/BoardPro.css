@@ -1830,3 +1830,685 @@
 .cancel-subtask-btn:hover {
   background: rgba(239, 68, 68, 0.25);
 }
+
+/* ========================================
+   Creative Enhancements - التحسينات الإبداعية
+   ======================================== */
+
+/* Animated Gradient Background for Header */
+.pro-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(99, 102, 241, 0.03) 0%,
+    rgba(139, 92, 246, 0.05) 25%,
+    rgba(236, 72, 153, 0.03) 50%,
+    rgba(99, 102, 241, 0.05) 75%,
+    rgba(139, 92, 246, 0.03) 100%
+  );
+  background-size: 300% 300%;
+  animation: gradientShift 15s ease infinite;
+  pointer-events: none;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Creative Glowing Board Icon */
+.board-icon-wrapper {
+  position: relative;
+  animation: iconFloat 4s ease-in-out infinite;
+}
+
+.board-icon-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  background: linear-gradient(135deg, #6366f1, #ec4899, #8b5cf6);
+  border-radius: 20px;
+  opacity: 0.5;
+  filter: blur(10px);
+  z-index: -1;
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+@keyframes iconFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.95); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+/* Enhanced Stats Cards with Hover Glow */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.stat-card:hover::before {
+  left: 100%;
+}
+
+.stat-card.total:hover {
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
+}
+
+.stat-card.done:hover {
+  box-shadow: 0 8px 32px rgba(34, 197, 94, 0.2);
+}
+
+.stat-card.working:hover {
+  box-shadow: 0 8px 32px rgba(245, 158, 11, 0.2);
+}
+
+.stat-card.stuck:hover {
+  box-shadow: 0 8px 32px rgba(239, 68, 68, 0.2);
+}
+
+/* Animated Productivity Circle */
+.productivity-circle {
+  animation: productivityPulse 4s ease-in-out infinite;
+}
+
+@keyframes productivityPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.progress-circle {
+  filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.5));
+  transition: stroke-dasharray 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Creative Table Group Header Animation */
+.table-group-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.table-group-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--group-color, #6366f1),
+    transparent
+  );
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.table-group:hover .table-group-header::after {
+  transform: scaleX(1);
+}
+
+/* Enhanced Group Indicator with Animation */
+.group-indicator {
+  position: relative;
+  overflow: hidden;
+}
+
+.group-indicator::before {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: indicatorShine 2s ease-in-out infinite;
+}
+
+@keyframes indicatorShine {
+  0%, 100% { top: -100%; }
+  50% { top: 100%; }
+}
+
+/* Task Row Creative Hover Effects */
+.task-row-main {
+  position: relative;
+}
+
+.task-row-main::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.15), transparent);
+  transition: width 0.3s ease;
+}
+
+.task-row-main:hover::before {
+  width: 100%;
+}
+
+/* Creative Subtask Row with Gradient Border */
+.subtask-row {
+  position: relative;
+}
+
+.subtask-row::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #6366f1, #8b5cf6, #ec4899);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.subtask-row:hover::after {
+  opacity: 1;
+}
+
+/* Enhanced Tree Connectors with Glow */
+.tree-connector {
+  position: relative;
+}
+
+.tree-line {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
+}
+
+.tree-line::before {
+  background: linear-gradient(180deg, #6366f1, #8b5cf6);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
+}
+
+/* Animated Expand Button */
+.expand-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.expand-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.3), transparent);
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.3s ease;
+}
+
+.expand-btn:hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.expand-btn.expanded {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+/* Creative Badge Animation */
+.subitems-count {
+  animation: badgePop 0.3s ease;
+  transition: all 0.2s ease;
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.subitems-count:hover {
+  transform: scale(1.1);
+  background: rgba(99, 102, 241, 0.25);
+}
+
+/* Cell Value Hover Effects */
+.cell-value {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.cell-value:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Status Cell Glow Effects */
+.col-data.status-done .cell-value {
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
+}
+
+.col-data.status-working .cell-value {
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+}
+
+.col-data.status-stuck .cell-value {
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+}
+
+/* Creative Add Button Animations */
+.add-subtask-icon,
+.add-column-btn,
+.add-task-btn {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.add-subtask-icon:hover,
+.add-column-btn:hover {
+  transform: scale(1.1) rotate(90deg);
+}
+
+.add-task-btn:hover {
+  transform: translateX(-4px);
+}
+
+.add-task-btn:hover svg {
+  animation: plusSpin 0.3s ease;
+}
+
+@keyframes plusSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(180deg); }
+}
+
+/* Save/Cancel Button Effects */
+.save-subtask-btn,
+.cancel-subtask-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.save-subtask-btn::before,
+.cancel-subtask-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.2), transparent 60%);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.save-subtask-btn:hover::before,
+.cancel-subtask-btn:hover::before {
+  transform: translateX(100%);
+}
+
+/* Subtask Input Focus Effect */
+.subtask-input {
+  position: relative;
+}
+
+.subtask-input:focus {
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+/* Enhanced Panel Slide Animation */
+.task-panel {
+  box-shadow: 20px 0 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Creative Kanban Card Hover */
+.kanban-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.kanban-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.1) 0%,
+    transparent 50%,
+    rgba(236, 72, 153, 0.1) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.kanban-card:hover::before {
+  opacity: 1;
+}
+
+/* Timeline Item Creative Effects */
+.timeline-item {
+  position: relative;
+}
+
+.item-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(236, 72, 153, 0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.item-card:hover::before {
+  opacity: 1;
+}
+
+/* Creative Search Input */
+.search-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.search-wrapper::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.search-wrapper:focus-within::before {
+  width: 100%;
+}
+
+/* View Mode Buttons Creative Effect */
+.view-mode {
+  position: relative;
+  overflow: hidden;
+}
+
+.view-mode::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(99, 102, 241, 0.3), transparent);
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.3s ease;
+}
+
+.view-mode:hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.view-mode.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 2px;
+}
+
+/* Action Button Creative Hover */
+.action-btn.primary {
+  position: relative;
+  overflow: hidden;
+}
+
+.action-btn.primary::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.2), transparent 60%);
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.5s ease;
+}
+
+.action-btn.primary:hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Smooth Subtask Expand Animation */
+.subtask-row {
+  animation: subtaskSlideIn 0.3s ease forwards;
+}
+
+@keyframes subtaskSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Creative Group Count Badge */
+.group-count {
+  position: relative;
+  overflow: hidden;
+}
+
+.group-count::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
+  transform: translateX(-100%);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}
+
+/* Delete Button Danger Effect */
+.delete-subtask-btn:hover {
+  animation: dangerShake 0.3s ease;
+}
+
+@keyframes dangerShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* Table Wrapper Smooth Scroll */
+.table-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+}
+
+.table-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 3px;
+}
+
+/* Collapsed Column Button Animation */
+.collapsed-col-btn {
+  animation: collapseIn 0.3s ease;
+}
+
+@keyframes collapseIn {
+  from {
+    opacity: 0;
+    transform: scale(0) rotate(-180deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+.collapsed-col-btn:hover {
+  animation: collapseHover 0.3s ease forwards;
+}
+
+@keyframes collapseHover {
+  to {
+    transform: scale(1.15) rotate(10deg);
+  }
+}
+
+/* Creative Loading State */
+.board-pro.loading .loading-spinner {
+  position: relative;
+}
+
+.board-pro.loading .loading-spinner::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: #6366f1;
+  border-right-color: #8b5cf6;
+  animation: spinnerRing 1.5s linear infinite;
+}
+
+@keyframes spinnerRing {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Subtask Icon Styling */
+.subtask-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: #8b5cf6;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.subtask-row:hover .subtask-icon {
+  opacity: 1;
+  transform: scale(1.2);
+  color: #a78bfa;
+}
+
+/* Staggered Subtask Animation */
+.subtask-row {
+  animation: subtaskSlideIn 0.3s ease forwards;
+  animation-fill-mode: both;
+}
+
+.subtask-row:nth-child(1) { animation-delay: 0.05s; }
+.subtask-row:nth-child(2) { animation-delay: 0.1s; }
+.subtask-row:nth-child(3) { animation-delay: 0.15s; }
+.subtask-row:nth-child(4) { animation-delay: 0.2s; }
+.subtask-row:nth-child(5) { animation-delay: 0.25s; }
+
+/* Enhanced Tree Line Glow on Hover */
+.subtask-row:hover .tree-line {
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+}
+
+.subtask-row:hover .tree-line::before {
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+}
+
+/* Task Name Sparkle Effect */
+.task-name-cell {
+  position: relative;
+}
+
+.task-name-cell::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -8px;
+  width: 4px;
+  height: 4px;
+  background: #8b5cf6;
+  border-radius: 50%;
+  opacity: 0;
+  transform: translateY(-50%) scale(0);
+  transition: all 0.3s ease;
+}
+
+.task-row-main:hover .task-name-cell::after {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+  animation: sparkle 1s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0.5; transform: translateY(-50%) scale(0.8); }
+  50% { opacity: 1; transform: translateY(-50%) scale(1.2); }
+}
+
+/* Floating Add Button Effect */
+.add-subtask-btn {
+  position: relative;
+}
+
+.add-subtask-btn::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3));
+  border-radius: 10px;
+  opacity: 0;
+  z-index: -1;
+  transition: all 0.3s ease;
+}
+
+.add-subtask-btn:hover::after {
+  opacity: 1;
+  inset: -4px;
+}
