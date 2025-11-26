@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { ref, onValue, get } from 'firebase/database'
 import { database } from '../firebase/config'
@@ -64,6 +64,54 @@ export default function BoardPro() {
   const [showTaskPanel, setShowTaskPanel] = useState(false)
   const [activeColumnMenu, setActiveColumnMenu] = useState(null) // لإظهار قائمة العمود
   const [collapsedColumns, setCollapsedColumns] = useState([]) // الأعمدة المطوية
+  const [expandedTasks, setExpandedTasks] = useState({}) // المهام المفتوحة لعرض السب تاسك
+  const [editingSubtask, setEditingSubtask] = useState(null) // السب تاسك قيد التعديل
+  const [newSubtaskName, setNewSubtaskName] = useState('') // اسم السب تاسك الجديد
+
+  // Toggle task expansion
+  const toggleTaskExpansion = (taskId) => {
+    setExpandedTasks(prev => ({
+      ...prev,
+      [taskId]: !prev[taskId]
+    }))
+  }
+
+  // Get subitems for a task
+  const getSubitems = (item) => {
+    const subitemsCol = item.column_values?.find(c => c.id === 'subitems' || c.type === 'subtasks')
+    if (subitemsCol?.value) {
+      try {
+        const parsed = JSON.parse(subitemsCol.value)
+        return parsed?.linkedPulseIds?.map(sub => ({
+          id: sub.linkedPulseId,
+          name: sub.name || `سب تاسك ${sub.linkedPulseId}`,
+          column_values: sub.column_values || []
+        })) || []
+      } catch {
+        return []
+      }
+    }
+    // Check for subitems in item directly
+    if (item.subitems) {
+      return item.subitems
+    }
+    return []
+  }
+
+  // Add new subtask
+  const handleAddSubtask = async (parentItem) => {
+    if (!newSubtaskName.trim()) return
+    // TODO: Implement Firebase add subtask
+    console.log('Adding subtask:', newSubtaskName, 'to', parentItem.id)
+    setNewSubtaskName('')
+    setEditingSubtask(null)
+  }
+
+  // Delete subtask
+  const handleDeleteSubtask = async (parentId, subtaskId) => {
+    // TODO: Implement Firebase delete subtask
+    console.log('Deleting subtask:', subtaskId, 'from', parentId)
+  }
 
   // Load data from Firebase only
   useEffect(() => {
@@ -598,30 +646,173 @@ export default function BoardPro() {
                       </tr>
                     </thead>
                     <tbody>
-                      {group.items.map(item => (
-                        <tr key={item.id} onClick={() => openTaskPanel(item)}>
-                          <td className="col-checkbox">
-                            <input type="checkbox" onClick={(e) => e.stopPropagation()} />
-                          </td>
-                          <td className="col-name">
-                            <span className="task-name-cell">{item.name}</span>
-                          </td>
-                          {board.columns?.filter(col =>
-                            !['name', 'subitems'].includes(col.id) &&
-                            !collapsedColumns.includes(col.id)
-                          ).slice(0, 6).map(column => {
-                            const colValue = item.column_values?.find(cv => cv.id === column.id)
-                            const cellClass = getCellClass(column.type, colValue?.text)
+                      {group.items.map(item => {
+                        const subitems = getSubitems(item)
+                        const hasSubitems = subitems.length > 0
+                        const isExpanded = expandedTasks[item.id]
 
-                            return (
-                              <td key={column.id} className={`col-data ${cellClass}`}>
-                                <span className="cell-value">{colValue?.text || '-'}</span>
+                        return (
+                          <React.Fragment key={item.id}>
+                            {/* Main Task Row */}
+                            <tr className={`task-row-main ${hasSubitems ? 'has-subitems' : ''} ${isExpanded ? 'expanded' : ''}`}>
+                              <td className="col-checkbox">
+                                <input type="checkbox" onClick={(e) => e.stopPropagation()} />
                               </td>
-                            )
-                          })}
-                          <td className="col-add"></td>
-                        </tr>
-                      ))}
+                              <td className="col-name">
+                                <div className="task-name-wrapper">
+                                  {/* Expand/Collapse Button */}
+                                  <button
+                                    className={`expand-btn ${isExpanded ? 'expanded' : ''}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      toggleTaskExpansion(item.id)
+                                    }}
+                                  >
+                                    <ChevronRight size={16} />
+                                  </button>
+                                  <span className="task-name-cell" onClick={() => openTaskPanel(item)}>
+                                    {item.name}
+                                  </span>
+                                  {hasSubitems && (
+                                    <span className="subitems-count">{subitems.length}</span>
+                                  )}
+                                </div>
+                              </td>
+                              {board.columns?.filter(col =>
+                                !['name', 'subitems'].includes(col.id) &&
+                                !collapsedColumns.includes(col.id)
+                              ).slice(0, 6).map(column => {
+                                const colValue = item.column_values?.find(cv => cv.id === column.id)
+                                const cellClass = getCellClass(column.type, colValue?.text)
+
+                                return (
+                                  <td key={column.id} className={`col-data ${cellClass}`}>
+                                    <span className="cell-value">{colValue?.text || '-'}</span>
+                                  </td>
+                                )
+                              })}
+                              <td className="col-add">
+                                <button
+                                  className="add-subtask-icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setEditingSubtask(item.id)
+                                    setExpandedTasks(prev => ({ ...prev, [item.id]: true }))
+                                  }}
+                                  title="إضافة سب تاسك"
+                                >
+                                  <Plus size={14} />
+                                </button>
+                              </td>
+                            </tr>
+
+                            {/* Sub-items Rows */}
+                            {isExpanded && (
+                              <>
+                                {subitems.map((subitem, subIndex) => (
+                                  <tr key={subitem.id} className="subtask-row">
+                                    <td className="col-checkbox">
+                                      <input type="checkbox" onClick={(e) => e.stopPropagation()} />
+                                    </td>
+                                    <td className="col-name">
+                                      <div className="subtask-name-wrapper">
+                                        <div className="tree-connector">
+                                          <span className={`tree-line ${subIndex === subitems.length - 1 ? 'last' : ''}`}></span>
+                                        </div>
+                                        <span className="subtask-name" onClick={() => openTaskPanel(subitem)}>
+                                          {subitem.name}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    {board.columns?.filter(col =>
+                                      !['name', 'subitems'].includes(col.id) &&
+                                      !collapsedColumns.includes(col.id)
+                                    ).slice(0, 6).map(column => {
+                                      const colValue = subitem.column_values?.find(cv => cv.id === column.id)
+                                      const cellClass = getCellClass(column.type, colValue?.text)
+
+                                      return (
+                                        <td key={column.id} className={`col-data subtask-cell ${cellClass}`}>
+                                          <span className="cell-value">{colValue?.text || '-'}</span>
+                                        </td>
+                                      )
+                                    })}
+                                    <td className="col-add">
+                                      <button
+                                        className="delete-subtask-btn"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleDeleteSubtask(item.id, subitem.id)
+                                        }}
+                                        title="حذف"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+
+                                {/* Add new subtask row */}
+                                {editingSubtask === item.id ? (
+                                  <tr className="add-subtask-row">
+                                    <td className="col-checkbox"></td>
+                                    <td className="col-name">
+                                      <div className="subtask-name-wrapper">
+                                        <div className="tree-connector">
+                                          <span className="tree-line last"></span>
+                                        </div>
+                                        <input
+                                          type="text"
+                                          className="subtask-input"
+                                          placeholder="اسم السب تاسك..."
+                                          value={newSubtaskName}
+                                          onChange={(e) => setNewSubtaskName(e.target.value)}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleAddSubtask(item)
+                                            if (e.key === 'Escape') setEditingSubtask(null)
+                                          }}
+                                          autoFocus
+                                        />
+                                      </div>
+                                    </td>
+                                    <td colSpan={6}>
+                                      <div className="subtask-actions">
+                                        <button
+                                          className="save-subtask-btn"
+                                          onClick={() => handleAddSubtask(item)}
+                                        >
+                                          <CheckCircle2 size={14} />
+                                          حفظ
+                                        </button>
+                                        <button
+                                          className="cancel-subtask-btn"
+                                          onClick={() => setEditingSubtask(null)}
+                                        >
+                                          <XCircle size={14} />
+                                          إلغاء
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ) : (
+                                  <tr className="add-subtask-row clickable">
+                                    <td className="col-checkbox"></td>
+                                    <td className="col-name" colSpan={7}>
+                                      <button
+                                        className="add-subtask-btn"
+                                        onClick={() => setEditingSubtask(item.id)}
+                                      >
+                                        <Plus size={14} />
+                                        <span>إضافة سب تاسك</span>
+                                      </button>
+                                    </td>
+                                  </tr>
+                                )}
+                              </>
+                            )}
+                          </React.Fragment>
+                        )
+                      })}
                       {/* Add new task row */}
                       <tr className="add-task-row">
                         <td className="col-checkbox"></td>
