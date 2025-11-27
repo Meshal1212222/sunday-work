@@ -1,226 +1,37 @@
 from datetime import datetime, date, timedelta
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from ..collectors.firebase_collector import FirebaseCollector
 from ..collectors.google_analytics import GoogleAnalyticsCollector
+from ..collectors.clarity import ClarityCollector
 from ..analyzers.openai_analyzer import OpenAIAnalyzer
 from ..integrations.ultramsg import UltraMsgClient
 from ..config import settings
 
 
 class SmartReportGenerator:
-    """مولد التقارير الذكية الشاملة"""
+    """مولد التقارير الذكية - نص فقط بدون PDF"""
 
     def __init__(self):
         self.firebase = FirebaseCollector()
         self.ai = OpenAIAnalyzer()
         self.whatsapp = UltraMsgClient()
 
-    async def generate_daily_report(self, report_date: date = None) -> str:
-        """التقرير اليومي الشامل"""
-        if report_date is None:
-            report_date = date.today()
+    def _calc_change(self, today: float, yesterday: float) -> tuple:
+        """حساب نسبة التغيير"""
+        if yesterday == 0:
+            return 0, "🟢"
+        change = ((today - yesterday) / yesterday) * 100
+        icon = "🟢" if change > 0 else "🔴" if change < 0 else "⚪"
+        return round(change, 1), icon
 
-        # جمع البيانات من كل المصادر
-        firebase_data = await self.firebase.get_daily_summary(report_date)
-
-        # Google Analytics
-        ga_data = {}
-        try:
-            ga = GoogleAnalyticsCollector()
-            ga_result = await ga.collect_daily_report(report_date)
-            if ga_result.get('status') == 'success':
-                ga_data = ga_result['data']
-        except Exception as e:
-            print(f"GA Error: {e}")
-
-        # تجميع البيانات للتحليل
-        all_data = {
-            "date": report_date.isoformat(),
-            "golden_host": firebase_data.get('golden_host', {}),
-            "sunday_board": firebase_data.get('sunday_board', {}),
-            "analytics": ga_data
-        }
-
-        # تحليل بالذكاء الاصطناعي
-        ai_analysis = await self.ai.analyze_data(all_data, "daily")
-
-        # بناء التقرير
-        report = self._build_daily_report(all_data, ai_analysis, report_date)
-
-        return report
-
-    def _build_daily_report(self, data: Dict, ai_analysis: str, report_date: date) -> str:
-        """بناء نص التقرير اليومي"""
-        gh = data.get('golden_host', {})
-        sb = data.get('sunday_board', {})
-        ga = data.get('analytics', {})
-
-        report = f"""📊 *التقرير اليومي الشامل*
-📅 {report_date.strftime('%Y/%m/%d')} | {self._get_day_name(report_date)}
-━━━━━━━━━━━━━━━━━━━━━
-
-🏨 *Golden Host*
-├ 📝 البلاغات: {gh.get('reports_count', 0)}
-├ 💰 الاستردادات: {gh.get('refunds_count', 0)} ({gh.get('refunds_total', 0):,.0f} ر.س)
-├ 🛒 المبيعات: {gh.get('sales_count', 0)}
-└ 💬 المحادثات: {gh.get('conversations_count', 0)}
-
-📋 *Sunday Board*
-├ 📌 إجمالي المهام: {sb.get('total_tasks', 0)}
-├ ✅ مكتملة اليوم: {sb.get('completed_today', 0)}
-└ ⚠️ متأخرة: {sb.get('overdue_tasks', 0)}
-
-📈 *إحصائيات الزوار*
-├ 👥 المستخدمين: {ga.get('active_users', 'N/A')}
-├ 📱 الجلسات: {ga.get('sessions', 'N/A')}
-├ 📄 المشاهدات: {ga.get('page_views', 'N/A')}
-└ ⏱ متوسط الجلسة: {self._format_duration(ga.get('avg_session_duration', 0))}
-
-━━━━━━━━━━━━━━━━━━━━━
-🤖 *تحليل AI:*
-
-{ai_analysis}
-
-━━━━━━━━━━━━━━━━━━━━━
-🏢 _شركة ليفل أب القابضة_
-🤖 _Botng v1.0_"""
-
-        return report
-
-    async def generate_weekly_report(self) -> str:
-        """التقرير الأسبوعي"""
-        end_date = date.today()
-        start_date = end_date - timedelta(days=6)
-
-        # جمع بيانات الأسبوع
-        weekly_data = {
-            'period': f"{start_date} - {end_date}",
-            'days': []
-        }
-
-        totals = {
-            'reports': 0,
-            'refunds': 0,
-            'refunds_amount': 0,
-            'sales': 0,
-            'conversations': 0,
-            'tasks_completed': 0
-        }
-
-        for i in range(7):
-            day = start_date + timedelta(days=i)
-            day_data = await self.firebase.get_daily_summary(day)
-
-            gh = day_data.get('golden_host', {})
-            sb = day_data.get('sunday_board', {})
-
-            totals['reports'] += gh.get('reports_count', 0)
-            totals['refunds'] += gh.get('refunds_count', 0)
-            totals['refunds_amount'] += gh.get('refunds_total', 0)
-            totals['sales'] += gh.get('sales_count', 0)
-            totals['conversations'] += gh.get('conversations_count', 0)
-            totals['tasks_completed'] += sb.get('completed_today', 0)
-
-        weekly_data['totals'] = totals
-
-        # تحليل
-        ai_analysis = await self.ai.analyze_data(weekly_data, "weekly")
-
-        report = f"""📈 *التقرير الأسبوعي*
-📅 {start_date.strftime('%Y/%m/%d')} - {end_date.strftime('%Y/%m/%d')}
-━━━━━━━━━━━━━━━━━━━━━
-
-📊 *ملخص الأسبوع*
-
-🏨 Golden Host:
-├ 📝 البلاغات: {totals['reports']}
-├ 💰 الاستردادات: {totals['refunds']} ({totals['refunds_amount']:,.0f} ر.س)
-├ 🛒 المبيعات: {totals['sales']}
-└ 💬 المحادثات: {totals['conversations']}
-
-📋 Sunday Board:
-└ ✅ مهام مكتملة: {totals['tasks_completed']}
-
-━━━━━━━━━━━━━━━━━━━━━
-🤖 *تحليل AI:*
-
-{ai_analysis}
-
-━━━━━━━━━━━━━━━━━━━━━
-🏢 _شركة ليفل أب القابضة_
-🤖 _Botng v1.0_"""
-
-        return report
-
-    async def generate_realtime_status(self) -> str:
-        """حالة النظام اللحظية"""
-        # البيانات اللحظية
-        tasks = await self.firebase.get_tasks()
-        overdue = await self.firebase.get_overdue_tasks()
-        reports = await self.firebase.get_reports(10)
-
-        pending_tasks = [t for t in tasks if t.get('status') == 'pending']
-        in_progress = [t for t in tasks if t.get('status') == 'in_progress']
-
-        status = f"""🔴 *الحالة اللحظية*
-⏰ {datetime.now().strftime('%H:%M:%S')}
-━━━━━━━━━━━━━━━━━━━━━
-
-📋 *المهام*
-├ ⏳ قيد الانتظار: {len(pending_tasks)}
-├ 🔄 قيد التنفيذ: {len(in_progress)}
-└ ⚠️ متأخرة: {len(overdue)}
-
-📝 *آخر البلاغات*
-{self._format_recent_items(reports, 'subject')}
-
-━━━━━━━━━━━━━━━━━━━━━
-🏢 _شركة ليفل أب القابضة_"""
-
-        return status
-
-    async def generate_employee_report(self) -> str:
-        """تقرير أداء الموظفين"""
-        performance = await self.firebase.get_employee_performance()
-
-        # ترتيب حسب الأداء
-        sorted_perf = sorted(performance, key=lambda x: x.get('sales', 0) + x.get('conversations', 0), reverse=True)
-
-        lines = []
-        for i, emp in enumerate(sorted_perf[:10], 1):
-            medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
-            lines.append(f"{medal} {emp['name']}: {emp['sales']} مبيعات | {emp['conversations']} محادثة")
-
-        report = f"""👥 *تقرير أداء الموظفين*
-━━━━━━━━━━━━━━━━━━━━━
-
-🏆 *الترتيب*
-
-{chr(10).join(lines)}
-
-━━━━━━━━━━━━━━━━━━━━━
-🏢 _شركة ليفل أب القابضة_"""
-
-        return report
-
-    async def send_report(self, report_type: str = "daily"):
-        """إرسال التقرير للقروب"""
-        if report_type == "daily":
-            report = await self.generate_daily_report()
-        elif report_type == "weekly":
-            report = await self.generate_weekly_report()
-        elif report_type == "status":
-            report = await self.generate_realtime_status()
-        elif report_type == "employees":
-            report = await self.generate_employee_report()
-        else:
-            report = await self.generate_daily_report()
-
-        await self.whatsapp.send_message(settings.report_group_id, report)
-        return report
-
-    # ==================== Helpers ====================
+    def _format_change(self, today: float, yesterday: float, reverse: bool = False) -> str:
+        """تنسيق التغيير مع السهم"""
+        change, icon = self._calc_change(today, yesterday)
+        if reverse:
+            icon = "🟢" if change < 0 else "🔴" if change > 0 else "⚪"
+        arrow = "+" if change > 0 else ""
+        return f"(أمس: {yesterday}) {icon} {arrow}{change}%"
 
     def _get_day_name(self, d: date) -> str:
         days = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
@@ -233,10 +44,178 @@ class SmartReportGenerator:
         secs = int(seconds % 60)
         return f"{minutes}:{secs:02d}"
 
-    def _format_recent_items(self, items: list, field: str, limit: int = 5) -> str:
-        if not items:
-            return "└ لا توجد بيانات"
-        lines = []
-        for item in items[:limit]:
-            lines.append(f"├ • {item.get(field, 'بدون عنوان')[:30]}")
-        return "\n".join(lines)
+    async def generate_daily_report(self, report_date: date = None) -> str:
+        """التقرير اليومي - نص فقط"""
+        if report_date is None:
+            report_date = date.today()
+
+        yesterday = report_date - timedelta(days=1)
+
+        # جلب بيانات اليوم من Google Analytics
+        ga_today = {}
+        ga_yesterday = {}
+        try:
+            ga = GoogleAnalyticsCollector()
+            result_today = await ga.collect_daily_report(report_date)
+            result_yesterday = await ga.collect_daily_report(yesterday)
+            if result_today.get('status') == 'success':
+                ga_today = result_today['data']
+            if result_yesterday.get('status') == 'success':
+                ga_yesterday = result_yesterday['data']
+        except Exception as e:
+            print(f"GA Error: {e}")
+
+        # جلب تحميلات التطبيق من Firebase
+        downloads_today = {'ios': 0, 'android': 0, 'total': 0}
+        downloads_yesterday = {'ios': 0, 'android': 0, 'total': 0}
+        try:
+            downloads_today = await self.firebase.get_app_downloads(report_date)
+            downloads_yesterday = await self.firebase.get_app_downloads(yesterday)
+        except Exception as e:
+            print(f"Firebase Downloads Error: {e}")
+
+        # جلب بيانات Clarity
+        clarity_data = {}
+        try:
+            clarity = ClarityCollector()
+            clarity_data = await clarity.get_daily_metrics(report_date)
+        except Exception as e:
+            print(f"Clarity Error: {e}")
+
+        # استخراج القيم
+        visitors_today = ga_today.get('active_users', 0)
+        visitors_yesterday = ga_yesterday.get('active_users', 0)
+        sessions_today = ga_today.get('sessions', 0)
+        page_views_today = ga_today.get('page_views', 0)
+        page_views_yesterday = ga_yesterday.get('page_views', 0)
+        avg_session = ga_today.get('avg_session_duration', 0)
+        bounce_rate = ga_today.get('bounce_rate', 0)
+
+        ios_today = downloads_today.get('ios', 0)
+        ios_yesterday = downloads_yesterday.get('ios', 0)
+        android_today = downloads_today.get('android', 0)
+        android_yesterday = downloads_yesterday.get('android', 0)
+        total_downloads_today = downloads_today.get('total', 0)
+        total_downloads_yesterday = downloads_yesterday.get('total', 0)
+
+        rage_clicks = clarity_data.get('rage_clicks', 0)
+        dead_clicks = clarity_data.get('dead_clicks', 0)
+        quick_backs = clarity_data.get('quick_backs', 0)
+        engagement = clarity_data.get('engagement_score', 0)
+
+        # تحديد حالة الأداء
+        web_status = "✅ ممتاز" if visitors_today > visitors_yesterday else "⚠️ يحتاج مراجعة"
+        downloads_status = "✅ في تصاعد" if total_downloads_today > total_downloads_yesterday else "⚠️ منخفض"
+        ux_status = "✅ جيدة" if engagement >= 50 else "⚠️ تحتاج تحسين"
+
+        # بناء التقرير النصي
+        report = f"""📊 *تقرير Golden Host اليومي*
+📅 {self._get_day_name(report_date)} {report_date.strftime('%d')} {self._get_month_name(report_date)} {report_date.year}
+━━━━━━━━━━━━━━━━━━━━━
+
+🌐 إحصائيات الموقع
+┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+├ 👥 الزوار: {visitors_today:,} {self._format_change(visitors_today, visitors_yesterday)}
+├ 📱 الجلسات: {sessions_today:,}
+├ 📄 المشاهدات: {page_views_today:,}
+├ ⏱ متوسط الجلسة: {self._format_duration(avg_session)} دقيقة
+└ 📉 معدل الارتداد: {bounce_rate}%
+
+📱 تحميلات التطبيق
+┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+├ 🍎 iOS: {ios_today} {self._format_change(ios_today, ios_yesterday)}
+├ 🤖 Android: {android_today} {self._format_change(android_today, android_yesterday)}
+└ 📊 الإجمالي: {total_downloads_today} {self._format_change(total_downloads_today, total_downloads_yesterday)}
+
+🔥 سلوك المستخدم (Clarity)
+┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+├ 😤 نقرات الغضب: {rage_clicks}
+├ 🖱 النقرات الميتة: {dead_clicks}
+├ ↩️ الرجوع السريع: {quick_backs}
+└ 📊 درجة التفاعل: {engagement}%
+
+━━━━━━━━━━━━━━━━━━━━━
+📈 ملخص الأداء
+┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+{web_status} أداء الويب
+{downloads_status} التحميلات
+{ux_status} تجربة المستخدم
+
+━━━━━━━━━━━━━━━━━━━━━
+🏢 شركة ليفل أب القابضة
+🤖 Botng v1.0"""
+
+        return report
+
+    def _get_month_name(self, d: date) -> str:
+        months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+                  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+        return months[d.month - 1]
+
+    async def generate_weekly_report(self) -> str:
+        """التقرير الأسبوعي"""
+        end_date = date.today()
+        start_date = end_date - timedelta(days=6)
+
+        # جمع بيانات الأسبوع
+        totals = {
+            'visitors': 0,
+            'sessions': 0,
+            'page_views': 0,
+            'ios': 0,
+            'android': 0
+        }
+
+        try:
+            ga = GoogleAnalyticsCollector()
+            for i in range(7):
+                day = start_date + timedelta(days=i)
+                result = await ga.collect_daily_report(day)
+                if result.get('status') == 'success':
+                    data = result['data']
+                    totals['visitors'] += data.get('active_users', 0)
+                    totals['sessions'] += data.get('sessions', 0)
+                    totals['page_views'] += data.get('page_views', 0)
+
+                downloads = await self.firebase.get_app_downloads(day)
+                totals['ios'] += downloads.get('ios', 0)
+                totals['android'] += downloads.get('android', 0)
+        except Exception as e:
+            print(f"Weekly Report Error: {e}")
+
+        report = f"""📈 *التقرير الأسبوعي*
+📅 {start_date.strftime('%d/%m')} - {end_date.strftime('%d/%m/%Y')}
+━━━━━━━━━━━━━━━━━━━━━
+
+🌐 إحصائيات الموقع
+┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+├ 👥 الزوار: {totals['visitors']:,}
+├ 📱 الجلسات: {totals['sessions']:,}
+└ 📄 المشاهدات: {totals['page_views']:,}
+
+📱 تحميلات التطبيق
+┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+├ 🍎 iOS: {totals['ios']}
+├ 🤖 Android: {totals['android']}
+└ 📊 الإجمالي: {totals['ios'] + totals['android']}
+
+━━━━━━━━━━━━━━━━━━━━━
+🏢 شركة ليفل أب القابضة
+🤖 Botng v1.0"""
+
+        return report
+
+    async def send_report(self, report_type: str = "daily", phone: str = None):
+        """إرسال التقرير عبر الواتساب"""
+        if phone is None:
+            phone = settings.admin_phone
+
+        if report_type == "daily":
+            report = await self.generate_daily_report()
+        elif report_type == "weekly":
+            report = await self.generate_weekly_report()
+        else:
+            report = await self.generate_daily_report()
+
+        await self.whatsapp.send_message(phone, report)
+        return report
