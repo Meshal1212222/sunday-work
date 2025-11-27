@@ -89,6 +89,23 @@ async def api_info():
 async def health_check():
     return {"status": "healthy", "service": "golden-host-analytics"}
 
+@app.get("/api/config-check")
+async def config_check():
+    """التحقق من إعدادات النظام"""
+    return {
+        "whatsapp": {
+            "provider": os.getenv("WHATSAPP_PROVIDER", "not_set"),
+            "ultramsg_instance": "✅ موجود" if os.getenv("ULTRAMSG_INSTANCE_ID") else "❌ غير موجود",
+            "ultramsg_token": "✅ موجود" if os.getenv("ULTRAMSG_TOKEN") else "❌ غير موجود",
+            "recipients": os.getenv("WHATSAPP_RECIPIENTS", "not_set")
+        },
+        "analytics": {
+            "ga4_property": "✅ موجود" if os.getenv("GA4_PROPERTY_ID") else "❌ غير موجود",
+            "clarity_project": "✅ موجود" if os.getenv("CLARITY_PROJECT_ID") else "❌ غير موجود"
+        },
+        "openai": "✅ موجود" if os.getenv("OPENAI_API_KEY") else "❌ غير موجود"
+    }
+
 @app.get("/")
 async def serve_home():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
