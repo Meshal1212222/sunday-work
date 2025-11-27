@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>المنصة الموحدة - Golden Host</title>
+    <title>Level Up | شركة ليفل أب القابضة</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
 
     <style>
         * {
@@ -16,213 +16,292 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --navy-dark: #0a1628;
+            --navy-medium: #111d35;
+            --navy-light: #1a2d4a;
+            --gold: #d4af37;
+            --gold-light: #f4d03f;
+            --white: #ffffff;
+            --gray-light: rgba(255, 255, 255, 0.7);
+        }
+
         body {
             font-family: 'Tajawal', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background: var(--navy-dark);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            position: relative;
             overflow-x: hidden;
         }
 
-        /* Animated background */
-        body::before {
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy-medium) 50%, var(--navy-light) 100%);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Animated Background Pattern */
+        .hero::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background:
-                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255, 107, 107, 0.2) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(78, 205, 196, 0.2) 0%, transparent 50%);
-            animation: pulse 8s ease-in-out infinite;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(212, 175, 55, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(26, 45, 74, 0.5) 0%, transparent 60%);
+            pointer-events: none;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        .container {
-            max-width: 1400px;
+        /* Grid Pattern */
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            position: relative;
-            z-index: 1;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(212, 175, 55, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(212, 175, 55, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
         }
 
+        /* Header */
         .header {
-            text-align: center;
-            margin-bottom: 60px;
-            color: white;
+            padding: 30px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
         }
 
         .logo {
-            font-size: 72px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--navy-dark);
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .logo-text {
+            color: var(--white);
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .logo-text span {
+            color: var(--gold);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .hero-title {
+            text-align: center;
             margin-bottom: 20px;
-            animation: float 3s ease-in-out infinite;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        .hero-title h1 {
+            font-size: 64px;
+            font-weight: 900;
+            color: var(--white);
+            margin-bottom: 10px;
+            letter-spacing: -1px;
         }
 
-        .header h1 {
-            font-size: 48px;
-            font-weight: 800;
-            margin-bottom: 16px;
-            background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF6B6B 100%);
+        .hero-title h1 span {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 4px 30px rgba(255, 215, 0, 0.3);
+            background-clip: text;
         }
 
-        .header p {
-            font-size: 20px;
-            opacity: 0.8;
-            max-width: 600px;
-            margin: 0 auto;
-            line-height: 1.8;
+        .hero-subtitle {
+            font-size: 22px;
+            color: var(--gray-light);
+            font-weight: 400;
+            margin-bottom: 60px;
         }
 
-        .cards-grid {
+        /* Projects Grid */
+        .projects-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 40px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+            padding: 0 20px;
         }
 
-        .system-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 32px;
-            padding: 48px;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer;
+        .project-card {
+            background: linear-gradient(145deg, rgba(26, 45, 74, 0.6) 0%, rgba(17, 29, 53, 0.8) 100%);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            border-radius: 24px;
+            padding: 40px 30px;
             text-decoration: none;
-            color: white;
-            display: block;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
             overflow: hidden;
+            backdrop-filter: blur(10px);
         }
 
-        .system-card::before {
+        .project-card::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.05) 100%);
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
             opacity: 0;
-            transition: opacity 0.4s ease;
+            transition: opacity 0.3s ease;
         }
 
-        .system-card:hover {
-            transform: translateY(-12px) scale(1.02);
-            border-color: rgba(255, 255, 255, 0.3);
-            box-shadow:
-                0 30px 60px rgba(0, 0, 0, 0.4),
-                0 0 60px rgba(255, 215, 0, 0.1);
+        .project-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(212, 175, 55, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 40px rgba(212, 175, 55, 0.1);
         }
 
-        .system-card:hover::before {
+        .project-card:hover::before {
             opacity: 1;
         }
 
         .card-icon {
-            font-size: 80px;
-            margin-bottom: 24px;
-            display: block;
+            width: 70px;
+            height: 70px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 25px;
+        }
+
+        .card-icon.golden {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(244, 208, 63, 0.1) 100%);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .card-icon.sunday {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .card-icon.botng {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.1) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
         .card-badge {
             display: inline-block;
-            padding: 8px 20px;
-            border-radius: 30px;
-            font-size: 14px;
-            font-weight: 700;
-            margin-bottom: 20px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 15px;
             letter-spacing: 0.5px;
         }
 
         .badge-golden {
-            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-            color: #1a1a2e;
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+            border: 1px solid rgba(212, 175, 55, 0.3);
         }
 
         .badge-sunday {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: rgba(102, 126, 234, 0.15);
+            color: #a5b4fc;
+            border: 1px solid rgba(102, 126, 234, 0.3);
         }
 
-        .system-card h2 {
-            font-size: 32px;
+        .badge-botng {
+            background: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .card-title {
+            font-size: 26px;
             font-weight: 700;
-            margin-bottom: 16px;
+            color: var(--white);
+            margin-bottom: 12px;
         }
 
-        .system-card > p {
-            font-size: 16px;
-            opacity: 0.7;
-            line-height: 1.7;
-            margin-bottom: 32px;
-        }
-
-        .features-list {
-            list-style: none;
-            margin-bottom: 32px;
-        }
-
-        .features-list li {
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        .card-description {
             font-size: 15px;
+            color: var(--gray-light);
+            line-height: 1.7;
+            margin-bottom: 25px;
+        }
+
+        .card-features {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+
+        .card-features li {
+            padding: 8px 0;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
-        .features-list li:last-child {
-            border-bottom: none;
-        }
-
-        .feature-icon {
-            font-size: 20px;
-            width: 32px;
-            text-align: center;
+        .card-features li::before {
+            content: '✓';
+            color: var(--gold);
+            font-weight: 700;
         }
 
         .card-button {
             width: 100%;
-            padding: 18px 32px;
-            border-radius: 16px;
+            padding: 14px 24px;
+            border-radius: 12px;
             border: none;
-            font-size: 16px;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             font-family: 'Tajawal', sans-serif;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .btn-golden {
-            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-            color: #1a1a2e;
-        }
-
-        .btn-golden:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+            color: var(--navy-dark);
         }
 
         .btn-sunday {
@@ -230,203 +309,196 @@
             color: white;
         }
 
-        .btn-sunday:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-        }
-
-        .stats-row {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin-bottom: 24px;
-        }
-
-        .stat-chip {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .quick-links {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 40px;
-        }
-
-        .quick-link {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 12px 24px;
-            border-radius: 30px;
+        .btn-botng {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
             color: white;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s ease;
+        }
+
+        .card-button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Stats Section */
+        .stats-section {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            justify-content: center;
+            gap: 60px;
+            margin-top: 80px;
+            padding: 40px;
+            background: rgba(26, 45, 74, 0.3);
+            border-radius: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            max-width: 800px;
         }
 
-        .quick-link:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
+        .stat-item {
+            text-align: center;
         }
 
+        .stat-number {
+            font-size: 42px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--gray-light);
+            margin-top: 5px;
+        }
+
+        /* Footer */
         .footer {
             text-align: center;
-            margin-top: 60px;
-            color: rgba(255, 255, 255, 0.5);
+            padding: 30px;
+            color: rgba(255, 255, 255, 0.4);
             font-size: 14px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .footer a {
+            color: var(--gold);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .projects-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         @media (max-width: 768px) {
-            .cards-grid {
+            .header {
+                padding: 20px;
+            }
+
+            .hero-title h1 {
+                font-size: 40px;
+            }
+
+            .hero-subtitle {
+                font-size: 18px;
+            }
+
+            .projects-grid {
                 grid-template-columns: 1fr;
+                max-width: 400px;
             }
 
-            .header h1 {
-                font-size: 32px;
+            .stats-section {
+                flex-direction: column;
+                gap: 30px;
             }
+        }
 
-            .system-card {
-                padding: 32px;
-            }
+        /* Floating Elements Animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
 
-            .card-icon {
-                font-size: 60px;
-            }
-
-            .system-card h2 {
-                font-size: 24px;
-            }
+        .floating {
+            animation: float 4s ease-in-out infinite;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">🏨</div>
-            <h1>المنصة الموحدة</h1>
-            <p>نظام متكامل لإدارة العمليات والمشاريع - اختر النظام المناسب للوصول السريع</p>
-        </div>
+    <section class="hero">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">L</div>
+                <div class="logo-text">Level <span>Up</span></div>
+            </div>
+        </header>
 
-        <div class="cards-grid">
-            <!-- Golden Host Card -->
-            <a href="golden-host/index.html" class="system-card">
-                <span class="card-badge badge-golden">النظام الرئيسي</span>
-                <span class="card-icon">🏨</span>
-                <h2>Golden Host</h2>
-                <p>نظام إدارة دعم العملاء ومكتبة الردود المعتمدة - لوحة تحكم شاملة للعمليات اليومية</p>
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="hero-title">
+                <h1>شركة <span>ليفل أب</span> القابضة</h1>
+            </div>
+            <p class="hero-subtitle">منصة متكاملة لإدارة الأعمال والعمليات</p>
 
-                <div class="stats-row">
-                    <span class="stat-chip">📝 50+ رد معتمد</span>
-                    <span class="stat-chip">📊 12 تصنيف</span>
-                    <span class="stat-chip">👥 6 موظفين</span>
+            <!-- Projects Grid -->
+            <div class="projects-grid">
+                <!-- Golden Host -->
+                <a href="golden-host/index.html" class="project-card">
+                    <div class="card-icon golden floating">🏨</div>
+                    <span class="card-badge badge-golden">دعم العملاء</span>
+                    <h3 class="card-title">Golden Host</h3>
+                    <p class="card-description">نظام إدارة دعم العملاء ومكتبة الردود المعتمدة مع لوحة تحكم شاملة</p>
+                    <ul class="card-features">
+                        <li>مكتبة الردود المعتمدة</li>
+                        <li>تحليلات أداء الموظفين</li>
+                        <li>لوحة تحكم متقدمة</li>
+                        <li>نظام البلاغات والاستردادات</li>
+                    </ul>
+                    <button class="card-button btn-golden">
+                        دخول النظام ←
+                    </button>
+                </a>
+
+                <!-- Sunday Board -->
+                <a href="sunday-board/board-pro.html" class="project-card">
+                    <div class="card-icon sunday floating" style="animation-delay: 0.5s;">📋</div>
+                    <span class="card-badge badge-sunday">إدارة المشاريع</span>
+                    <h3 class="card-title">Sunday Board</h3>
+                    <p class="card-description">نظام متقدم لإدارة المشاريع والمهام مع تتبع التقدم والميزانيات</p>
+                    <ul class="card-features">
+                        <li>عرض جدولي احترافي</li>
+                        <li>إدارة الميزانيات</li>
+                        <li>الجدول الزمني التفاعلي</li>
+                        <li>لوحة أوامر سريعة (⌘K)</li>
+                    </ul>
+                    <button class="card-button btn-sunday">
+                        دخول النظام ←
+                    </button>
+                </a>
+
+                <!-- Botng -->
+                <a href="botng/" class="project-card">
+                    <div class="card-icon botng floating" style="animation-delay: 1s;">🤖</div>
+                    <span class="card-badge badge-botng">أتمتة ذكية</span>
+                    <h3 class="card-title">Botng</h3>
+                    <p class="card-description">نظام أتمتة ذكي لجمع البيانات وتحليلها وإرسال التقارير عبر واتساب</p>
+                    <ul class="card-features">
+                        <li>تقارير يومية تلقائية</li>
+                        <li>تحليل بالذكاء الاصطناعي</li>
+                        <li>تكامل واتساب</li>
+                        <li>جدولة ذكية</li>
+                    </ul>
+                    <button class="card-button btn-botng">
+                        دخول النظام ←
+                    </button>
+                </a>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-section">
+                <div class="stat-item">
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">أنظمة متكاملة</div>
                 </div>
-
-                <ul class="features-list">
-                    <li>
-                        <span class="feature-icon">📚</span>
-                        <span>مكتبة الردود المعتمدة</span>
-                    </li>
-                    <li>
-                        <span class="feature-icon">📋</span>
-                        <span>الإجراءات والسياسات</span>
-                    </li>
-                    <li>
-                        <span class="feature-icon">📊</span>
-                        <span>تحليلات الأداء الشهرية</span>
-                    </li>
-                    <li>
-                        <span class="feature-icon">🎛️</span>
-                        <span>لوحة تحكم متقدمة</span>
-                    </li>
-                    <li>
-                        <span class="feature-icon">💬</span>
-                        <span>نظام البلاغات والاستردادات</span>
-                    </li>
-                </ul>
-
-                <button class="card-button btn-golden">
-                    <span>الدخول للنظام</span>
-                    <span>←</span>
-                </button>
-            </a>
-
-            <!-- Sunday Board Card -->
-            <a href="sunday-board/board-pro.html" class="system-card">
-                <span class="card-badge badge-sunday">إدارة المشاريع</span>
-                <span class="card-icon">📋</span>
-                <h2>Sunday Board</h2>
-                <p>نظام متقدم لإدارة المشاريع والمهام - تتبع التقدم والجداول الزمنية والميزانيات</p>
-
-                <div class="stats-row">
-                    <span class="stat-chip">📊 14 نوع عمود</span>
-                    <span class="stat-chip">⚡ أتمتة</span>
-                    <span class="stat-chip">📈 تقارير</span>
+                <div class="stat-item">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">تقارير آلية</div>
                 </div>
+                <div class="stat-item">
+                    <div class="stat-number">∞</div>
+                    <div class="stat-label">إمكانيات</div>
+                </div>
+            </div>
+        </main>
 
-                <ul class="features-list">
-                    <li>
-                        <span class="feature-icon">📊</span>
-                        <span>عرض جدولي احترافي</span>
-                    </li>
-                    <li>
-                        <span class="feature-icon">💰</span>
-                        <span>إدارة الميزانيات والتكاليف</span>
-                    </li>
-                    <li>
-                        <span class="feature-icon">⭐</span>
-                        <span>تقييم الأداء بالنجوم</span>
-                    </li>
-                    <li>
-                        <span class="feature-icon">📈</span>
-                        <span>الجدول الزمني التفاعلي</span>
-                    </li>
-                    <li>
-                        <span class="feature-icon">⌘</span>
-                        <span>لوحة أوامر سريعة (⌘K)</span>
-                    </li>
-                </ul>
-
-                <button class="card-button btn-sunday">
-                    <span>الدخول للنظام</span>
-                    <span>←</span>
-                </button>
-            </a>
-        </div>
-
-        <!-- Quick Links -->
-        <div class="quick-links">
-            <a href="golden-host/admin.html" class="quick-link">
-                <span>🎛️</span>
-                <span>لوحة التحكم</span>
-            </a>
-            <a href="golden-host/employee-analytics.html" class="quick-link">
-                <span>📊</span>
-                <span>تحليل الأداء</span>
-            </a>
-            <a href="golden-host/dashboard.html" class="quick-link">
-                <span>📈</span>
-                <span>الداشبورد</span>
-            </a>
-            <a href="sunday-board/board-original.html" class="quick-link">
-                <span>📋</span>
-                <span>النسخة البسيطة</span>
-            </a>
-        </div>
-
-        <div class="footer">
-            <p>تم التطوير بـ ❤️ | Golden Host Platform 2024</p>
-        </div>
-    </div>
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2024 شركة ليفل أب القابضة | Level Up Holding</p>
+        </footer>
+    </section>
 </body>
 </html>
