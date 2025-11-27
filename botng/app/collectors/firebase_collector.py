@@ -3,6 +3,7 @@ from firebase_admin import credentials, db
 from datetime import datetime, date, timedelta
 from typing import Dict, Any, List, Optional
 import os
+import json
 
 from ..config import settings
 
@@ -10,20 +11,47 @@ from ..config import settings
 class FirebaseCollector:
     """جامع بيانات Firebase - Golden Host & Sunday Board"""
 
+    _initialized = False
+
     def __init__(self):
         # Initialize Firebase if not already done
-        if not firebase_admin._apps:
-            cred = credentials.Certificate(settings.google_credentials_path)
-            firebase_admin.initialize_app(cred, {
-                'databaseURL': settings.firebase_database_url
-            })
+        if not FirebaseCollector._initialized and not firebase_admin._apps:
+            try:
+                # Try to load from environment variable first (for Railway)
+                cred_json = os.environ.get('FIREBASE_CREDENTIALS_JSON')
+                if cred_json:
+                    cred_dict = json.loads(cred_json)
+                    cred = credentials.Certificate(cred_dict)
+                elif os.path.exists(settings.google_credentials_path):
+                    # Fall back to file
+                    cred = credentials.Certificate(settings.google_credentials_path)
+                else:
+                    print("⚠️ Firebase credentials not found - using mock mode")
+                    self.db = None
+                    FirebaseCollector._initialized = True
+                    return
 
-        self.db = db.reference()
+                firebase_admin.initialize_app(cred, {
+                    'databaseURL': settings.firebase_database_url
+                })
+                FirebaseCollector._initialized = True
+            except Exception as e:
+                print(f"⚠️ Firebase init error: {e}")
+                self.db = None
+                FirebaseCollector._initialized = True
+                return
+
+        if firebase_admin._apps:
+            self.db = db.reference()
+        else:
+            self.db = None
 
     # ==================== Golden Host Data ====================
 
     async def get_reports(self, limit: int = 50) -> List[Dict]:
         """جلب البلاغات من Golden Host"""
+        if not self.db:
+            return []
         try:
             ref = self.db.child('goldenhost/reports')
             data = ref.order_by_child('date').limit_to_last(limit).get()
@@ -34,6 +62,8 @@ class FirebaseCollector:
 
     async def get_refunds(self, limit: int = 50) -> List[Dict]:
         """جلب الاستردادات"""
+        if not self.db:
+            return []
         try:
             ref = self.db.child('goldenhost/refunds')
             data = ref.order_by_child('date').limit_to_last(limit).get()
@@ -44,6 +74,8 @@ class FirebaseCollector:
 
     async def get_conversations(self, limit: int = 100) -> List[Dict]:
         """جلب المحادثات"""
+        if not self.db:
+            return []
         try:
             ref = self.db.child('goldenhost/conversations')
             data = ref.limit_to_last(limit).get()
@@ -54,6 +86,8 @@ class FirebaseCollector:
 
     async def get_sales(self, limit: int = 100) -> List[Dict]:
         """جلب المبيعات"""
+        if not self.db:
+            return []
         try:
             ref = self.db.child('goldenhost/sales')
             data = ref.limit_to_last(limit).get()
@@ -64,6 +98,8 @@ class FirebaseCollector:
 
     async def get_employee_activity(self) -> List[Dict]:
         """جلب نشاط الموظفين"""
+        if not self.db:
+            return []
         try:
             ref = self.db.child('goldenhost/activity')
             data = ref.get()
@@ -76,6 +112,8 @@ class FirebaseCollector:
 
     async def get_boards(self) -> Dict[str, Any]:
         """جلب كل البوردات"""
+        if not self.db:
+            return {}
         try:
             ref = self.db.child('sunday/boards')
             return ref.get() or {}
@@ -85,6 +123,8 @@ class FirebaseCollector:
 
     async def get_tasks(self, board_id: str = None) -> List[Dict]:
         """جلب المهام"""
+        if not self.db:
+            return []
         try:
             if board_id:
                 ref = self.db.child(f'sunday/tasks/{board_id}')
@@ -190,6 +230,8 @@ class FirebaseCollector:
 
     async def add_task(self, board_id: str, task: Dict) -> str:
         """إضافة مهمة جديدة"""
+        if not self.db:
+            return None
         try:
             ref = self.db.child(f'sunday/tasks/{board_id}')
             new_ref = ref.push(task)
@@ -200,6 +242,8 @@ class FirebaseCollector:
 
     async def update_task(self, board_id: str, task_id: str, updates: Dict) -> bool:
         """تحديث مهمة"""
+        if not self.db:
+            return False
         try:
             ref = self.db.child(f'sunday/tasks/{board_id}/{task_id}')
             ref.update(updates)
@@ -210,6 +254,8 @@ class FirebaseCollector:
 
     async def add_report(self, report: Dict) -> str:
         """إضافة بلاغ جديد"""
+        if not self.db:
+            return None
         try:
             ref = self.db.child('goldenhost/reports')
             new_ref = ref.push(report)
@@ -220,6 +266,8 @@ class FirebaseCollector:
 
     async def log_activity(self, activity: Dict) -> bool:
         """تسجيل نشاط"""
+        if not self.db:
+            return False
         try:
             activity['timestamp'] = datetime.now().isoformat()
             ref = self.db.child('goldenhost/activity')

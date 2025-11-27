@@ -1,13 +1,7 @@
-from google.analytics.data_v1beta import BetaAnalyticsDataClient
-from google.analytics.data_v1beta.types import (
-    RunReportRequest,
-    DateRange,
-    Dimension,
-    Metric,
-)
 from datetime import date, timedelta
 from typing import Dict, Any, Optional
 import os
+import json
 
 from ..config import settings
 
@@ -15,20 +9,57 @@ from ..config import settings
 class GoogleAnalyticsCollector:
     """جامع بيانات Google Analytics 4"""
 
+    _client = None
+    _initialized = False
+
     def __init__(self):
-        # Set credentials path
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.google_credentials_path
         self.property_id = settings.ga4_property_id
-        self.client = BetaAnalyticsDataClient()
+        self.client = None
+
+        if GoogleAnalyticsCollector._initialized:
+            self.client = GoogleAnalyticsCollector._client
+            return
+
+        try:
+            # Try environment variable first (for Railway)
+            cred_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+            if cred_json:
+                # Write to temp file for google client
+                import tempfile
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                    f.write(cred_json)
+                    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = f.name
+            elif os.path.exists(settings.google_credentials_path):
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.google_credentials_path
+            else:
+                print("⚠️ Google credentials not found - GA disabled")
+                GoogleAnalyticsCollector._initialized = True
+                return
+
+            from google.analytics.data_v1beta import BetaAnalyticsDataClient
+            self.client = BetaAnalyticsDataClient()
+            GoogleAnalyticsCollector._client = self.client
+            GoogleAnalyticsCollector._initialized = True
+
+        except Exception as e:
+            print(f"⚠️ GA init error: {e}")
+            GoogleAnalyticsCollector._initialized = True
 
     async def collect_daily_report(self, report_date: date = None) -> Dict[str, Any]:
         """جمع التقرير اليومي"""
+        if not self.client:
+            return {"status": "error", "message": "GA not configured", "data": {}}
+
         if report_date is None:
             report_date = date.today() - timedelta(days=1)  # أمس
 
         date_str = report_date.strftime("%Y-%m-%d")
 
         try:
+            from google.analytics.data_v1beta.types import (
+                RunReportRequest, DateRange, Dimension, Metric
+            )
+
             # طلب البيانات الأساسية
             request = RunReportRequest(
                 property=f"properties/{self.property_id}",
@@ -81,7 +112,13 @@ class GoogleAnalyticsCollector:
 
     async def _get_top_pages(self, date_str: str, limit: int = 5) -> list:
         """جلب أكثر الصفحات زيارة"""
+        if not self.client:
+            return []
         try:
+            from google.analytics.data_v1beta.types import (
+                RunReportRequest, DateRange, Dimension, Metric
+            )
+
             request = RunReportRequest(
                 property=f"properties/{self.property_id}",
                 date_ranges=[DateRange(start_date=date_str, end_date=date_str)],
@@ -145,10 +182,17 @@ class GoogleAnalyticsCollector:
 
     async def collect_weekly_summary(self) -> Dict[str, Any]:
         """ملخص الأسبوع"""
+        if not self.client:
+            return {"status": "error", "message": "GA not configured"}
+
         end_date = date.today() - timedelta(days=1)
         start_date = end_date - timedelta(days=6)
 
         try:
+            from google.analytics.data_v1beta.types import (
+                RunReportRequest, DateRange, Dimension, Metric
+            )
+
             request = RunReportRequest(
                 property=f"properties/{self.property_id}",
                 date_ranges=[DateRange(
