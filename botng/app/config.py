@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     ga4_property_id: str = ""
     google_credentials_path: str = "credentials/google-service-account.json"
 
+    # Firebase
+    firebase_database_url: str = ""
+
     # App Settings
     report_time: str = "11:00"
     debug: bool = True

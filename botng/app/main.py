@@ -1,11 +1,14 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from datetime import datetime, date
+import os
 
 from .config import settings
 from .database import init_db, get_db, SessionLocal
 from .webhooks.whatsapp import router as whatsapp_router
+from .dashboard.routes import router as dashboard_router
 from .scheduler.jobs import start_scheduler, shutdown_scheduler
 from .reporters.report_generator import ReportGenerator
 from .integrations.ultramsg import UltraMsgClient
@@ -45,6 +48,21 @@ app.add_middleware(
 
 # Include routers
 app.include_router(whatsapp_router, prefix="/webhook", tags=["WhatsApp"])
+app.include_router(dashboard_router, prefix="/api/dashboard", tags=["Dashboard"])
+
+# Static files
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+# ==================== Root & Dashboard ====================
+
+@app.get("/")
+async def root():
+    """الصفحة الرئيسية - توجيه للوحة التحكم"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/api/dashboard/")
 
 
 # ==================== Health Check ====================
