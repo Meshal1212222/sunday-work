@@ -11,19 +11,23 @@ import httpx
 
 class WhatsAppService:
     def __init__(self):
-        # Support multiple WhatsApp APIs
-        self.provider = os.getenv("WHATSAPP_PROVIDER", "whatsapp_business")
+        # Alternative: UltraMsg API
+        self.ultramsg_instance = os.getenv("ULTRAMSG_INSTANCE_ID", "")
+        self.ultramsg_token = os.getenv("ULTRAMSG_TOKEN", "")
+
+        # Auto-detect provider based on available credentials
+        if self.ultramsg_instance and self.ultramsg_token:
+            self.provider = "ultramsg"
+        else:
+            self.provider = os.getenv("WHATSAPP_PROVIDER", "whatsapp_business")
 
         # WhatsApp Business API
         self.phone_number_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
         self.access_token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
 
-        # Alternative: UltraMsg API
-        self.ultramsg_instance = os.getenv("ULTRAMSG_INSTANCE_ID", "")
-        self.ultramsg_token = os.getenv("ULTRAMSG_TOKEN", "")
-
-        # Recipients
-        self.default_recipients = os.getenv("WHATSAPP_RECIPIENTS", "").split(",")
+        # Recipients - default to user's number if not set
+        recipients_str = os.getenv("WHATSAPP_RECIPIENTS", "966563652525")
+        self.default_recipients = [r.strip() for r in recipients_str.split(",") if r.strip()]
 
     async def send_message(self, phone: str, message: str) -> Dict[str, Any]:
         """إرسال رسالة واتساب"""
