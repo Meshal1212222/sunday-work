@@ -1,0 +1,2 @@
+# Include all requirements from botng
+-r botng/requirements.txt
