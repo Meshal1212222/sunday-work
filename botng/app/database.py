@@ -6,9 +6,9 @@ import os
 
 from .config import settings
 
-# Use SQLite if no DATABASE_URL or if it's the default PostgreSQL
+# Use SQLite if no DATABASE_URL or if it's localhost PostgreSQL (not available on Railway)
 db_url = settings.database_url
-if not db_url or 'postgresql://botng:botng_secret@localhost' in db_url:
+if not db_url or 'localhost' in db_url or not db_url.startswith(('postgresql://', 'sqlite://')):
     # Use SQLite for simplicity
     db_url = "sqlite:///./botng.db"
     print("📦 Using SQLite database")

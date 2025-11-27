@@ -19,15 +19,28 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Startup
     print("🚀 Starting Botng...")
-    init_db()
-    start_scheduler()
+    try:
+        init_db()
+        print("✅ Database initialized")
+    except Exception as e:
+        print(f"⚠️ Database init warning: {e}")
+
+    try:
+        start_scheduler()
+        print("✅ Scheduler started")
+    except Exception as e:
+        print(f"⚠️ Scheduler warning: {e}")
+
     print("✅ Botng is ready!")
 
     yield
 
     # Shutdown
     print("👋 Shutting down Botng...")
-    shutdown_scheduler()
+    try:
+        shutdown_scheduler()
+    except Exception as e:
+        print(f"⚠️ Shutdown warning: {e}")
 
 
 app = FastAPI(
