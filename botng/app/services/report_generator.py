@@ -22,7 +22,7 @@ from app.services.pdf_report_service import pdf_report_service
 
 
 async def generate_daily_report() -> Dict[str, Any]:
-    """توليد وإرسال التقرير اليومي (نص + PDF)"""
+    """توليد وإرسال التقرير اليومي (PDF فقط + تاريخ)"""
 
     print(f"🚀 بدء توليد التقرير اليومي - {datetime.now()}")
 
@@ -39,15 +39,7 @@ async def generate_daily_report() -> Dict[str, Any]:
         print("📱 جمع بيانات التحميلات...")
         downloads_data = await downloads_service.get_today_downloads()
 
-        # 4. تحليل البيانات بالذكاء الاصطناعي
-        print("🤖 تحليل البيانات بـ OpenAI...")
-        analysis = await openai_service.analyze_user_behavior(
-            analytics_data,
-            clarity_data,
-            downloads_data
-        )
-
-        # 5. توليد تقرير PDF
+        # 4. توليد تقرير PDF (يشمل كل التفاصيل)
         print("📄 توليد تقرير PDF...")
         pdf_path = await pdf_report_service.generate_daily_pdf(
             analytics_data,
@@ -55,17 +47,17 @@ async def generate_daily_report() -> Dict[str, Any]:
             downloads_data
         )
 
-        # 6. تنسيق التقرير النصي لواتساب
-        print("📝 تنسيق التقرير...")
-        formatted_report = whatsapp_service.format_report_for_whatsapp(analysis)
+        # 5. إرسال التاريخ فقط كرسالة نصية
+        date_str = datetime.now().strftime('%Y-%m-%d')
+        day_name = ["الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"][datetime.now().weekday()]
+        date_message = f"📊 تقرير {date_str} • {day_name}"
 
-        # 7. إرسال التقرير النصي
-        print("📱 إرسال التقرير النصي...")
-        text_results = await whatsapp_service.send_daily_report(formatted_report)
+        print("📱 إرسال التاريخ...")
+        text_results = await whatsapp_service.send_daily_report(date_message)
 
-        # 8. إرسال ملف PDF
+        # 6. إرسال ملف PDF
         print("📎 إرسال ملف PDF...")
-        pdf_results = await whatsapp_service.send_document(pdf_path, "تقرير قولدن هوست اليومي")
+        pdf_results = await whatsapp_service.send_document(pdf_path, f"تقرير قولدن هوست - {date_str}")
 
         result = {
             "status": "success",
@@ -75,11 +67,9 @@ async def generate_daily_report() -> Dict[str, Any]:
                 "clarity": bool(clarity_data),
                 "downloads": bool(downloads_data)
             },
-            "analysis_status": analysis.get("status"),
             "pdf_path": pdf_path,
             "text_send_results": text_results,
-            "pdf_send_results": pdf_results,
-            "report_preview": formatted_report[:500] + "..."
+            "pdf_send_results": pdf_results
         }
 
         print(f"✅ تم إكمال التقرير اليومي - {datetime.now()}")
@@ -101,19 +91,12 @@ async def generate_quick_report() -> Dict[str, Any]:
     clarity_data = await clarity_service.get_daily_summary()
     downloads_data = await downloads_service.get_today_downloads()
 
-    analysis = await openai_service.analyze_user_behavior(
-        analytics_data,
-        clarity_data,
-        downloads_data
-    )
-
     return {
         "raw_data": {
             "analytics": analytics_data,
             "clarity": clarity_data,
             "downloads": downloads_data
         },
-        "analysis": analysis,
         "generated_at": datetime.now().isoformat()
     }
 
