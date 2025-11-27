@@ -145,3 +145,88 @@ async def get_comparison_summary() -> Dict[str, Any]:
             "change": f"{downloads.get('change_percent', 0)}%"
         }
     }
+
+
+async def generate_custom_report(report_type: str = "quick") -> Dict[str, Any]:
+    """توليد تقرير مخصص حسب النوع"""
+
+    analytics_data = await analytics_service.get_daily_stats()
+    clarity_data = await clarity_service.get_daily_summary()
+    downloads_data = await downloads_service.get_today_downloads()
+
+    if report_type == "quick":
+        return {
+            "type": "quick",
+            "summary": {
+                "users": analytics_data.get("total_users", 0),
+                "downloads": downloads_data.get("today", 0),
+                "engagement": clarity_data.get("engagement_score", 0)
+            },
+            "generated_at": datetime.now().isoformat()
+        }
+
+    # Full report with PDF
+    pdf_path = await pdf_report_service.generate_daily_pdf(
+        analytics_data,
+        clarity_data,
+        downloads_data
+    )
+
+    return {
+        "type": report_type,
+        "pdf_path": pdf_path,
+        "raw_data": {
+            "analytics": analytics_data,
+            "clarity": clarity_data,
+            "downloads": downloads_data
+        },
+        "generated_at": datetime.now().isoformat()
+    }
+
+
+async def send_test_report_to_phone(phone: str) -> Dict[str, Any]:
+    """إرسال تقرير اختباري لرقم محدد"""
+
+    print(f"📱 إرسال تقرير اختبار إلى {phone}...")
+
+    try:
+        # جمع البيانات
+        analytics_data = await analytics_service.get_daily_stats()
+        clarity_data = await clarity_service.get_daily_summary()
+        downloads_data = await downloads_service.get_today_downloads()
+
+        # توليد PDF
+        pdf_path = await pdf_report_service.generate_daily_pdf(
+            analytics_data,
+            clarity_data,
+            downloads_data
+        )
+
+        # إرسال التاريخ
+        date_str = datetime.now().strftime('%Y-%m-%d')
+        day_name = ["الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"][datetime.now().weekday()]
+        date_message = f"📊 تقرير {date_str} • {day_name}"
+
+        # إرسال الرسالة النصية
+        text_result = await whatsapp_service.send_message(phone, date_message)
+
+        # إرسال PDF
+        pdf_result = await whatsapp_service.send_document(pdf_path, f"تقرير قولدن هوست - {date_str}")
+
+        return {
+            "status": "success",
+            "phone": phone,
+            "text_result": text_result,
+            "pdf_result": pdf_result,
+            "pdf_path": pdf_path,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        print(f"❌ خطأ في إرسال التقرير الاختباري: {e}")
+        return {
+            "status": "error",
+            "phone": phone,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }

@@ -10,7 +10,8 @@ from datetime import datetime
 from app.services.report_generator import (
     generate_daily_report,
     generate_quick_report,
-    generate_custom_report
+    generate_custom_report,
+    send_test_report_to_phone
 )
 from app.services.whatsapp_service import whatsapp_service
 
@@ -127,4 +128,23 @@ async def get_schedule():
             }
         },
         "next_run": "غداً الساعة 9:00 صباحاً بتوقيت الرياض"
+    }
+
+
+@router.post("/send-test/{phone}")
+async def send_test_to_phone(phone: str):
+    """إرسال تقرير اختباري لرقم محدد"""
+
+    # Clean phone number
+    clean_phone = phone.replace(" ", "").replace("-", "").replace("+", "")
+    if not clean_phone.startswith("966"):
+        clean_phone = "966" + clean_phone.lstrip("0")
+
+    result = await send_test_report_to_phone(clean_phone)
+
+    return {
+        "status": "sent",
+        "phone": clean_phone,
+        "result": result,
+        "timestamp": datetime.now().isoformat()
     }
