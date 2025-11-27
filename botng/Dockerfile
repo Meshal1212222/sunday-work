@@ -12,5 +12,5 @@ COPY . .
 # Expose port
 EXPOSE 8000
 
-# Run application - Railway will set PORT, we use Python to read it
-CMD python -c "import os; port = os.environ.get('PORT', '8000'); import subprocess; subprocess.run(['uvicorn', 'app.main:app', '--host', '0.0.0.0', '--port', port])"
+# Run application with fixed port 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
