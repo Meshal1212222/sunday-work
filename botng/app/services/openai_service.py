@@ -1,6 +1,7 @@
 """
 OpenAI Service
 تحليل البيانات باستخدام الذكاء الاصطناعي
+أتمتة إحصائيات التحميل وسلوك المستخدم - قولدن هوست
 """
 
 import os
@@ -36,10 +37,10 @@ class OpenAIService:
                         "content": """أنت محلل بيانات خبير متخصص في تحليل سلوك المستخدمين.
                         مهمتك تقديم تقرير يومي موجز باللغة العربية.
 
-                        التقرير يجب أن يتضمن:
-                        1. ملخص الأرقام الرئيسية
-                        2. المقارنة مع الأمس (بالنسب المئوية ↑ أو ↓)
-                        3. أهم التغييرات والملاحظات
+                        التقرير يجب أن يفصل بوضوح بين:
+                        1. الويب (Web) - زوار الموقع
+                        2. التطبيق (App) - تحميلات iOS و Android
+                        3. سلوك المستخدم من Clarity
 
                         استخدم الرموز التعبيرية بشكل مناسب.
                         اجعل التقرير مختصر ومفيد للإرسال عبر واتساب."""
@@ -74,48 +75,49 @@ class OpenAIService:
     ) -> str:
         """بناء prompt التحليل"""
 
-        # Calculate changes
         users_change = analytics.get('users_change_percent', 0)
         sessions_change = analytics.get('sessions_change_percent', 0)
         downloads_change = downloads.get('change_percent', 0)
 
+        ios_today = downloads.get('ios', {}).get('today', 0)
+        ios_yesterday = downloads.get('ios', {}).get('yesterday', 0)
+        android_today = downloads.get('android', {}).get('today', 0)
+        android_yesterday = downloads.get('android', {}).get('yesterday', 0)
+
         return f"""
-قم بإنشاء تقرير يومي موجز:
+قم بإنشاء تقرير يومي موجز يفصل بين الويب والتطبيق:
 
-📊 **Google Analytics - اليوم:**
-- المستخدمون: {analytics.get('total_users', 0)} ({'+' if users_change >= 0 else ''}{users_change}% عن الأمس)
-- الجلسات: {analytics.get('sessions', 0)} ({'+' if sessions_change >= 0 else ''}{sessions_change}% عن الأمس)
+🌐 **الويب (Web) - Google Analytics:**
+- الزوار اليوم: {analytics.get('total_users', 0)} ({'+' if users_change >= 0 else ''}{users_change}% عن الأمس)
+- الزوار أمس: {analytics.get('yesterday_users', 0)}
+- الجلسات: {analytics.get('sessions', 0)} ({'+' if sessions_change >= 0 else ''}{sessions_change}%)
 - مشاهدات الصفحات: {analytics.get('page_views', 0)}
-- متوسط مدة الجلسة: {analytics.get('avg_session_duration', 0)} ثانية
 - معدل الارتداد: {analytics.get('bounce_rate', 0)}%
-- المستخدمون الجدد: {analytics.get('new_users', 0)}
-- أعلى الصفحات: {', '.join(analytics.get('top_pages', [])[:3])}
+- متوسط مدة الجلسة: {analytics.get('avg_session_duration', 0)} ثانية
+- الأجهزة: موبايل {analytics.get('devices', {}).get('mobile', 0)} | ديسكتوب {analytics.get('devices', {}).get('desktop', 0)}
 
-📊 **أمس للمقارنة:**
-- المستخدمون أمس: {analytics.get('yesterday_users', 0)}
-- الجلسات أمس: {analytics.get('yesterday_sessions', 0)}
+📱 **التطبيق (App) - التحميلات:**
+- إجمالي اليوم: {downloads.get('today', 0)} ({'+' if downloads_change >= 0 else ''}{downloads_change}%)
+- إجمالي أمس: {downloads.get('yesterday', 0)}
+- iOS اليوم: {ios_today} | أمس: {ios_yesterday}
+- Android اليوم: {android_today} | أمس: {android_yesterday}
 
-🔥 **Microsoft Clarity:**
-- نقاط الغضب (Rage Clicks): {clarity.get('rage_clicks', 0)}
-- النقرات الميتة (Dead Clicks): {clarity.get('dead_clicks', 0)}
-- الرجوع السريع: {clarity.get('quick_backs', 0)}
+🔥 **سلوك المستخدم (Clarity):**
 - درجة التفاعل: {clarity.get('engagement_score', 0)}%
 - درجة الإحباط: {clarity.get('frustration_score', 0)}%
-- عمق التمرير 50%+: {clarity.get('scroll_depth', {}).get('50%', 0)} مستخدم
-
-📱 **تحميلات التطبيق:**
-- تحميلات اليوم: {downloads.get('today', 0)}
-- تحميلات أمس: {downloads.get('yesterday', 0)}
-- التغيير: {'+' if downloads_change >= 0 else ''}{downloads_change}%
+- نقاط الغضب: {clarity.get('rage_clicks', 0)}
+- النقرات الميتة: {clarity.get('dead_clicks', 0)}
+- الرجوع السريع: {clarity.get('quick_backs', 0)}
 
 ---
 
 المطلوب:
-1. **ملخص سريع** (3 نقاط رئيسية)
-2. **ماذا تغير عن الأمس؟** (أهم التغييرات بالنسب)
-3. **ملاحظة مهمة** (إن وجدت)
+1. **ملخص الويب** (نقطة واحدة)
+2. **ملخص التطبيق** (نقطة واحدة)
+3. **ملخص السلوك** (نقطة واحدة)
+4. **أهم تغيير عن الأمس**
 
-اكتب التقرير بشكل موجز جداً مناسب للواتساب.
+اكتب بشكل موجز جداً مناسب للواتساب.
 """
 
     def _get_fallback_analysis(
@@ -131,38 +133,51 @@ class OpenAIService:
         users_change = analytics.get('users_change_percent', 0)
 
         sessions = analytics.get('sessions', 0)
-        sessions_change = analytics.get('sessions_change_percent', 0)
 
         downloads_today = downloads.get('today', 0)
+        downloads_yesterday = downloads.get('yesterday', 0)
         downloads_change = downloads.get('change_percent', 0)
+
+        ios_today = downloads.get('ios', {}).get('today', 0)
+        android_today = downloads.get('android', {}).get('today', 0)
 
         rage_clicks = clarity.get('rage_clicks', 0)
         engagement = clarity.get('engagement_score', 0)
 
-        # Build report
         users_arrow = "↑" if users_change >= 0 else "↓"
-        sessions_arrow = "↑" if sessions_change >= 0 else "↓"
         downloads_arrow = "↑" if downloads_change >= 0 else "↓"
 
         analysis_text = f"""📊 *تقرير اليوم - {datetime.now().strftime('%Y-%m-%d')}*
 
-*Google Analytics:*
-👥 المستخدمون: {users} ({users_arrow} {abs(users_change)}%)
-📱 الجلسات: {sessions} ({sessions_arrow} {abs(sessions_change)}%)
+━━━━━━━━━━━━━━━━━━━━
+🌐 *الويب (Web)*
+━━━━━━━━━━━━━━━━━━━━
+👥 الزوار: {users} ({users_arrow} {abs(users_change)}%)
+📊 أمس: {yesterday_users}
+🔄 الجلسات: {sessions}
 📈 معدل الارتداد: {analytics.get('bounce_rate', 0)}%
 
-*Clarity:*
-🎯 درجة التفاعل: {engagement}%
+━━━━━━━━━━━━━━━━━━━━
+📱 *التطبيق (App)*
+━━━━━━━━━━━━━━━━━━━━
+📲 التحميلات: {downloads_today} ({downloads_arrow} {abs(downloads_change)}%)
+📊 أمس: {downloads_yesterday}
+🍎 iOS: {ios_today}
+🤖 Android: {android_today}
+
+━━━━━━━━━━━━━━━━━━━━
+🔥 *سلوك المستخدم*
+━━━━━━━━━━━━━━━━━━━━
+🎯 التفاعل: {engagement}%
 😤 نقاط الغضب: {rage_clicks}
-🖱️ النقرات الميتة: {clarity.get('dead_clicks', 0)}
+🖱️ نقرات ميتة: {clarity.get('dead_clicks', 0)}
 
-*التحميلات:*
-📲 اليوم: {downloads_today} ({downloads_arrow} {abs(downloads_change)}%)
-
-*مقارنة بالأمس:*
-{"✅ زيادة في الزوار" if users_change > 0 else "⚠️ انخفاض في الزوار" if users_change < 0 else "➖ ثبات في الزوار"}
-{"✅ زيادة في التحميلات" if downloads_change > 0 else "⚠️ انخفاض في التحميلات" if downloads_change < 0 else "➖ ثبات في التحميلات"}
-{"⚠️ نقاط غضب عالية - راجع Clarity" if rage_clicks > 10 else ""}"""
+━━━━━━━━━━━━━━━━━━━━
+📋 *الملخص*
+━━━━━━━━━━━━━━━━━━━━
+{"✅ الويب: زيادة في الزوار" if users_change > 0 else "⚠️ الويب: انخفاض في الزوار" if users_change < 0 else "➖ الويب: ثبات"}
+{"✅ التطبيق: زيادة في التحميلات" if downloads_change > 0 else "⚠️ التطبيق: انخفاض في التحميلات" if downloads_change < 0 else "➖ التطبيق: ثبات"}
+{"⚠️ تنبيه: نقاط غضب عالية!" if rage_clicks > 10 else "✅ السلوك: جيد"}"""
 
         return {
             "status": "fallback",
