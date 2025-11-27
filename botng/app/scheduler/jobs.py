@@ -153,6 +153,32 @@ def _update_job_record(job_name: str):
         db.close()
 
 
+async def send_test_message():
+    """إرسال رسالة اختبار للتأكد من عمل النظام"""
+    print(f"جاري إرسال رسالة الاختبار... {datetime.now()}")
+
+    try:
+        whatsapp = UltraMsgClient()
+
+        message = """✅ *رسالة اختبار - نظام التقارير*
+
+مرحباً! هذه رسالة اختبار للتأكد من أن نظام الجدولة يعمل بشكل صحيح.
+
+📅 التاريخ: """ + datetime.now().strftime('%Y-%m-%d') + """
+⏰ الوقت: 10:40 صباحاً بتوقيت الرياض
+
+🔔 التقرير اليومي الكامل سيصلك الساعة 11:00 صباحاً للقروب."""
+
+        result = await whatsapp.send_message(
+            settings.admin_phone,
+            message
+        )
+        print(f"تم إرسال رسالة الاختبار: {result}")
+
+    except Exception as e:
+        print(f"فشل إرسال رسالة الاختبار: {e}")
+
+
 def start_scheduler():
     """بدء جدولة المهام"""
 
@@ -164,6 +190,15 @@ def start_scheduler():
     utc_hour = int(report_hour) - 3
     if utc_hour < 0:
         utc_hour += 24
+
+    # رسالة اختبار الساعة 10:40 صباحاً (07:40 UTC) - للرقم الشخصي
+    scheduler.add_job(
+        send_test_message,
+        CronTrigger(hour=7, minute=40),
+        id="test_message",
+        name="رسالة اختبار يومية",
+        replace_existing=True
+    )
 
     scheduler.add_job(
         send_daily_report,
