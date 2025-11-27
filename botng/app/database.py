@@ -2,10 +2,28 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, B
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
+import os
+
 from .config import settings
 
+# Use SQLite if no DATABASE_URL or if it's the default PostgreSQL
+db_url = settings.database_url
+if not db_url or 'postgresql://botng:botng_secret@localhost' in db_url:
+    # Use SQLite for simplicity
+    db_url = "sqlite:///./botng.db"
+    print("📦 Using SQLite database")
+
 # Create engine
-engine = create_engine(settings.database_url, echo=settings.debug)
+try:
+    if db_url.startswith('sqlite'):
+        engine = create_engine(db_url, connect_args={"check_same_thread": False})
+    else:
+        engine = create_engine(db_url, echo=settings.debug)
+except Exception as e:
+    print(f"⚠️ Database connection error: {e}")
+    # Fallback to SQLite
+    db_url = "sqlite:///./botng.db"
+    engine = create_engine(db_url, connect_args={"check_same_thread": False})
 
 # Session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
