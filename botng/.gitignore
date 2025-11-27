@@ -1,0 +1,33 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Credentials (IMPORTANT: Keep private!)
+credentials/
+*.json
+!package.json
+!railway.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite3

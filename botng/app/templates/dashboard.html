@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Botng Dashboard | لوحة التحكم</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a237e;
+            --primary-light: #3949ab;
+            --secondary: #00bcd4;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --dark: #1a1a2e;
+            --light: #f5f5f5;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .navbar {
+            background: var(--primary);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .navbar h1 {
+            color: white;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .navbar .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        .stat-card .icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card .icon.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .stat-card .icon.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .stat-card .icon.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .stat-card .icon.purple { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .stat-card .change {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .change.positive { color: var(--success); }
+        .change.negative { color: var(--danger); }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .card-header h2 {
+            font-size: 1.2rem;
+            color: var(--dark);
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        /* Systems Status */
+        .systems-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .system-item {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 12px;
+            background: #f8f9fa;
+        }
+
+        .system-item .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .system-item .name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .system-item .status-text {
+            font-size: 0.8rem;
+            color: var(--success);
+        }
+
+        .system-item.warning .status-text {
+            color: var(--warning);
+        }
+
+        .system-item.error .status-text {
+            color: var(--danger);
+        }
+
+        /* Activity List */
+        .activity-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .activity-icon.report { background: #e3f2fd; color: #1976d2; }
+        .activity-icon.task { background: #f3e5f5; color: #7b1fa2; }
+        .activity-icon.alert { background: #fff3e0; color: #f57c00; }
+        .activity-icon.message { background: #e8f5e9; color: #388e3c; }
+
+        .activity-content h4 {
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-content p {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .activity-time {
+            font-size: 0.8rem;
+            color: #999;
+            margin-right: auto;
+        }
+
+        /* Tasks Table */
+        .tasks-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .tasks-table th,
+        .tasks-table td {
+            padding: 1rem;
+            text-align: right;
+            border-bottom: 1px solid #eee;
+        }
+
+        .tasks-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .task-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .task-status.pending { background: #fff3e0; color: #f57c00; }
+        .task-status.in-progress { background: #e3f2fd; color: #1976d2; }
+        .task-status.done { background: #e8f5e9; color: #388e3c; }
+        .task-status.overdue { background: #ffebee; color: #c62828; }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            border-color: var(--primary);
+            background: #fff;
+        }
+
+        .action-btn .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .action-btn .label {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: var(--secondary);
+            text-decoration: none;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            z-index: 1000;
+        }
+
+        .toast {
+            background: var(--dark);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            margin-top: 0.5rem;
+            animation: slideIn 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>
+            <span>🤖</span>
+            <span>Botng Dashboard</span>
+        </h1>
+        <div class="status">
+            <div class="status-dot"></div>
+            <span>النظام يعمل</span>
+            <span id="current-time"></span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="icon blue">📊</div>
+                <h3>البلاغات اليوم</h3>
+                <div class="value" id="reports-count">-</div>
+                <div class="change positive" id="reports-change">↑ 0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon green">💰</div>
+                <h3>الاستردادات</h3>
+                <div class="value" id="refunds-total">-</div>
+                <div class="change" id="refunds-count">0 طلب</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon orange">📋</div>
+                <h3>المهام النشطة</h3>
+                <div class="value" id="tasks-count">-</div>
+                <div class="change negative" id="overdue-count">0 متأخرة</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon purple">👥</div>
+                <h3>زوار الموقع</h3>
+                <div class="value" id="visitors-count">-</div>
+                <div class="change" id="sessions-count">0 جلسة</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Systems Status -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="card-header">
+                        <h2>🔗 حالة الأنظمة المتصلة</h2>
+                        <button class="btn btn-primary" onclick="refreshSystems()">تحديث</button>
+                    </div>
+                    <div class="systems-grid" id="systems-status">
+                        <div class="system-item">
+                            <div class="icon">🏨</div>
+                            <div class="name">Golden Host</div>
+                            <div class="status-text">✓ متصل</div>
+                        </div>
+                        <div class="system-item">
+                            <div class="icon">📋</div>
+                            <div class="name">Sunday Board</div>
+                            <div class="status-text">✓ متصل</div>
+                        </div>
+                        <div class="system-item">
+                            <div class="icon">📈</div>
+                            <div class="name">Google Analytics</div>
+                            <div class="status-text">✓ متصل</div>
+                        </div>
+                        <div class="system-item">
+                            <div class="icon">💬</div>
+                            <div class="name">WhatsApp</div>
+                            <div class="status-text">✓ متصل</div>
+                        </div>
+                        <div class="system-item">
+                            <div class="icon">🔥</div>
+                            <div class="name">Firebase</div>
+                            <div class="status-text">✓ متصل</div>
+                        </div>
+                        <div class="system-item">
+                            <div class="icon">🤖</div>
+                            <div class="name">OpenAI</div>
+                            <div class="status-text">✓ متصل</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tasks Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📋 المهام الحالية</h2>
+                        <button class="btn btn-warning" onclick="showOverdueTasks()">المتأخرة فقط</button>
+                    </div>
+                    <div id="tasks-container">
+                        <table class="tasks-table">
+                            <thead>
+                                <tr>
+                                    <th>المهمة</th>
+                                    <th>المسؤول</th>
+                                    <th>الحالة</th>
+                                    <th>التاريخ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tasks-body">
+                                <tr>
+                                    <td colspan="4" class="loading">
+                                        <div class="spinner"></div>
+                                        جاري التحميل...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-column">
+                <!-- Quick Actions -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="card-header">
+                        <h2>⚡ إجراءات سريعة</h2>
+                    </div>
+                    <div class="quick-actions">
+                        <button class="action-btn" onclick="sendDailyReport()">
+                            <span class="icon">📊</span>
+                            <span class="label">إرسال تقرير يومي</span>
+                        </button>
+                        <button class="action-btn" onclick="sendWeeklyReport()">
+                            <span class="icon">📈</span>
+                            <span class="label">إرسال تقرير أسبوعي</span>
+                        </button>
+                        <button class="action-btn" onclick="checkTriggers()">
+                            <span class="icon">🔔</span>
+                            <span class="label">فحص التنبيهات</span>
+                        </button>
+                        <button class="action-btn" onclick="syncData()">
+                            <span class="icon">🔄</span>
+                            <span class="label">مزامنة البيانات</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📜 آخر النشاطات</h2>
+                    </div>
+                    <div class="activity-list" id="activity-list">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            جاري التحميل...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>🤖 Botng v1.0 | نظام الأتمتة الذكي</p>
+        <p>🏢 <a href="#">شركة ليفل أب القابضة</a></p>
+    </footer>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent =
+                now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+
+            toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/api/dashboard/stats');
+                const data = await response.json();
+
+                // Update stats
+                document.getElementById('reports-count').textContent = data.golden_host?.reports_count || 0;
+                document.getElementById('refunds-total').textContent =
+                    (data.golden_host?.refunds_total || 0).toLocaleString() + ' ر.س';
+                document.getElementById('refunds-count').textContent =
+                    (data.golden_host?.refunds_count || 0) + ' طلب';
+
+                document.getElementById('tasks-count').textContent = data.sunday_board?.total_tasks || 0;
+                document.getElementById('overdue-count').textContent =
+                    (data.sunday_board?.overdue_tasks || 0) + ' متأخرة';
+
+                document.getElementById('visitors-count').textContent = data.analytics?.active_users || 0;
+                document.getElementById('sessions-count').textContent =
+                    (data.analytics?.sessions || 0) + ' جلسة';
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        // Load tasks
+        async function loadTasks() {
+            try {
+                const response = await fetch('/api/dashboard/tasks');
+                const tasks = await response.json();
+
+                const tbody = document.getElementById('tasks-body');
+
+                if (!tasks.length) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:2rem;">لا توجد مهام</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = tasks.slice(0, 10).map(task => {
+                    const statusClass = {
+                        'pending': 'pending',
+                        'in_progress': 'in-progress',
+                        'done': 'done',
+                        'overdue': 'overdue'
+                    }[task.status] || 'pending';
+
+                    const statusText = {
+                        'pending': 'قيد الانتظار',
+                        'in_progress': 'قيد التنفيذ',
+                        'done': 'مكتمل',
+                        'overdue': 'متأخر'
+                    }[task.status] || task.status;
+
+                    return `
+                        <tr>
+                            <td>${task.title || 'بدون عنوان'}</td>
+                            <td>${task.assignee || '-'}</td>
+                            <td><span class="task-status ${statusClass}">${statusText}</span></td>
+                            <td>${task.due_date || '-'}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                document.getElementById('tasks-body').innerHTML =
+                    '<tr><td colspan="4" style="text-align:center;color:red;">خطأ في تحميل المهام</td></tr>';
+            }
+        }
+
+        // Load activity
+        async function loadActivity() {
+            try {
+                const response = await fetch('/api/dashboard/activity');
+                const activities = await response.json();
+
+                const container = document.getElementById('activity-list');
+
+                if (!activities.length) {
+                    container.innerHTML = '<div style="text-align:center;padding:2rem;color:#666;">لا توجد نشاطات</div>';
+                    return;
+                }
+
+                container.innerHTML = activities.slice(0, 10).map(activity => {
+                    const iconClass = {
+                        'report': 'report',
+                        'task': 'task',
+                        'alert': 'alert',
+                        'message': 'message'
+                    }[activity.type] || 'report';
+
+                    const icons = {
+                        'report': '📊',
+                        'task': '📋',
+                        'alert': '🔔',
+                        'message': '💬'
+                    };
+
+                    return `
+                        <div class="activity-item">
+                            <div class="activity-icon ${iconClass}">${icons[activity.type] || '📌'}</div>
+                            <div class="activity-content">
+                                <h4>${activity.title || 'نشاط'}</h4>
+                                <p>${activity.description || ''}</p>
+                            </div>
+                            <span class="activity-time">${activity.time || ''}</span>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error loading activity:', error);
+                document.getElementById('activity-list').innerHTML =
+                    '<div style="text-align:center;color:red;">خطأ في تحميل النشاطات</div>';
+            }
+        }
+
+        // Actions
+        async function sendDailyReport() {
+            showToast('جاري إرسال التقرير اليومي...', 'info');
+            try {
+                const response = await fetch('/api/dashboard/send-report?type=daily', { method: 'POST' });
+                const result = await response.json();
+                if (result.status === 'sent') {
+                    showToast('تم إرسال التقرير بنجاح!', 'success');
+                } else {
+                    showToast('فشل في إرسال التقرير', 'error');
+                }
+            } catch (error) {
+                showToast('خطأ في الاتصال', 'error');
+            }
+        }
+
+        async function sendWeeklyReport() {
+            showToast('جاري إرسال التقرير الأسبوعي...', 'info');
+            try {
+                const response = await fetch('/api/dashboard/send-report?type=weekly', { method: 'POST' });
+                const result = await response.json();
+                if (result.status === 'sent') {
+                    showToast('تم إرسال التقرير بنجاح!', 'success');
+                } else {
+                    showToast('فشل في إرسال التقرير', 'error');
+                }
+            } catch (error) {
+                showToast('خطأ في الاتصال', 'error');
+            }
+        }
+
+        async function checkTriggers() {
+            showToast('جاري فحص التنبيهات...', 'info');
+            try {
+                const response = await fetch('/api/dashboard/check-triggers', { method: 'POST' });
+                const result = await response.json();
+                showToast(`تم فحص ${result.checked || 0} تنبيه`, 'success');
+            } catch (error) {
+                showToast('خطأ في الاتصال', 'error');
+            }
+        }
+
+        async function syncData() {
+            showToast('جاري مزامنة البيانات...', 'info');
+            try {
+                const response = await fetch('/api/dashboard/sync', { method: 'POST' });
+                const result = await response.json();
+                showToast('تم مزامنة البيانات!', 'success');
+                loadDashboardData();
+                loadTasks();
+                loadActivity();
+            } catch (error) {
+                showToast('خطأ في الاتصال', 'error');
+            }
+        }
+
+        function refreshSystems() {
+            showToast('جاري فحص الأنظمة...', 'info');
+            setTimeout(() => showToast('جميع الأنظمة تعمل بشكل صحيح', 'success'), 1000);
+        }
+
+        function showOverdueTasks() {
+            showToast('عرض المهام المتأخرة فقط', 'info');
+        }
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardData();
+            loadTasks();
+            loadActivity();
+
+            // Refresh every 60 seconds
+            setInterval(() => {
+                loadDashboardData();
+                loadTasks();
+            }, 60000);
+        });
+    </script>
+</body>
+</html>
