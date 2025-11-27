@@ -25,7 +25,8 @@ class Settings(BaseSettings):
     firebase_database_url: str = ""
 
     # App Settings
-    report_time: str = "11:00"
+    report_time: str = "11:00"  # وقت التقرير اليومي - 11 صباحاً بتوقيت الرياض
+    admin_phone: str = "966563652525"  # رقم واتساب الأدمن
     debug: bool = True
 
     # API Base URLs
