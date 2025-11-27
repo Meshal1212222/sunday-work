@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: botng-db
+    environment:
+      POSTGRES_USER: botng
+      POSTGRES_PASSWORD: botng_secret
+      POSTGRES_DB: botng
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botng"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Botng API
+  api:
+    build: .
+    container_name: botng-api
+    environment:
+      - DATABASE_URL=postgresql://botng:botng_secret@db:5432/botng
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ULTRAMSG_INSTANCE_ID=${ULTRAMSG_INSTANCE_ID}
+      - ULTRAMSG_TOKEN=${ULTRAMSG_TOKEN}
+      - ULTRAMSG_PHONE=${ULTRAMSG_PHONE}
+      - ADMIN_PHONE=${ADMIN_PHONE}
+      - REPORT_TIME=${REPORT_TIME:-08:00}
+      - DEBUG=${DEBUG:-false}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
