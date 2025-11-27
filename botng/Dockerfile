@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Railway uses PORT env variable
-ENV PORT=8000
+ENV PORT 8000
 
-# Run application
-CMD uvicorn app.main:app --host 0.0.0.0 --port $PORT
+# Run application with shell to expand variables
+CMD ["/bin/sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
