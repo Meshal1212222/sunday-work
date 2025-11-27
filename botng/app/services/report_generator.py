@@ -7,6 +7,7 @@ Report Generator Service
 - Microsoft Clarity (سلوك المستخدم، نقاط الغضب)
 - تحميلات التطبيق
 - مقارنة بالأمس (النسب المئوية)
+- تقرير PDF مع رسوم بيانية
 """
 
 from datetime import datetime
@@ -17,10 +18,11 @@ from app.services.clarity_service import clarity_service
 from app.services.downloads_service import downloads_service
 from app.services.openai_service import openai_service
 from app.services.whatsapp_service import whatsapp_service
+from app.services.pdf_report_service import pdf_report_service
 
 
 async def generate_daily_report() -> Dict[str, Any]:
-    """توليد وإرسال التقرير اليومي"""
+    """توليد وإرسال التقرير اليومي (نص + PDF)"""
 
     print(f"🚀 بدء توليد التقرير اليومي - {datetime.now()}")
 
@@ -45,13 +47,25 @@ async def generate_daily_report() -> Dict[str, Any]:
             downloads_data
         )
 
-        # 5. تنسيق التقرير لواتساب
+        # 5. توليد تقرير PDF
+        print("📄 توليد تقرير PDF...")
+        pdf_path = await pdf_report_service.generate_daily_pdf(
+            analytics_data,
+            clarity_data,
+            downloads_data
+        )
+
+        # 6. تنسيق التقرير النصي لواتساب
         print("📝 تنسيق التقرير...")
         formatted_report = whatsapp_service.format_report_for_whatsapp(analysis)
 
-        # 6. إرسال التقرير
-        print("📱 إرسال عبر واتساب...")
-        send_results = await whatsapp_service.send_daily_report(formatted_report)
+        # 7. إرسال التقرير النصي
+        print("📱 إرسال التقرير النصي...")
+        text_results = await whatsapp_service.send_daily_report(formatted_report)
+
+        # 8. إرسال ملف PDF
+        print("📎 إرسال ملف PDF...")
+        pdf_results = await whatsapp_service.send_document(pdf_path, "تقرير قولدن هوست اليومي")
 
         result = {
             "status": "success",
@@ -62,7 +76,9 @@ async def generate_daily_report() -> Dict[str, Any]:
                 "downloads": bool(downloads_data)
             },
             "analysis_status": analysis.get("status"),
-            "send_results": send_results,
+            "pdf_path": pdf_path,
+            "text_send_results": text_results,
+            "pdf_send_results": pdf_results,
             "report_preview": formatted_report[:500] + "..."
         }
 
@@ -98,6 +114,26 @@ async def generate_quick_report() -> Dict[str, Any]:
             "downloads": downloads_data
         },
         "analysis": analysis,
+        "generated_at": datetime.now().isoformat()
+    }
+
+
+async def generate_pdf_only() -> Dict[str, Any]:
+    """توليد تقرير PDF فقط"""
+
+    analytics_data = await analytics_service.get_daily_stats()
+    clarity_data = await clarity_service.get_daily_summary()
+    downloads_data = await downloads_service.get_today_downloads()
+
+    pdf_path = await pdf_report_service.generate_daily_pdf(
+        analytics_data,
+        clarity_data,
+        downloads_data
+    )
+
+    return {
+        "status": "success",
+        "pdf_path": pdf_path,
         "generated_at": datetime.now().isoformat()
     }
 
