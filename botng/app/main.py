@@ -9,7 +9,8 @@ from .config import settings
 from .database import init_db, get_db, SessionLocal
 from .webhooks.whatsapp import router as whatsapp_router
 from .dashboard.routes import router as dashboard_router
-from .scheduler.jobs import start_scheduler, shutdown_scheduler
+from .scheduler.jobs import start_scheduler, shutdown_scheduler, trigger_daily_report_now
+from .reporters.smart_report import SmartReportGenerator
 from .reporters.report_generator import ReportGenerator
 from .integrations.ultramsg import UltraMsgClient
 
@@ -143,6 +144,20 @@ async def send_report(report_type: str = "daily", phone: str = None):
         "report_type": report_type,
         "result": result
     }
+
+
+@app.post("/api/reports/send-to-group")
+async def send_report_to_group():
+    """إرسال التقرير اليومي للقروب (نص + PDF)"""
+    try:
+        await trigger_daily_report_now()
+        return {
+            "status": "sent",
+            "recipient": settings.report_group_id,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ==================== Data Sync API ====================
