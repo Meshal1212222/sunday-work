@@ -3,6 +3,11 @@
 .env.local
 .env.production
 
+# Credentials (IMPORTANT: Keep private!)
+credentials/
+*.json
+!package.json
+
 # Python
 __pycache__/
 *.py[cod]

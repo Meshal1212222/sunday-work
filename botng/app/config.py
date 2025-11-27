@@ -13,11 +13,16 @@ class Settings(BaseSettings):
     # Ultra Message (WhatsApp)
     ultramsg_instance_id: str = ""
     ultramsg_token: str = ""
-    ultramsg_phone: str = ""
+
+    # WhatsApp Group for Reports
+    report_group_id: str = ""
+
+    # Google Analytics 4
+    ga4_property_id: str = ""
+    google_credentials_path: str = "credentials/google-service-account.json"
 
     # App Settings
-    admin_phone: str = ""
-    report_time: str = "08:00"
+    report_time: str = "11:00"
     debug: bool = True
 
     # API Base URLs
