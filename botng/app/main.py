@@ -116,6 +116,11 @@ async def botng_dashboard():
             "configured": bool(settings.ga4_property_id),
             "details": f"Property: {settings.ga4_property_id}" if settings.ga4_property_id else "غير مُعد"
         },
+        "clarity": {
+            "name": "Microsoft Clarity",
+            "configured": True,  # يعمل بإدخال يدوي
+            "details": "إدخال يدوي - /api/data/clarity/import"
+        },
         "firebase": {
             "name": "Firebase",
             "configured": bool(settings.firebase_database_url),
