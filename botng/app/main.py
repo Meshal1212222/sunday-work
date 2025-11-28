@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 from datetime import datetime, date
 import os
@@ -89,6 +90,562 @@ async def health_check():
         "timestamp": datetime.utcnow().isoformat(),
         "version": "1.0.0"
     }
+
+
+# ==================== Botng Dashboard ====================
+
+@app.get("/botng", response_class=HTMLResponse)
+async def botng_dashboard():
+    """صفحة لوحة تحكم Botng - التكاملات والجدولة"""
+    from .scheduler.jobs import scheduler
+
+    # حالة التكاملات
+    integrations = {
+        "ultramsg": {
+            "name": "UltraMsg (WhatsApp)",
+            "configured": bool(settings.ultramsg_instance_id and settings.ultramsg_token),
+            "details": f"Instance: {settings.ultramsg_instance_id[:10]}..." if settings.ultramsg_instance_id else "غير مُعد"
+        },
+        "openai": {
+            "name": "OpenAI (GPT)",
+            "configured": bool(settings.openai_api_key),
+            "details": f"Model: {settings.openai_model}" if settings.openai_api_key else "غير مُعد"
+        },
+        "google_analytics": {
+            "name": "Google Analytics 4",
+            "configured": bool(settings.ga4_property_id),
+            "details": f"Property: {settings.ga4_property_id}" if settings.ga4_property_id else "غير مُعد"
+        },
+        "clarity": {
+            "name": "Microsoft Clarity",
+            "configured": True,  # يعمل بإدخال يدوي
+            "details": "إدخال يدوي - /api/data/clarity/import"
+        },
+        "firebase": {
+            "name": "Firebase",
+            "configured": bool(settings.firebase_database_url),
+            "details": "متصل" if settings.firebase_database_url else "غير مُعد"
+        }
+    }
+
+    # المهام المجدولة
+    scheduled_jobs = []
+    try:
+        for job in scheduler.get_jobs():
+            next_run = job.next_run_time
+            scheduled_jobs.append({
+                "id": job.id,
+                "name": job.name,
+                "next_run": next_run.strftime("%Y-%m-%d %H:%M:%S") if next_run else "غير محدد",
+                "next_run_relative": _get_relative_time(next_run) if next_run else "غير محدد"
+            })
+    except:
+        pass
+
+    # إعدادات التقارير
+    report_settings = {
+        "time": settings.report_time,
+        "recipient": settings.report_group_id if settings.report_group_id else settings.admin_phone,
+        "recipient_type": "قروب" if settings.report_group_id else "رقم شخصي"
+    }
+
+    # جلب قائمة القروبات من UltraMsg
+    groups_list = []
+    try:
+        import httpx
+        response = httpx.get(
+            f"https://api.ultramsg.com/{settings.ultramsg_instance_id}/groups",
+            params={"token": settings.ultramsg_token},
+            verify=False,
+            timeout=10
+        )
+        if response.status_code == 200:
+            groups_data = response.json()
+            groups_list = [{"id": g["id"], "name": g["name"]} for g in groups_data if g.get("isGroup")]
+    except:
+        pass
+
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Botng Dashboard | لوحة التحكم</title>
+        <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+        <style>
+            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+            body {{
+                font-family: 'Tajawal', sans-serif;
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                min-height: 100vh;
+                color: #fff;
+                padding: 20px;
+            }}
+            .container {{ max-width: 1200px; margin: 0 auto; }}
+            h1 {{
+                text-align: center;
+                margin-bottom: 30px;
+                font-size: 2.5em;
+                background: linear-gradient(90deg, #00d4ff, #00ff88);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }}
+            .section {{
+                background: rgba(255,255,255,0.05);
+                border-radius: 15px;
+                padding: 25px;
+                margin-bottom: 25px;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.1);
+            }}
+            .section h2 {{
+                margin-bottom: 20px;
+                color: #00d4ff;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }}
+            .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }}
+            .card {{
+                background: rgba(255,255,255,0.08);
+                border-radius: 12px;
+                padding: 20px;
+                border: 1px solid rgba(255,255,255,0.1);
+                transition: transform 0.3s, box-shadow 0.3s;
+            }}
+            .card:hover {{
+                transform: translateY(-5px);
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            }}
+            .card h3 {{ margin-bottom: 10px; font-size: 1.1em; }}
+            .status {{
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 5px 12px;
+                border-radius: 20px;
+                font-size: 0.9em;
+            }}
+            .status.active {{ background: rgba(0,255,136,0.2); color: #00ff88; }}
+            .status.inactive {{ background: rgba(255,100,100,0.2); color: #ff6464; }}
+            .details {{ color: rgba(255,255,255,0.6); font-size: 0.85em; margin-top: 8px; }}
+            .job-card {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: rgba(255,255,255,0.05);
+                padding: 15px 20px;
+                border-radius: 10px;
+                margin-bottom: 10px;
+            }}
+            .job-name {{ font-weight: 500; }}
+            .job-time {{ color: #00d4ff; font-size: 0.9em; }}
+            .settings-row {{
+                display: flex;
+                justify-content: space-between;
+                padding: 12px 0;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+            }}
+            .settings-row:last-child {{ border-bottom: none; }}
+            .settings-label {{ color: rgba(255,255,255,0.7); }}
+            .settings-value {{ font-weight: 500; color: #00ff88; }}
+            .refresh-btn {{
+                background: linear-gradient(90deg, #00d4ff, #00ff88);
+                border: none;
+                padding: 10px 25px;
+                border-radius: 25px;
+                color: #1a1a2e;
+                font-weight: 700;
+                cursor: pointer;
+                font-family: 'Tajawal', sans-serif;
+                transition: transform 0.2s;
+            }}
+            .refresh-btn:hover {{ transform: scale(1.05); }}
+            .header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }}
+            .settings-form {{ display: flex; flex-direction: column; gap: 15px; }}
+            .form-group {{ display: flex; flex-direction: column; gap: 8px; }}
+            .form-group label {{ color: rgba(255,255,255,0.8); font-weight: 500; }}
+            .time-input, .text-input, .select-input {{
+                background: rgba(255,255,255,0.1);
+                border: 1px solid rgba(255,255,255,0.2);
+                border-radius: 8px;
+                padding: 12px 15px;
+                color: #fff;
+                font-family: 'Tajawal', sans-serif;
+                font-size: 1em;
+                outline: none;
+                transition: border-color 0.3s;
+            }}
+            .time-input:focus, .text-input:focus, .select-input:focus {{
+                border-color: #00d4ff;
+            }}
+            .select-input option {{ background: #1a1a2e; color: #fff; }}
+            .save-btn {{
+                background: linear-gradient(90deg, #00ff88, #00d4ff);
+                border: none;
+                padding: 12px 30px;
+                border-radius: 25px;
+                color: #1a1a2e;
+                font-weight: 700;
+                cursor: pointer;
+                font-family: 'Tajawal', sans-serif;
+                font-size: 1em;
+                transition: transform 0.2s, box-shadow 0.2s;
+                align-self: flex-start;
+            }}
+            .save-btn:hover {{ transform: scale(1.05); box-shadow: 0 5px 20px rgba(0,255,136,0.3); }}
+
+            /* Automation Flow Styles */
+            .automation-flow {{
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 10px;
+                padding: 20px 0;
+            }}
+            .flow-step {{
+                background: rgba(255,255,255,0.08);
+                border-radius: 15px;
+                padding: 20px;
+                text-align: center;
+                min-width: 140px;
+                flex: 1;
+                border: 2px solid transparent;
+                transition: all 0.3s;
+            }}
+            .flow-step:hover {{
+                transform: translateY(-5px);
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            }}
+            .flow-step.source {{ border-color: #4ecdc4; }}
+            .flow-step.process {{ border-color: #45b7d1; }}
+            .flow-step.generate {{ border-color: #96ceb4; }}
+            .flow-step.schedule {{ border-color: #ffd93d; }}
+            .flow-step.send {{ border-color: #6bcb77; }}
+            .step-icon {{ font-size: 2.5em; margin-bottom: 10px; }}
+            .step-title {{ font-weight: 700; color: #fff; margin-bottom: 10px; font-size: 1.1em; }}
+            .step-items {{ display: flex; flex-direction: column; gap: 5px; }}
+            .step-items .item {{
+                font-size: 0.8em;
+                padding: 4px 8px;
+                border-radius: 10px;
+                background: rgba(255,255,255,0.1);
+            }}
+            .step-items .item.active {{ background: rgba(0,255,136,0.2); color: #00ff88; }}
+            .step-items .item.inactive {{ background: rgba(255,100,100,0.2); color: #ff6464; }}
+            .flow-arrow {{
+                font-size: 2em;
+                color: #00d4ff;
+                font-weight: bold;
+                animation: pulse 1.5s infinite;
+            }}
+            @keyframes pulse {{
+                0%, 100% {{ opacity: 1; transform: scale(1); }}
+                50% {{ opacity: 0.5; transform: scale(1.2); }}
+            }}
+            @media (max-width: 768px) {{
+                .automation-flow {{ flex-direction: column; }}
+                .flow-arrow {{ transform: rotate(90deg); }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🤖 Botng Dashboard</h1>
+                <button class="refresh-btn" onclick="location.reload()">🔄 تحديث</button>
+            </div>
+
+            <div class="section">
+                <h2>🔌 التكاملات</h2>
+                <div class="grid">
+                    {"".join(f'''
+                    <div class="card">
+                        <h3>{v["name"]}</h3>
+                        <span class="status {"active" if v["configured"] else "inactive"}">
+                            {"✅ مفعّل" if v["configured"] else "❌ غير مفعّل"}
+                        </span>
+                        <p class="details">{v["details"]}</p>
+                    </div>
+                    ''' for k, v in integrations.items())}
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>⏰ المهام المجدولة</h2>
+                {"".join(f'''
+                <div class="job-card">
+                    <span class="job-name">📋 {job["name"]}</span>
+                    <span class="job-time">⏱️ {job["next_run_relative"]}</span>
+                </div>
+                ''' for job in scheduled_jobs) if scheduled_jobs else '<p style="color: rgba(255,255,255,0.6);">لا توجد مهام مجدولة حالياً</p>'}
+            </div>
+
+            <div class="section">
+                <h2>📊 إعدادات التقارير</h2>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label>⏰ وقت الإرسال اليومي</label>
+                        <input type="time" id="report_time" value="{report_settings["time"]}" class="time-input">
+                    </div>
+                    <div class="form-group">
+                        <label>📱 المستلم</label>
+                        <select id="recipient_type" class="select-input" onchange="toggleRecipientInput()">
+                            <option value="phone" {"selected" if not settings.report_group_id else ""}>رقم شخصي</option>
+                            <option value="group" {"selected" if settings.report_group_id else ""}>قروب واتساب</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="phone-input-group" style="{"display:none" if settings.report_group_id else ""}">
+                        <label>📞 رقم الواتساب</label>
+                        <input type="text" id="phone_recipient" value="{settings.admin_phone}" class="text-input" placeholder="966XXXXXXXXX">
+                    </div>
+                    <div class="form-group" id="group-input-group" style="{"" if settings.report_group_id else "display:none"}">
+                        <label>👥 اختر القروب</label>
+                        <select id="group_recipient" class="select-input">
+                            <option value="">-- اختر قروب --</option>
+                            {"".join(f'<option value="{g["id"]}" {"selected" if g["id"] == settings.report_group_id else ""}>{g["name"]}</option>' for g in groups_list)}
+                        </select>
+                    </div>
+                    <button class="save-btn" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+                    <span id="save-status" style="margin-right: 15px; display: none;"></span>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🗺️ خريطة عملية الأتمتة</h2>
+                <div class="automation-flow">
+                    <div class="flow-step source">
+                        <div class="step-icon">📊</div>
+                        <div class="step-title">مصادر البيانات</div>
+                        <div class="step-items">
+                            <span class="item {"active" if settings.ga4_property_id else "inactive"}">Google Analytics</span>
+                            <span class="item active">Microsoft Clarity</span>
+                            <span class="item {"active" if settings.firebase_database_url else "inactive"}">Firebase</span>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step process">
+                        <div class="step-icon">⚙️</div>
+                        <div class="step-title">معالجة البيانات</div>
+                        <div class="step-items">
+                            <span class="item active">جمع الإحصائيات</span>
+                            <span class="item active">تحليل السلوك</span>
+                            <span class="item active">مقارنة الفترات</span>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step generate">
+                        <div class="step-icon">📝</div>
+                        <div class="step-title">إنشاء التقرير</div>
+                        <div class="step-items">
+                            <span class="item active">تقرير نصي</span>
+                            <span class="item active">ملف PDF</span>
+                            <span class="item active">رسوم بيانية</span>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step schedule">
+                        <div class="step-icon">⏰</div>
+                        <div class="step-title">الجدولة</div>
+                        <div class="step-items">
+                            <span class="item active">يومياً: {report_settings["time"]}</span>
+                            <span class="item active">توقيت الرياض</span>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step send">
+                        <div class="step-icon">📱</div>
+                        <div class="step-title">الإرسال</div>
+                        <div class="step-items">
+                            <span class="item {"active" if settings.ultramsg_instance_id else "inactive"}">WhatsApp API</span>
+                            <span class="item active">{report_settings["recipient_type"]}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🔗 روابط سريعة</h2>
+                <div class="grid">
+                    <a href="/docs" style="text-decoration:none;">
+                        <div class="card">
+                            <h3>📚 API Documentation</h3>
+                            <p class="details">توثيق الـ API التفاعلي</p>
+                        </div>
+                    </a>
+                    <a href="/api/reports/send-now" style="text-decoration:none;" onclick="fetch('/api/reports/send-now', {{method:'POST'}}).then(r=>r.json()).then(d=>alert('تم الإرسال!')); return false;">
+                        <div class="card">
+                            <h3>📤 إرسال تقرير الآن</h3>
+                            <p class="details">إرسال التقرير اليومي فوراً</p>
+                        </div>
+                    </a>
+                    <a href="/api/health" style="text-decoration:none;">
+                        <div class="card">
+                            <h3>💚 Health Check</h3>
+                            <p class="details">فحص حالة النظام</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <script>
+            function toggleRecipientInput() {{
+                const type = document.getElementById('recipient_type').value;
+                document.getElementById('phone-input-group').style.display = type === 'phone' ? '' : 'none';
+                document.getElementById('group-input-group').style.display = type === 'group' ? '' : 'none';
+            }}
+
+            async function saveSettings() {{
+                const time = document.getElementById('report_time').value;
+                const recipientType = document.getElementById('recipient_type').value;
+                let recipient = '';
+
+                if (recipientType === 'phone') {{
+                    recipient = document.getElementById('phone_recipient').value;
+                }} else {{
+                    recipient = document.getElementById('group_recipient').value;
+                }}
+
+                if (!recipient) {{
+                    alert('الرجاء اختيار المستلم');
+                    return;
+                }}
+
+                const status = document.getElementById('save-status');
+                status.style.display = 'inline';
+                status.style.color = '#ffd700';
+                status.textContent = '⏳ جاري الحفظ...';
+
+                try {{
+                    const response = await fetch('/api/settings/update', {{
+                        method: 'POST',
+                        headers: {{ 'Content-Type': 'application/json' }},
+                        body: JSON.stringify({{
+                            report_time: time,
+                            recipient_type: recipientType,
+                            recipient: recipient
+                        }})
+                    }});
+
+                    const result = await response.json();
+
+                    if (result.status === 'success') {{
+                        status.style.color = '#00ff88';
+                        status.textContent = '✅ تم الحفظ وتحديث الجدولة!';
+                    }} else {{
+                        status.style.color = '#ff6464';
+                        status.textContent = '❌ ' + (result.message || 'فشل الحفظ');
+                    }}
+                }} catch (e) {{
+                    status.style.color = '#ff6464';
+                    status.textContent = '❌ خطأ في الاتصال';
+                }}
+
+                setTimeout(() => {{ status.style.display = 'none'; }}, 5000);
+            }}
+        </script>
+    </body>
+    </html>
+    """
+    return html
+
+
+@app.post("/api/settings/update")
+async def update_settings(data: dict):
+    """تحديث إعدادات التقارير"""
+    import json
+
+    try:
+        report_time = data.get("report_time", "11:00")
+        recipient_type = data.get("recipient_type", "phone")
+        recipient = data.get("recipient", "")
+
+        # حفظ الإعدادات في ملف JSON
+        settings_file = os.path.join(os.path.dirname(__file__), "runtime_settings.json")
+
+        new_settings = {
+            "report_time": report_time,
+            "recipient_type": recipient_type,
+            "recipient": recipient,
+            "report_group_id": recipient if recipient_type == "group" else "",
+            "admin_phone": recipient if recipient_type == "phone" else settings.admin_phone,
+            "updated_at": datetime.utcnow().isoformat()
+        }
+
+        with open(settings_file, "w", encoding="utf-8") as f:
+            json.dump(new_settings, f, ensure_ascii=False, indent=2)
+
+        # تحديث الجدولة فوراً
+        from .scheduler.jobs import scheduler, send_daily_report
+        from apscheduler.triggers.cron import CronTrigger
+
+        hour, minute = report_time.split(":")
+        utc_hour = int(hour) - 3  # Riyadh is UTC+3
+        if utc_hour < 0:
+            utc_hour += 24
+
+        # إعادة جدولة التقرير اليومي
+        scheduler.reschedule_job(
+            "daily_report",
+            trigger=CronTrigger(hour=utc_hour, minute=int(minute))
+        )
+
+        return {
+            "status": "success",
+            "message": "تم حفظ الإعدادات وتحديث الجدولة",
+            "settings": new_settings
+        }
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+
+@app.get("/api/settings")
+async def get_settings():
+    """جلب الإعدادات الحالية"""
+    import json
+
+    settings_file = os.path.join(os.path.dirname(__file__), "runtime_settings.json")
+
+    if os.path.exists(settings_file):
+        with open(settings_file, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    return {
+        "report_time": settings.report_time,
+        "recipient_type": "group" if settings.report_group_id else "phone",
+        "recipient": settings.report_group_id or settings.admin_phone
+    }
+
+
+def _get_relative_time(dt):
+    """تحويل الوقت لصيغة نسبية"""
+    if not dt:
+        return "غير محدد"
+
+    from datetime import timezone
+    now = datetime.now(dt.tzinfo) if dt.tzinfo else datetime.now()
+    diff = dt - now
+
+    total_seconds = diff.total_seconds()
+    if total_seconds < 0:
+        return "انتهى"
+
+    hours = int(total_seconds // 3600)
+    minutes = int((total_seconds % 3600) // 60)
+
+    if hours > 24:
+        days = hours // 24
+        return f"بعد {days} يوم"
+    elif hours > 0:
+        return f"بعد {hours} ساعة و {minutes} دقيقة"
+    else:
+        return f"بعد {minutes} دقيقة"
 
 
 # ==================== Reports API ====================
