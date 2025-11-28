@@ -295,6 +295,60 @@ async def botng_dashboard():
                 align-self: flex-start;
             }}
             .save-btn:hover {{ transform: scale(1.05); box-shadow: 0 5px 20px rgba(0,255,136,0.3); }}
+
+            /* Automation Flow Styles */
+            .automation-flow {{
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 10px;
+                padding: 20px 0;
+            }}
+            .flow-step {{
+                background: rgba(255,255,255,0.08);
+                border-radius: 15px;
+                padding: 20px;
+                text-align: center;
+                min-width: 140px;
+                flex: 1;
+                border: 2px solid transparent;
+                transition: all 0.3s;
+            }}
+            .flow-step:hover {{
+                transform: translateY(-5px);
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            }}
+            .flow-step.source {{ border-color: #4ecdc4; }}
+            .flow-step.process {{ border-color: #45b7d1; }}
+            .flow-step.generate {{ border-color: #96ceb4; }}
+            .flow-step.schedule {{ border-color: #ffd93d; }}
+            .flow-step.send {{ border-color: #6bcb77; }}
+            .step-icon {{ font-size: 2.5em; margin-bottom: 10px; }}
+            .step-title {{ font-weight: 700; color: #fff; margin-bottom: 10px; font-size: 1.1em; }}
+            .step-items {{ display: flex; flex-direction: column; gap: 5px; }}
+            .step-items .item {{
+                font-size: 0.8em;
+                padding: 4px 8px;
+                border-radius: 10px;
+                background: rgba(255,255,255,0.1);
+            }}
+            .step-items .item.active {{ background: rgba(0,255,136,0.2); color: #00ff88; }}
+            .step-items .item.inactive {{ background: rgba(255,100,100,0.2); color: #ff6464; }}
+            .flow-arrow {{
+                font-size: 2em;
+                color: #00d4ff;
+                font-weight: bold;
+                animation: pulse 1.5s infinite;
+            }}
+            @keyframes pulse {{
+                0%, 100% {{ opacity: 1; transform: scale(1); }}
+                50% {{ opacity: 0.5; transform: scale(1.2); }}
+            }}
+            @media (max-width: 768px) {{
+                .automation-flow {{ flex-direction: column; }}
+                .flow-arrow {{ transform: rotate(90deg); }}
+            }}
         </style>
     </head>
     <body>
@@ -356,6 +410,59 @@ async def botng_dashboard():
                     </div>
                     <button class="save-btn" onclick="saveSettings()">💾 حفظ الإعدادات</button>
                     <span id="save-status" style="margin-right: 15px; display: none;"></span>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🗺️ خريطة عملية الأتمتة</h2>
+                <div class="automation-flow">
+                    <div class="flow-step source">
+                        <div class="step-icon">📊</div>
+                        <div class="step-title">مصادر البيانات</div>
+                        <div class="step-items">
+                            <span class="item {"active" if settings.ga4_property_id else "inactive"}">Google Analytics</span>
+                            <span class="item active">Microsoft Clarity</span>
+                            <span class="item {"active" if settings.firebase_database_url else "inactive"}">Firebase</span>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step process">
+                        <div class="step-icon">⚙️</div>
+                        <div class="step-title">معالجة البيانات</div>
+                        <div class="step-items">
+                            <span class="item active">جمع الإحصائيات</span>
+                            <span class="item active">تحليل السلوك</span>
+                            <span class="item active">مقارنة الفترات</span>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step generate">
+                        <div class="step-icon">📝</div>
+                        <div class="step-title">إنشاء التقرير</div>
+                        <div class="step-items">
+                            <span class="item active">تقرير نصي</span>
+                            <span class="item active">ملف PDF</span>
+                            <span class="item active">رسوم بيانية</span>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step schedule">
+                        <div class="step-icon">⏰</div>
+                        <div class="step-title">الجدولة</div>
+                        <div class="step-items">
+                            <span class="item active">يومياً: {report_settings["time"]}</span>
+                            <span class="item active">توقيت الرياض</span>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step send">
+                        <div class="step-icon">📱</div>
+                        <div class="step-title">الإرسال</div>
+                        <div class="step-items">
+                            <span class="item {"active" if settings.ultramsg_instance_id else "inactive"}">WhatsApp API</span>
+                            <span class="item active">{report_settings["recipient_type"]}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
