@@ -149,6 +149,22 @@ async def botng_dashboard():
         "recipient_type": "قروب" if settings.report_group_id else "رقم شخصي"
     }
 
+    # جلب قائمة القروبات من UltraMsg
+    groups_list = []
+    try:
+        import httpx
+        response = httpx.get(
+            f"https://api.ultramsg.com/{settings.ultramsg_instance_id}/groups",
+            params={"token": settings.ultramsg_token},
+            verify=False,
+            timeout=10
+        )
+        if response.status_code == 200:
+            groups_data = response.json()
+            groups_list = [{"id": g["id"], "name": g["name"]} for g in groups_data if g.get("isGroup")]
+    except:
+        pass
+
     html = f"""
     <!DOCTYPE html>
     <html lang="ar" dir="rtl">
@@ -322,14 +338,21 @@ async def botng_dashboard():
                     </div>
                     <div class="form-group">
                         <label>📱 المستلم</label>
-                        <select id="recipient_type" class="select-input">
+                        <select id="recipient_type" class="select-input" onchange="toggleRecipientInput()">
                             <option value="phone" {"selected" if not settings.report_group_id else ""}>رقم شخصي</option>
                             <option value="group" {"selected" if settings.report_group_id else ""}>قروب واتساب</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>📞 الرقم / معرف القروب</label>
-                        <input type="text" id="recipient" value="{report_settings["recipient"]}" class="text-input" placeholder="966XXXXXXXXX أو GROUP_ID@g.us">
+                    <div class="form-group" id="phone-input-group" style="{"display:none" if settings.report_group_id else ""}">
+                        <label>📞 رقم الواتساب</label>
+                        <input type="text" id="phone_recipient" value="{settings.admin_phone}" class="text-input" placeholder="966XXXXXXXXX">
+                    </div>
+                    <div class="form-group" id="group-input-group" style="{"" if settings.report_group_id else "display:none"}">
+                        <label>👥 اختر القروب</label>
+                        <select id="group_recipient" class="select-input">
+                            <option value="">-- اختر قروب --</option>
+                            {"".join(f'<option value="{g["id"]}" {"selected" if g["id"] == settings.report_group_id else ""}>{g["name"]}</option>' for g in groups_list)}
+                        </select>
                     </div>
                     <button class="save-btn" onclick="saveSettings()">💾 حفظ الإعدادات</button>
                     <span id="save-status" style="margin-right: 15px; display: none;"></span>
@@ -361,12 +384,29 @@ async def botng_dashboard():
             </div>
         </div>
         <script>
+            function toggleRecipientInput() {{
+                const type = document.getElementById('recipient_type').value;
+                document.getElementById('phone-input-group').style.display = type === 'phone' ? '' : 'none';
+                document.getElementById('group-input-group').style.display = type === 'group' ? '' : 'none';
+            }}
+
             async function saveSettings() {{
                 const time = document.getElementById('report_time').value;
                 const recipientType = document.getElementById('recipient_type').value;
-                const recipient = document.getElementById('recipient').value;
-                const status = document.getElementById('save-status');
+                let recipient = '';
 
+                if (recipientType === 'phone') {{
+                    recipient = document.getElementById('phone_recipient').value;
+                }} else {{
+                    recipient = document.getElementById('group_recipient').value;
+                }}
+
+                if (!recipient) {{
+                    alert('الرجاء اختيار المستلم');
+                    return;
+                }}
+
+                const status = document.getElementById('save-status');
                 status.style.display = 'inline';
                 status.style.color = '#ffd700';
                 status.textContent = '⏳ جاري الحفظ...';
@@ -386,7 +426,7 @@ async def botng_dashboard():
 
                     if (result.status === 'success') {{
                         status.style.color = '#00ff88';
-                        status.textContent = '✅ تم الحفظ! سيتم تطبيق التغييرات بعد إعادة التشغيل';
+                        status.textContent = '✅ تم الحفظ وتحديث الجدولة!';
                     }} else {{
                         status.style.color = '#ff6464';
                         status.textContent = '❌ ' + (result.message || 'فشل الحفظ');
