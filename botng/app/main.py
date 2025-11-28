@@ -247,6 +247,38 @@ async def botng_dashboard():
             }}
             .refresh-btn:hover {{ transform: scale(1.05); }}
             .header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }}
+            .settings-form {{ display: flex; flex-direction: column; gap: 15px; }}
+            .form-group {{ display: flex; flex-direction: column; gap: 8px; }}
+            .form-group label {{ color: rgba(255,255,255,0.8); font-weight: 500; }}
+            .time-input, .text-input, .select-input {{
+                background: rgba(255,255,255,0.1);
+                border: 1px solid rgba(255,255,255,0.2);
+                border-radius: 8px;
+                padding: 12px 15px;
+                color: #fff;
+                font-family: 'Tajawal', sans-serif;
+                font-size: 1em;
+                outline: none;
+                transition: border-color 0.3s;
+            }}
+            .time-input:focus, .text-input:focus, .select-input:focus {{
+                border-color: #00d4ff;
+            }}
+            .select-input option {{ background: #1a1a2e; color: #fff; }}
+            .save-btn {{
+                background: linear-gradient(90deg, #00ff88, #00d4ff);
+                border: none;
+                padding: 12px 30px;
+                border-radius: 25px;
+                color: #1a1a2e;
+                font-weight: 700;
+                cursor: pointer;
+                font-family: 'Tajawal', sans-serif;
+                font-size: 1em;
+                transition: transform 0.2s, box-shadow 0.2s;
+                align-self: flex-start;
+            }}
+            .save-btn:hover {{ transform: scale(1.05); box-shadow: 0 5px 20px rgba(0,255,136,0.3); }}
         </style>
     </head>
     <body>
@@ -283,17 +315,24 @@ async def botng_dashboard():
 
             <div class="section">
                 <h2>📊 إعدادات التقارير</h2>
-                <div class="settings-row">
-                    <span class="settings-label">وقت الإرسال اليومي</span>
-                    <span class="settings-value">{report_settings["time"]} صباحاً</span>
-                </div>
-                <div class="settings-row">
-                    <span class="settings-label">نوع المستلم</span>
-                    <span class="settings-value">{report_settings["recipient_type"]}</span>
-                </div>
-                <div class="settings-row">
-                    <span class="settings-label">المستلم</span>
-                    <span class="settings-value">{report_settings["recipient"]}</span>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label>⏰ وقت الإرسال اليومي</label>
+                        <input type="time" id="report_time" value="{report_settings["time"]}" class="time-input">
+                    </div>
+                    <div class="form-group">
+                        <label>📱 المستلم</label>
+                        <select id="recipient_type" class="select-input">
+                            <option value="phone" {"selected" if not settings.report_group_id else ""}>رقم شخصي</option>
+                            <option value="group" {"selected" if settings.report_group_id else ""}>قروب واتساب</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>📞 الرقم / معرف القروب</label>
+                        <input type="text" id="recipient" value="{report_settings["recipient"]}" class="text-input" placeholder="966XXXXXXXXX أو GROUP_ID@g.us">
+                    </div>
+                    <button class="save-btn" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+                    <span id="save-status" style="margin-right: 15px; display: none;"></span>
                 </div>
             </div>
 
@@ -321,10 +360,120 @@ async def botng_dashboard():
                 </div>
             </div>
         </div>
+        <script>
+            async function saveSettings() {{
+                const time = document.getElementById('report_time').value;
+                const recipientType = document.getElementById('recipient_type').value;
+                const recipient = document.getElementById('recipient').value;
+                const status = document.getElementById('save-status');
+
+                status.style.display = 'inline';
+                status.style.color = '#ffd700';
+                status.textContent = '⏳ جاري الحفظ...';
+
+                try {{
+                    const response = await fetch('/api/settings/update', {{
+                        method: 'POST',
+                        headers: {{ 'Content-Type': 'application/json' }},
+                        body: JSON.stringify({{
+                            report_time: time,
+                            recipient_type: recipientType,
+                            recipient: recipient
+                        }})
+                    }});
+
+                    const result = await response.json();
+
+                    if (result.status === 'success') {{
+                        status.style.color = '#00ff88';
+                        status.textContent = '✅ تم الحفظ! سيتم تطبيق التغييرات بعد إعادة التشغيل';
+                    }} else {{
+                        status.style.color = '#ff6464';
+                        status.textContent = '❌ ' + (result.message || 'فشل الحفظ');
+                    }}
+                }} catch (e) {{
+                    status.style.color = '#ff6464';
+                    status.textContent = '❌ خطأ في الاتصال';
+                }}
+
+                setTimeout(() => {{ status.style.display = 'none'; }}, 5000);
+            }}
+        </script>
     </body>
     </html>
     """
     return html
+
+
+@app.post("/api/settings/update")
+async def update_settings(data: dict):
+    """تحديث إعدادات التقارير"""
+    import json
+
+    try:
+        report_time = data.get("report_time", "11:00")
+        recipient_type = data.get("recipient_type", "phone")
+        recipient = data.get("recipient", "")
+
+        # حفظ الإعدادات في ملف JSON
+        settings_file = os.path.join(os.path.dirname(__file__), "runtime_settings.json")
+
+        new_settings = {
+            "report_time": report_time,
+            "recipient_type": recipient_type,
+            "recipient": recipient,
+            "report_group_id": recipient if recipient_type == "group" else "",
+            "admin_phone": recipient if recipient_type == "phone" else settings.admin_phone,
+            "updated_at": datetime.utcnow().isoformat()
+        }
+
+        with open(settings_file, "w", encoding="utf-8") as f:
+            json.dump(new_settings, f, ensure_ascii=False, indent=2)
+
+        # تحديث الجدولة فوراً
+        from .scheduler.jobs import scheduler, send_daily_report
+        from apscheduler.triggers.cron import CronTrigger
+
+        hour, minute = report_time.split(":")
+        utc_hour = int(hour) - 3  # Riyadh is UTC+3
+        if utc_hour < 0:
+            utc_hour += 24
+
+        # إعادة جدولة التقرير اليومي
+        scheduler.reschedule_job(
+            "daily_report",
+            trigger=CronTrigger(hour=utc_hour, minute=int(minute))
+        )
+
+        return {
+            "status": "success",
+            "message": "تم حفظ الإعدادات وتحديث الجدولة",
+            "settings": new_settings
+        }
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+
+@app.get("/api/settings")
+async def get_settings():
+    """جلب الإعدادات الحالية"""
+    import json
+
+    settings_file = os.path.join(os.path.dirname(__file__), "runtime_settings.json")
+
+    if os.path.exists(settings_file):
+        with open(settings_file, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    return {
+        "report_time": settings.report_time,
+        "recipient_type": "group" if settings.report_group_id else "phone",
+        "recipient": settings.report_group_id or settings.admin_phone
+    }
 
 
 def _get_relative_time(dt):
