@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     ultramsg_instance_id: str = ""
     ultramsg_token: str = ""
 
-    # WhatsApp Group for Reports
-    report_group_id: str = "120363308255104429@g.us"  # قروب تطوير و جودة قولدن هوست
+    # WhatsApp Group for Reports (معطل حالياً - الإرسال لرقم الأدمن فقط)
+    report_group_id: str = ""  # قروب تطوير و جودة قولدن هوست
 
     # Google Analytics 4
     ga4_property_id: str = ""
