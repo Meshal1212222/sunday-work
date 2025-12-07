@@ -374,8 +374,8 @@ _شركة ليفل أب القابضة | Botng_"""
             x = np.arange(len(categories))
             width = 0.35
 
-            bars1 = ax.bar(x - width/2, today_vals, width, label='Today', color='#4CAF50')
-            bars2 = ax.bar(x + width/2, yesterday_vals, width, label='Yesterday', color='#9E9E9E')
+            bars1 = ax.bar(x - width/2, today_vals, width, label='Yesterday', color='#4CAF50')
+            bars2 = ax.bar(x + width/2, yesterday_vals, width, label='Day Before', color='#9E9E9E')
 
             ax.set_ylabel('Count')
             ax.set_xticks(x)
@@ -391,8 +391,8 @@ _شركة ليفل أب القابضة | Botng_"""
             x = np.arange(len(labels))
             width = 0.35
 
-            ax.bar(x - width/2, today_vals, width, label='Today', color='#2196F3')
-            ax.bar(x + width/2, yesterday_vals, width, label='Yesterday', color='#90CAF9')
+            ax.bar(x - width/2, today_vals, width, label='Yesterday', color='#2196F3')
+            ax.bar(x + width/2, yesterday_vals, width, label='Day Before', color='#90CAF9')
 
             ax.set_ylabel('Downloads')
             ax.set_xticks(x)
@@ -410,16 +410,17 @@ _شركة ليفل أب القابضة | Botng_"""
         return buf
 
     async def generate_pdf_report(self, metrics: Dict = None) -> str:
-        """إنشاء تقرير PDF احترافي"""
+        """إنشاء تقرير PDF احترافي - بيانات أمس"""
         if metrics is None:
             data = await self.fetch_live_data()
             metrics = self._extract_metrics(data)
 
-        today = date.today()
+        # التقرير عن أمس (يوم كامل)
+        report_date = date.today() - timedelta(days=1)
 
         # Create temp file
         temp_dir = tempfile.gettempdir()
-        pdf_path = os.path.join(temp_dir, f"golden_host_report_{today.strftime('%Y%m%d')}.pdf")
+        pdf_path = os.path.join(temp_dir, f"golden_host_report_{report_date.strftime('%Y%m%d')}.pdf")
 
         # Create PDF
         c = canvas.Canvas(pdf_path, pagesize=A4)
@@ -443,7 +444,7 @@ _شركة ليفل أب القابضة | Botng_"""
         c.drawCentredString(width/2, height - 35, "Golden Host Daily Report")
 
         c.setFont("Helvetica", 12)
-        c.drawCentredString(width/2, height - 55, f"{today.strftime('%A, %d %B %Y')}")
+        c.drawCentredString(width/2, height - 55, f"{report_date.strftime('%A, %d %B %Y')} (Yesterday's Stats)")
 
         # Gold accent line
         c.setStrokeColor(accent_color)
@@ -459,9 +460,9 @@ _شركة ليفل أب القابضة | Botng_"""
         spacing = (width - 100 - 4 * card_width) / 3
 
         kpi_data = [
-            ("Visitors", metrics['visitors_today'], f"vs {metrics['visitors_yesterday']}", success_color if metrics['visitors_today'] >= metrics['visitors_yesterday'] else danger_color),
-            ("Sessions", metrics['sessions_today'], "Today", colors.HexColor("#2196f3")),
-            ("Page Views", metrics['page_views_today'], f"vs {metrics['page_views_yesterday']}", success_color if metrics['page_views_today'] >= metrics['page_views_yesterday'] else danger_color),
+            ("Visitors", metrics['visitors_today'], f"vs {metrics['visitors_yesterday']} (day before)", success_color if metrics['visitors_today'] >= metrics['visitors_yesterday'] else danger_color),
+            ("Sessions", metrics['sessions_today'], "Yesterday", colors.HexColor("#2196f3")),
+            ("Page Views", metrics['page_views_today'], f"vs {metrics['page_views_yesterday']} (day before)", success_color if metrics['page_views_today'] >= metrics['page_views_yesterday'] else danger_color),
             ("Bounce Rate", f"{metrics['bounce_rate']}%", "Rate", warning_color if metrics['bounce_rate'] > 50 else success_color)
         ]
 
@@ -506,8 +507,8 @@ _شركة ليفل أب القابضة | Botng_"""
         c.setFillColor(colors.black)
         c.setFont("Helvetica-Bold", 10)
         c.drawString(60, y_pos - 15, "Metric")
-        c.drawString(200, y_pos - 15, "Today")
-        c.drawString(300, y_pos - 15, "Yesterday")
+        c.drawString(200, y_pos - 15, "Yesterday")
+        c.drawString(300, y_pos - 15, "Day Before")
         c.drawString(400, y_pos - 15, "Change")
 
         y_pos -= 20
@@ -563,8 +564,8 @@ _شركة ليفل أب القابضة | Botng_"""
             c.setFillColor(colors.black)
             c.setFont("Helvetica-Bold", 10)
             c.drawString(60, y_pos - 15, "Platform")
-            c.drawString(200, y_pos - 15, "Today")
-            c.drawString(300, y_pos - 15, "Yesterday")
+            c.drawString(200, y_pos - 15, "Yesterday")
+            c.drawString(300, y_pos - 15, "Day Before")
             c.drawString(400, y_pos - 15, "Change")
 
             y_pos -= 20

@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 from datetime import datetime, date
 import os
+import asyncio
 
 from .config import settings
 from .database import init_db, get_db, SessionLocal
@@ -14,11 +15,17 @@ from .scheduler.jobs import start_scheduler, shutdown_scheduler, trigger_daily_r
 from .reporters.smart_report import SmartReportGenerator
 from .reporters.report_generator import ReportGenerator
 from .integrations.ultramsg import UltraMsgClient
+from .automations.triggers import AutomationScheduler
+
+# Global automation scheduler instance
+automation_scheduler = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
+    global automation_scheduler
+
     # Startup
     print("🚀 Starting Botng...")
     try:
@@ -33,12 +40,25 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"⚠️ Scheduler warning: {e}")
 
+    # Start Crash Monitoring (Real-time)
+    try:
+        automation_scheduler = AutomationScheduler()
+        asyncio.create_task(automation_scheduler.start())
+        print("✅ Crash monitoring started (Real-time)")
+    except Exception as e:
+        print(f"⚠️ Crash monitoring warning: {e}")
+
     print("✅ Botng is ready!")
 
     yield
 
     # Shutdown
     print("👋 Shutting down Botng...")
+
+    # Stop crash monitoring
+    if automation_scheduler:
+        automation_scheduler.stop()
+
     try:
         shutdown_scheduler()
     except Exception as e:
