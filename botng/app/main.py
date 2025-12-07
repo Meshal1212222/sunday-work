@@ -1081,6 +1081,85 @@ async def send_test_report_to_phone(phone: str):
         }
 
 
+# ==================== Golden Host Dashboard ====================
+
+@app.get("/goldenhost", response_class=HTMLResponse)
+async def goldenhost_dashboard():
+    """صفحة داشبورد Golden Host"""
+    from fastapi.templating import Jinja2Templates
+    templates_dir = os.path.join(os.path.dirname(__file__), "templates")
+    templates = Jinja2Templates(directory=templates_dir)
+    from starlette.requests import Request
+    # Return HTML file directly
+    with open(os.path.join(templates_dir, "goldenhost.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.get("/api/goldenhost/reports")
+async def get_goldenhost_reports():
+    """جلب آخر البلاغات"""
+    from .collectors.firebase_collector import FirebaseCollector
+    try:
+        firebase = FirebaseCollector()
+        reports = await firebase.get_reports(10)
+        return reports
+    except Exception as e:
+        return []
+
+
+@app.get("/api/goldenhost/refunds")
+async def get_goldenhost_refunds():
+    """جلب آخر الاستردادات"""
+    from .collectors.firebase_collector import FirebaseCollector
+    try:
+        firebase = FirebaseCollector()
+        refunds = await firebase.get_refunds(10)
+        return refunds
+    except Exception as e:
+        return []
+
+
+@app.get("/api/goldenhost/employees")
+async def get_goldenhost_employees():
+    """جلب أداء الموظفين"""
+    from .collectors.firebase_collector import FirebaseCollector
+    try:
+        firebase = FirebaseCollector()
+        employees = await firebase.get_employee_performance()
+        return employees if employees else []
+    except Exception as e:
+        return []
+
+
+@app.get("/api/goldenhost/stats")
+async def get_goldenhost_stats():
+    """جلب إحصائيات Golden Host"""
+    from .collectors.firebase_collector import FirebaseCollector
+    from .collectors.google_analytics import GoogleAnalyticsCollector
+    try:
+        firebase = FirebaseCollector()
+        today = date.today()
+        daily_data = await firebase.get_daily_summary(today)
+
+        # GA data
+        ga_data = {}
+        try:
+            ga = GoogleAnalyticsCollector()
+            ga_result = await ga.collect_daily_report()
+            if ga_result.get('status') == 'success':
+                ga_data = ga_result['data']
+        except:
+            pass
+
+        return {
+            "status": "success",
+            "golden_host": daily_data.get('golden_host', {}),
+            "analytics": ga_data
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 # ==================== Run ====================
 
 if __name__ == "__main__":
