@@ -18,108 +18,166 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ..config import settings
+from ..collectors.google_analytics import GoogleAnalyticsCollector
+from ..collectors.firebase_collector import FirebaseCollector
 
 
 class SmartReportGenerator:
     """مولد التقارير الذكية - نص + PDF"""
 
-    # Railway API Base URL
-    API_BASE = "https://sunday-work-production.up.railway.app"
-
     def __init__(self):
         self.data = {}
         self.yesterday_data = {}
+        self.ga_collector = GoogleAnalyticsCollector()
+        self.firebase_collector = FirebaseCollector()
 
-    async def fetch_live_data(self) -> Dict[str, Any]:
-        """جلب البيانات الحية من Railway APIs"""
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            try:
-                # Dashboard Stats
-                stats_resp = await client.get(f"{self.API_BASE}/api/dashboard/stats")
-                stats = stats_resp.json() if stats_resp.status_code == 200 else {}
+    async def fetch_live_data(self, for_yesterday: bool = True) -> Dict[str, Any]:
+        """جلب البيانات مباشرة من الـ collectors
 
-                # Golden Host Stats
-                gh_resp = await client.get(f"{self.API_BASE}/api/dashboard/golden-host")
-                golden_host = gh_resp.json() if gh_resp.status_code == 200 else {}
+        Args:
+            for_yesterday: إذا True يجلب بيانات أمس (الافتراضي للتقارير اليومية)
+        """
+        try:
+            # تحديد التواريخ
+            if for_yesterday:
+                report_date = date.today() - timedelta(days=1)  # أمس
+                comparison_date = date.today() - timedelta(days=2)  # أول أمس
+            else:
+                report_date = date.today()
+                comparison_date = date.today() - timedelta(days=1)
 
-                # Analytics Summary
-                analytics_resp = await client.get(f"{self.API_BASE}/api/analytics/summary")
-                analytics = analytics_resp.json() if analytics_resp.status_code == 200 else {}
+            # جلب بيانات Google Analytics
+            ga_comparison = await self.ga_collector.collect_comparison(report_date)
 
-                # User Behavior
-                behavior_resp = await client.get(f"{self.API_BASE}/api/dashboard/user-behavior")
-                behavior = behavior_resp.json() if behavior_resp.status_code == 200 else {}
+            ga_today = {}
+            ga_yesterday = {}
 
-                # Clarity Data
-                clarity_resp = await client.get(f"{self.API_BASE}/api/analytics/clarity")
-                clarity = clarity_resp.json() if clarity_resp.status_code == 200 else {}
+            if ga_comparison.get("status") == "success":
+                ga_today = ga_comparison["data"].get("today", {})
+                ga_yesterday = ga_comparison["data"].get("yesterday", {})
+            else:
+                # محاولة جلب البيانات بشكل منفصل
+                today_result = await self.ga_collector.collect_daily_report(report_date)
+                yesterday_result = await self.ga_collector.collect_daily_report(comparison_date)
 
-                return {
-                    "stats": stats,
-                    "golden_host": golden_host,
-                    "analytics": analytics,
-                    "behavior": behavior,
-                    "clarity": clarity
-                }
-            except Exception as e:
-                print(f"Error fetching live data: {e}")
-                return {}
+                if today_result.get("status") == "success":
+                    ga_today = today_result["data"]
+                if yesterday_result.get("status") == "success":
+                    ga_yesterday = yesterday_result["data"]
+
+            # جلب بيانات Firebase (Golden Host & Sunday Board)
+            firebase_data = await self.firebase_collector.get_daily_summary(report_date)
+
+            return {
+                "analytics": {
+                    "today": ga_today,
+                    "yesterday": ga_yesterday
+                },
+                "golden_host": firebase_data.get("golden_host", {}),
+                "sunday_board": firebase_data.get("sunday_board", {}),
+                "clarity": {},  # سيتم إضافته لاحقاً إذا توفر
+                "report_date": report_date.isoformat(),
+                "for_yesterday": for_yesterday
+            }
+        except Exception as e:
+            print(f"Error fetching live data: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"for_yesterday": for_yesterday}
 
     def _extract_metrics(self, data: Dict) -> Dict[str, Any]:
         """استخراج المقاييس من البيانات"""
         analytics = data.get("analytics", {})
         clarity = data.get("clarity", {})
-        behavior = data.get("behavior", {})
         golden_host = data.get("golden_host", {})
+        sunday_board = data.get("sunday_board", {})
 
-        # Website metrics
+        # Website metrics من Google Analytics
         today_metrics = analytics.get("today", {})
         yesterday_metrics = analytics.get("yesterday", {})
 
-        visitors_today = today_metrics.get("activeUsers", today_metrics.get("visitors", 0))
-        visitors_yesterday = yesterday_metrics.get("activeUsers", yesterday_metrics.get("visitors", 0))
+        # GA collector يستخدم snake_case
+        visitors_today = today_metrics.get("active_users", today_metrics.get("activeUsers", 0))
+        visitors_yesterday = yesterday_metrics.get("active_users", yesterday_metrics.get("activeUsers", 0))
 
         sessions_today = today_metrics.get("sessions", 0)
-        page_views_today = today_metrics.get("pageViews", today_metrics.get("screenPageViews", 0))
-        page_views_yesterday = yesterday_metrics.get("pageViews", yesterday_metrics.get("screenPageViews", 0))
+        sessions_yesterday = yesterday_metrics.get("sessions", 0)
 
-        avg_session = today_metrics.get("avgSessionDuration", today_metrics.get("averageSessionDuration", 0))
-        bounce_rate = today_metrics.get("bounceRate", 0)
+        page_views_today = today_metrics.get("page_views", today_metrics.get("pageViews", 0))
+        page_views_yesterday = yesterday_metrics.get("page_views", yesterday_metrics.get("pageViews", 0))
 
-        # App Downloads
-        downloads = golden_host.get("downloads", {})
-        ios_today = downloads.get("ios", {}).get("today", 0)
-        ios_yesterday = downloads.get("ios", {}).get("yesterday", 0)
-        android_today = downloads.get("android", {}).get("today", 0)
-        android_yesterday = downloads.get("android", {}).get("yesterday", 0)
+        avg_session = today_metrics.get("avg_session_duration", today_metrics.get("averageSessionDuration", 0))
+        bounce_rate = today_metrics.get("bounce_rate", today_metrics.get("bounceRate", 0))
 
-        # Clarity metrics
-        clarity_data = clarity.get("data", clarity)
-        engagement = clarity_data.get("engagementScore", clarity_data.get("engagement_score", 0))
-        rage_clicks = clarity_data.get("rageClicks", clarity_data.get("rage_clicks", 0))
-        dead_clicks = clarity_data.get("deadClicks", clarity_data.get("dead_clicks", 0))
-        quick_backs = clarity_data.get("quickBacks", clarity_data.get("quick_backs", 0))
+        new_users_today = today_metrics.get("new_users", 0)
+        new_users_yesterday = yesterday_metrics.get("new_users", 0)
 
         # Top pages
-        top_pages = analytics.get("topPages", [])
+        top_pages = today_metrics.get("top_pages", [])
+
+        # Golden Host data من Firebase
+        reports_count = golden_host.get("reports_count", 0)
+        refunds_count = golden_host.get("refunds_count", 0)
+        refunds_total = golden_host.get("refunds_total", 0)
+        sales_count = golden_host.get("sales_count", 0)
+        conversations_count = golden_host.get("conversations_count", 0)
+
+        # Sunday Board data
+        total_tasks = sunday_board.get("total_tasks", 0)
+        completed_today = sunday_board.get("completed_today", 0)
+        overdue_tasks = sunday_board.get("overdue_tasks", 0)
+
+        # Clarity metrics (إذا متوفرة)
+        clarity_data = clarity.get("data", clarity) if clarity else {}
+        engagement = clarity_data.get("engagement_score", clarity_data.get("engagementScore", 75))
+        rage_clicks = clarity_data.get("rage_clicks", clarity_data.get("rageClicks", 0))
+        dead_clicks = clarity_data.get("dead_clicks", clarity_data.get("deadClicks", 0))
+        quick_backs = clarity_data.get("quick_backs", clarity_data.get("quickBacks", 0))
+
+        # ملاحظة: التحميلات تحتاج مصدر خارجي (App Store Connect / Google Play)
+        # حالياً نستخدم قيم افتراضية - يجب إضافة collector للتحميلات
+        ios_today = 0
+        ios_yesterday = 0
+        android_today = 0
+        android_yesterday = 0
 
         return {
+            # Website Metrics
             "visitors_today": visitors_today,
             "visitors_yesterday": visitors_yesterday,
             "sessions_today": sessions_today,
+            "sessions_yesterday": sessions_yesterday,
             "page_views_today": page_views_today,
             "page_views_yesterday": page_views_yesterday,
             "avg_session": avg_session,
             "bounce_rate": bounce_rate,
+            "new_users_today": new_users_today,
+            "new_users_yesterday": new_users_yesterday,
+            "top_pages": top_pages,
+
+            # App Downloads (تحتاج مصدر)
             "ios_today": ios_today,
             "ios_yesterday": ios_yesterday,
             "android_today": android_today,
             "android_yesterday": android_yesterday,
+
+            # Golden Host (Firebase)
+            "reports_count": reports_count,
+            "refunds_count": refunds_count,
+            "refunds_total": refunds_total,
+            "sales_count": sales_count,
+            "conversations_count": conversations_count,
+
+            # Sunday Board (Firebase)
+            "total_tasks": total_tasks,
+            "completed_today": completed_today,
+            "overdue_tasks": overdue_tasks,
+
+            # Clarity
             "engagement": engagement,
             "rage_clicks": rage_clicks,
             "dead_clicks": dead_clicks,
             "quick_backs": quick_backs,
-            "top_pages": top_pages
         }
 
     def _calc_change(self, today: float, yesterday: float) -> Tuple[float, str]:
@@ -149,14 +207,16 @@ class SmartReportGenerator:
         return f"{minutes}:{secs:02d}"
 
     async def generate_text_summary(self, metrics: Dict = None) -> str:
-        """إنشاء ملخص نصي"""
+        """إنشاء ملخص نصي - بيانات أمس"""
         if metrics is None:
-            data = await self.fetch_live_data()
+            data = await self.fetch_live_data(for_yesterday=True)
             metrics = self._extract_metrics(data)
 
-        today = date.today()
+        # التقرير يكون عن أمس (يوم كامل)
+        yesterday = date.today() - timedelta(days=1)
+        day_before = date.today() - timedelta(days=2)
 
-        # Calculate changes
+        # Calculate changes (أمس مقارنة بأول أمس)
         visitors_change, visitors_sign = self._calc_change(
             metrics["visitors_today"], metrics["visitors_yesterday"]
         )
@@ -183,22 +243,37 @@ class SmartReportGenerator:
         ux_status = "جيدة" if metrics["engagement"] >= 50 else "تحتاج تحسين"
         ux_warning = "" if metrics["engagement"] < 50 else ""
 
-        summary = f"""*تقرير Golden Host اليومي*
-{self._get_day_name(today)} {today.day} {self._get_month_name(today)} {today.year}
+        # حساب تغيير المشاهدات
+        pv_change, pv_sign = self._calc_change(
+            metrics["page_views_today"], metrics["page_views_yesterday"]
+        )
+        pv_icon = "" if pv_change >= 0 else ""
+
+        summary = f"""*تقرير Golden Host - إحصائيات أمس*
+{self._get_day_name(yesterday)} {yesterday.day} {self._get_month_name(yesterday)} {yesterday.year}
 
 
 
-*الموقع*
- الزوار: *{metrics['visitors_today']}* (أمس: {metrics['visitors_yesterday']}) {visitors_icon}{visitors_sign}{visitors_change}%
- الجلسات: *{metrics['sessions_today']}*
- المشاهدات: *{metrics['page_views_today']}*
+*الموقع الإلكتروني*
+ الزوار: *{metrics['visitors_today']:,}* (أول أمس: {metrics['visitors_yesterday']:,}) {visitors_icon}{visitors_sign}{visitors_change}%
+ الجلسات: *{metrics['sessions_today']:,}*
+ المشاهدات: *{metrics['page_views_today']:,}* {pv_icon}{pv_sign}{pv_change}%
+ معدل الجلسة: *{self._format_duration(metrics['avg_session'])}*
+ معدل الارتداد: *{metrics['bounce_rate']:.1f}%*
 
-*التحميلات*
- iOS: *{metrics['ios_today']}* {ios_icon}{ios_sign}{ios_change}%
- Android: *{metrics['android_today']}* {android_icon}{android_sign}{android_change}%
- الإجمالي: *{total_today}* {total_icon}{total_sign}{total_change}%
+*Golden Host - البلاغات*
+ بلاغات جديدة: *{metrics['reports_count']}*
+ طلبات استرداد: *{metrics['refunds_count']}*
+ إجمالي الاسترداد: *{metrics['refunds_total']:,.0f} ر.س*
+ المبيعات: *{metrics['sales_count']}*
+ المحادثات: *{metrics['conversations_count']}*
 
-*Clarity*
+*Sunday Board - المهام*
+ إجمالي المهام: *{metrics['total_tasks']}*
+ مكتملة أمس: *{metrics['completed_today']}*
+ متأخرة: *{metrics['overdue_tasks']}* {"" if metrics['overdue_tasks'] > 0 else ""}
+
+*تجربة المستخدم (Clarity)*
  التفاعل: *{metrics['engagement']}%* {ux_warning}
  نقرات الغضب: *{metrics['rage_clicks']}*
 
@@ -206,10 +281,11 @@ class SmartReportGenerator:
 
 *الملخص*
  الويب: {web_status}
- التحميلات: {downloads_status}
+ البلاغات: {"يحتاج متابعة" if metrics['reports_count'] > 5 else "طبيعي"}
+ المهام: {"متأخرة!" if metrics['overdue_tasks'] > 0 else "ممتاز"}
  UX: {ux_status}
 
-_التفاصيل في الملف المرفق_"""
+_شركة ليفل أب القابضة | Botng_"""
 
         return summary
 
@@ -541,12 +617,13 @@ _التفاصيل في الملف المرفق_"""
         return pdf_path
 
     async def generate_daily_report(self, report_date: date = None) -> Dict[str, Any]:
-        """إنشاء التقرير اليومي الكامل (نص + PDF)"""
+        """إنشاء التقرير اليومي الكامل (نص + PDF) - بيانات أمس"""
+        # التقرير اليومي دائماً عن أمس (يوم كامل)
         if report_date is None:
-            report_date = date.today()
+            report_date = date.today() - timedelta(days=1)
 
-        # Fetch live data
-        data = await self.fetch_live_data()
+        # Fetch live data (for_yesterday=True بشكل افتراضي)
+        data = await self.fetch_live_data(for_yesterday=True)
         metrics = self._extract_metrics(data)
 
         # Generate text summary
@@ -564,29 +641,34 @@ _التفاصيل في الملف المرفق_"""
 
     async def generate_weekly_report(self) -> str:
         """التقرير الأسبوعي"""
-        end_date = date.today()
+        end_date = date.today() - timedelta(days=1)  # أمس
         start_date = end_date - timedelta(days=6)
 
-        # For weekly, we'll generate a summary
-        data = await self.fetch_live_data()
-        metrics = self._extract_metrics(data)
+        # جلب بيانات Google Analytics الأسبوعية
+        ga_weekly = await self.ga_collector.collect_weekly_summary()
 
-        total_downloads = metrics['ios_today'] + metrics['android_today']
+        if ga_weekly.get("status") == "success":
+            weekly_data = ga_weekly["data"]
+            total_users = weekly_data.get("total_users", 0)
+            total_sessions = weekly_data.get("total_sessions", 0)
+            total_views = weekly_data.get("total_views", 0)
+        else:
+            # fallback - استخدام تقديرات
+            data = await self.fetch_live_data()
+            metrics = self._extract_metrics(data)
+            total_users = metrics['visitors_today'] * 7
+            total_sessions = metrics['sessions_today'] * 7
+            total_views = metrics['page_views_today'] * 7
 
-        report = f"""*التقرير الأسبوعي*
+        report = f"""*التقرير الأسبوعي - Golden Host*
 {start_date.strftime('%d/%m')} - {end_date.strftime('%d/%m/%Y')}
 
 
 
-*الموقع*
- الزوار: *{metrics['visitors_today'] * 7}* (تقديري)
- الجلسات: *{metrics['sessions_today'] * 7}* (تقديري)
- المشاهدات: *{metrics['page_views_today'] * 7}* (تقديري)
-
-*التحميلات*
- iOS: *{metrics['ios_today'] * 7}* (تقديري)
- Android: *{metrics['android_today'] * 7}* (تقديري)
- الإجمالي: *{total_downloads * 7}* (تقديري)
+*الموقع الإلكتروني*
+ إجمالي الزوار: *{total_users:,}*
+ إجمالي الجلسات: *{total_sessions:,}*
+ إجمالي المشاهدات: *{total_views:,}*
 
 
 
