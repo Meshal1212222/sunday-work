@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 from datetime import datetime, date
 import os
+import asyncio
 
 from .config import settings
 from .database import init_db, get_db, SessionLocal
@@ -14,11 +15,17 @@ from .scheduler.jobs import start_scheduler, shutdown_scheduler, trigger_daily_r
 from .reporters.smart_report import SmartReportGenerator
 from .reporters.report_generator import ReportGenerator
 from .integrations.ultramsg import UltraMsgClient
+from .automations.triggers import AutomationScheduler
+
+# Global automation scheduler instance
+automation_scheduler = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
+    global automation_scheduler
+
     # Startup
     print("🚀 Starting Botng...")
     try:
@@ -33,12 +40,25 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"⚠️ Scheduler warning: {e}")
 
+    # Start Crash Monitoring (Real-time)
+    try:
+        automation_scheduler = AutomationScheduler()
+        asyncio.create_task(automation_scheduler.start())
+        print("✅ Crash monitoring started (Real-time)")
+    except Exception as e:
+        print(f"⚠️ Crash monitoring warning: {e}")
+
     print("✅ Botng is ready!")
 
     yield
 
     # Shutdown
     print("👋 Shutting down Botng...")
+
+    # Stop crash monitoring
+    if automation_scheduler:
+        automation_scheduler.stop()
+
     try:
         shutdown_scheduler()
     except Exception as e:
@@ -673,6 +693,145 @@ async def get_weekly_report():
 
     return {
         "report": report
+    }
+
+
+@app.get("/api/reports/checkout-funnel")
+async def get_checkout_funnel():
+    """
+    تحليل Funnel الحجوزات - نسبة الإكمال من صفحة الدفع
+
+    Returns:
+    - checkout_started: عدد المستخدمين اللي وصلوا صفحة الدفع
+    - completed: عدد اللي أكملوا الحجز
+    - abandoned: عدد اللي ما أكملوا
+    - conversion_rate: نسبة الإكمال %
+    - abandonment_rate: نسبة التخلي %
+    """
+    from .collectors.google_analytics import GoogleAnalyticsCollector
+
+    ga = GoogleAnalyticsCollector()
+    funnel_data = await ga.get_checkout_funnel_comparison()
+
+    return funnel_data
+
+
+@app.get("/api/reports/bookings")
+async def get_bookings_report():
+    """
+    جلب بيانات الحجوزات من Firebase
+
+    المسار في Firebase: goldenhost/bookings/YYYY-MM-DD
+    """
+    from .collectors.firebase_collector import FirebaseCollector
+
+    firebase = FirebaseCollector()
+
+    # بيانات أمس وأول أمس
+    comparison = await firebase.get_bookings_comparison()
+
+    # بيانات الشهر
+    monthly = await firebase.get_monthly_bookings()
+
+    return {
+        "daily": comparison,
+        "monthly": monthly
+    }
+
+
+@app.post("/api/reports/bookings/send")
+async def send_bookings_report(phone: str = None):
+    """
+    إرسال تقرير الحجوزات المنفصل عبر واتساب
+
+    المسار في Firebase: goldenhost/bookings/YYYY-MM-DD
+    الحقول المطلوبة:
+    - checkout_started: عدد اللي وصلوا صفحة الدفع
+    - completed: عدد اللي أكملوا الحجز
+    """
+    from .collectors.firebase_collector import FirebaseCollector
+
+    if phone is None:
+        phone = settings.admin_phone
+
+    firebase = FirebaseCollector()
+    whatsapp = UltraMsgClient()
+
+    # جلب البيانات
+    comparison = await firebase.get_bookings_comparison()
+    monthly = await firebase.get_monthly_bookings()
+
+    yesterday = comparison.get("yesterday", {})
+    day_before = comparison.get("day_before", {})
+
+    # التحقق من وجود بيانات
+    if not yesterday.get("has_data"):
+        return {
+            "status": "no_data",
+            "message": "لا توجد بيانات حجوزات لأمس في Firebase",
+            "expected_path": f"goldenhost/bookings/{(date.today() - timedelta(days=1)).isoformat()}",
+            "expected_fields": {
+                "checkout_started": "عدد اللي وصلوا صفحة الدفع",
+                "completed": "عدد اللي أكملوا الحجز"
+            }
+        }
+
+    # حساب التغيير
+    rate_change = comparison.get("rate_change", 0)
+    change_icon = "📈" if rate_change >= 0 else "📉"
+    change_sign = "+" if rate_change >= 0 else ""
+
+    # إنشاء التقرير
+    report_date = date.today() - timedelta(days=1)
+    days_ar = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
+    months_ar = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+                 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+
+    day_name = days_ar[report_date.weekday()]
+    month_name = months_ar[report_date.month - 1]
+
+    # قسم الشهر
+    monthly_section = ""
+    if monthly.get("has_data"):
+        monthly_section = f"""
+
+*📅 إحصائيات الشهر:*
+وصلوا الدفع: *{monthly['total_checkout_started']:,}*
+أكملوا: *{monthly['total_completed']:,}*
+نسبة الشهر: *{monthly['monthly_conversion_rate']}%*"""
+
+    message = f"""*📊 تقرير الحجوزات - Golden Host*
+{day_name} {report_date.day} {month_name} {report_date.year}
+━━━━━━━━━━━━━━━━━━━━
+
+*👤 وصلوا صفحة الدفع:* {yesterday['checkout_started']:,}
+*✅ أكملوا الحجز:* {yesterday['completed']:,}
+*❌ لم يكملوا:* {yesterday['abandoned']:,}
+
+━━━━━━━━━━━━━━━━━━━━
+
+*📈 نسبة الإكمال:* {yesterday['conversion_rate']}%
+*📉 نسبة التخلي:* {yesterday['abandonment_rate']}%
+
+*مقارنة بأول أمس:*
+{change_icon} {change_sign}{rate_change}% {"تحسن ✅" if rate_change >= 0 else "تراجع ⚠️"}
+{monthly_section}
+
+━━━━━━━━━━━━━━━━━━━━
+_شركة ليفل أب القابضة | Botng_"""
+
+    # إرسال التقرير
+    result = await whatsapp.send_message(phone, message)
+
+    return {
+        "status": "sent",
+        "phone": phone,
+        "data": {
+            "yesterday": yesterday,
+            "day_before": day_before,
+            "monthly": monthly
+        },
+        "result": result
     }
 
 

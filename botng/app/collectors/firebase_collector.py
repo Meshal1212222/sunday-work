@@ -318,3 +318,128 @@ class FirebaseCollector:
         except Exception as e:
             print(f"Error fetching downloads: {e}")
             return {"ios": 0, "android": 0, "total": 0, "has_data": False}
+
+    # ==================== Bookings / Checkout Funnel ====================
+
+    async def get_bookings(self, report_date: date = None) -> Dict[str, Any]:
+        """
+        جلب بيانات الحجوزات من Firebase
+
+        المسار: goldenhost/bookings/YYYY-MM-DD
+        الحقول:
+        - checkout_started: عدد اللي وصلوا صفحة الدفع
+        - completed: عدد اللي أكملوا الحجز
+        """
+        if not self.db:
+            return {"checkout_started": 0, "completed": 0, "has_data": False}
+
+        try:
+            if report_date is None:
+                report_date = date.today() - timedelta(days=1)
+
+            date_str = report_date.isoformat()
+
+            # جلب الحجوزات - المسار: goldenhost/bookings/YYYY-MM-DD
+            ref = self.db.child(f'goldenhost/bookings/{date_str}')
+            data = ref.get()
+
+            if data:
+                checkout_started = data.get("checkout_started", 0)
+                completed = data.get("completed", 0)
+                abandoned = checkout_started - completed
+
+                # حساب النسب
+                if checkout_started > 0:
+                    conversion_rate = (completed / checkout_started) * 100
+                    abandonment_rate = 100 - conversion_rate
+                else:
+                    conversion_rate = 0
+                    abandonment_rate = 0
+
+                return {
+                    "checkout_started": checkout_started,
+                    "completed": completed,
+                    "abandoned": abandoned,
+                    "conversion_rate": round(conversion_rate, 1),
+                    "abandonment_rate": round(abandonment_rate, 1),
+                    "has_data": True,
+                    "date": date_str
+                }
+
+            return {
+                "checkout_started": 0,
+                "completed": 0,
+                "abandoned": 0,
+                "conversion_rate": 0,
+                "abandonment_rate": 0,
+                "has_data": False,
+                "date": date_str
+            }
+
+        except Exception as e:
+            print(f"Error fetching bookings: {e}")
+            return {"checkout_started": 0, "completed": 0, "has_data": False}
+
+    async def get_bookings_comparison(self, report_date: date = None) -> Dict[str, Any]:
+        """مقارنة حجوزات أمس بأول أمس"""
+        if report_date is None:
+            report_date = date.today() - timedelta(days=1)
+
+        day_before = report_date - timedelta(days=1)
+
+        yesterday = await self.get_bookings(report_date)
+        day_before_data = await self.get_bookings(day_before)
+
+        # حساب التغيير في النسبة
+        if day_before_data.get("conversion_rate", 0) > 0:
+            rate_change = yesterday.get("conversion_rate", 0) - day_before_data.get("conversion_rate", 0)
+        else:
+            rate_change = yesterday.get("conversion_rate", 0)
+
+        return {
+            "yesterday": yesterday,
+            "day_before": day_before_data,
+            "rate_change": round(rate_change, 1),
+            "is_improved": rate_change > 0
+        }
+
+    async def get_monthly_bookings(self) -> Dict[str, Any]:
+        """إحصائيات الحجوزات للشهر الحالي"""
+        if not self.db:
+            return {"has_data": False}
+
+        try:
+            today = date.today()
+            first_day = today.replace(day=1)
+
+            total_checkout = 0
+            total_completed = 0
+            days_with_data = 0
+
+            # جلب بيانات كل يوم في الشهر
+            current_date = first_day
+            while current_date < today:
+                data = await self.get_bookings(current_date)
+                if data.get("has_data"):
+                    total_checkout += data.get("checkout_started", 0)
+                    total_completed += data.get("completed", 0)
+                    days_with_data += 1
+                current_date += timedelta(days=1)
+
+            if total_checkout > 0:
+                monthly_rate = (total_completed / total_checkout) * 100
+            else:
+                monthly_rate = 0
+
+            return {
+                "total_checkout_started": total_checkout,
+                "total_completed": total_completed,
+                "total_abandoned": total_checkout - total_completed,
+                "monthly_conversion_rate": round(monthly_rate, 1),
+                "days_with_data": days_with_data,
+                "has_data": days_with_data > 0
+            }
+
+        except Exception as e:
+            print(f"Error fetching monthly bookings: {e}")
+            return {"has_data": False}
