@@ -1029,6 +1029,58 @@ _تم التحليل بواسطة Botng AI_"""
         }
 
 
+@app.post("/api/reports/send-test/{phone}")
+async def send_test_report_to_phone(phone: str):
+    """إرسال تقرير تجريبي لرقم محدد - نص + PDF"""
+    from .reporters.smart_report import SmartReportGenerator
+    from .scheduler.jobs import upload_pdf_and_get_url
+    from datetime import timedelta
+
+    whatsapp = UltraMsgClient()
+    generator = SmartReportGenerator()
+
+    try:
+        # إنشاء التقرير
+        report = await generator.generate_daily_report()
+        report_date = date.today() - timedelta(days=1)
+
+        # إرسال النص
+        text_result = await whatsapp.send_message(phone, report["text"])
+
+        # إرسال PDF لنفس الرقم
+        pdf_result = None
+        pdf_path = report.get("pdf_path")
+        if pdf_path and os.path.exists(pdf_path):
+            pdf_url = await upload_pdf_and_get_url(pdf_path)
+            if pdf_url:
+                pdf_result = await whatsapp.send_document(
+                    phone, pdf_url,
+                    f"Golden_Host_Report_{report_date.strftime('%Y%m%d')}.pdf"
+                )
+
+        # تنظيف PDF
+        if pdf_path and os.path.exists(pdf_path):
+            os.remove(pdf_path)
+
+        return {
+            "status": "sent",
+            "phone": phone,
+            "report_date": report.get("date"),
+            "data_sources": report.get("data_sources"),
+            "text_result": text_result,
+            "pdf_result": pdf_result,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+
 # ==================== Run ====================
 
 if __name__ == "__main__":
