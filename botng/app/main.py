@@ -1029,6 +1029,137 @@ _تم التحليل بواسطة Botng AI_"""
         }
 
 
+@app.post("/api/reports/send-test/{phone}")
+async def send_test_report_to_phone(phone: str):
+    """إرسال تقرير تجريبي لرقم محدد - نص + PDF"""
+    from .reporters.smart_report import SmartReportGenerator
+    from .scheduler.jobs import upload_pdf_and_get_url
+    from datetime import timedelta
+
+    whatsapp = UltraMsgClient()
+    generator = SmartReportGenerator()
+
+    try:
+        # إنشاء التقرير
+        report = await generator.generate_daily_report()
+        report_date = date.today() - timedelta(days=1)
+
+        # إرسال النص
+        text_result = await whatsapp.send_message(phone, report["text"])
+
+        # إرسال PDF لنفس الرقم
+        pdf_result = None
+        pdf_path = report.get("pdf_path")
+        if pdf_path and os.path.exists(pdf_path):
+            pdf_url = await upload_pdf_and_get_url(pdf_path)
+            if pdf_url:
+                pdf_result = await whatsapp.send_document(
+                    phone, pdf_url,
+                    f"Golden_Host_Report_{report_date.strftime('%Y%m%d')}.pdf"
+                )
+
+        # تنظيف PDF
+        if pdf_path and os.path.exists(pdf_path):
+            os.remove(pdf_path)
+
+        return {
+            "status": "sent",
+            "phone": phone,
+            "report_date": report.get("date"),
+            "data_sources": report.get("data_sources"),
+            "text_result": text_result,
+            "pdf_result": pdf_result,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+
+# ==================== Golden Host Dashboard ====================
+
+@app.get("/goldenhost", response_class=HTMLResponse)
+async def goldenhost_dashboard():
+    """صفحة داشبورد Golden Host"""
+    from fastapi.templating import Jinja2Templates
+    templates_dir = os.path.join(os.path.dirname(__file__), "templates")
+    templates = Jinja2Templates(directory=templates_dir)
+    from starlette.requests import Request
+    # Return HTML file directly
+    with open(os.path.join(templates_dir, "goldenhost.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.get("/api/goldenhost/reports")
+async def get_goldenhost_reports():
+    """جلب آخر البلاغات"""
+    from .collectors.firebase_collector import FirebaseCollector
+    try:
+        firebase = FirebaseCollector()
+        reports = await firebase.get_reports(10)
+        return reports
+    except Exception as e:
+        return []
+
+
+@app.get("/api/goldenhost/refunds")
+async def get_goldenhost_refunds():
+    """جلب آخر الاستردادات"""
+    from .collectors.firebase_collector import FirebaseCollector
+    try:
+        firebase = FirebaseCollector()
+        refunds = await firebase.get_refunds(10)
+        return refunds
+    except Exception as e:
+        return []
+
+
+@app.get("/api/goldenhost/employees")
+async def get_goldenhost_employees():
+    """جلب أداء الموظفين"""
+    from .collectors.firebase_collector import FirebaseCollector
+    try:
+        firebase = FirebaseCollector()
+        employees = await firebase.get_employee_performance()
+        return employees if employees else []
+    except Exception as e:
+        return []
+
+
+@app.get("/api/goldenhost/stats")
+async def get_goldenhost_stats():
+    """جلب إحصائيات Golden Host"""
+    from .collectors.firebase_collector import FirebaseCollector
+    from .collectors.google_analytics import GoogleAnalyticsCollector
+    try:
+        firebase = FirebaseCollector()
+        today = date.today()
+        daily_data = await firebase.get_daily_summary(today)
+
+        # GA data
+        ga_data = {}
+        try:
+            ga = GoogleAnalyticsCollector()
+            ga_result = await ga.collect_daily_report()
+            if ga_result.get('status') == 'success':
+                ga_data = ga_result['data']
+        except:
+            pass
+
+        return {
+            "status": "success",
+            "golden_host": daily_data.get('golden_host', {}),
+            "analytics": ga_data
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 # ==================== Run ====================
 
 if __name__ == "__main__":

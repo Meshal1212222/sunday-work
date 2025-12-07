@@ -157,17 +157,23 @@ async def get_activity():
 async def send_report(type: str = "daily"):
     """إرسال تقرير عبر واتساب"""
     try:
+        from ..integrations.ultramsg import UltraMsgClient
+
         generator = SmartReportGenerator()
+        whatsapp = UltraMsgClient()
 
         if type == "daily":
             report = await generator.generate_daily_report()
+            report_text = report.get("text", "حدث خطأ في إنشاء التقرير")
         elif type == "weekly":
-            report = await generator.generate_weekly_report()
+            report_text = await generator.generate_weekly_report()
         else:
             report = await generator.generate_daily_report()
+            report_text = report.get("text", "حدث خطأ في إنشاء التقرير")
 
-        # إرسال للقروب
-        await generator.whatsapp.send_message(settings.report_group_id, report)
+        # إرسال للقروب أو الأدمن
+        recipient = settings.report_group_id if settings.report_group_id else settings.admin_phone
+        await whatsapp.send_message(recipient, report_text)
 
         return {
             "status": "sent",

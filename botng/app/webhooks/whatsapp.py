@@ -113,20 +113,50 @@ async def handle_command(message: str, phone: str) -> str:
 
     # ==================== Reports ====================
     if message_lower == "تقرير":
-        return await generator.generate_daily_report()
+        report = await generator.generate_daily_report()
+        return report.get("text", "حدث خطأ في إنشاء التقرير")
 
     if message_lower == "اسبوعي":
         return await generator.generate_weekly_report()
 
     if message_lower == "حالة":
-        return await generator.generate_realtime_status()
+        # الحالة اللحظية - استخدام بيانات GA
+        try:
+            from ..collectors.google_analytics import GoogleAnalyticsCollector
+            ga = GoogleAnalyticsCollector()
+            result = await ga.collect_daily_report()
+            if result.get('status') == 'success':
+                data = result['data']
+                return f"""📊 *الحالة اللحظية*
+━━━━━━━━━━━━━━━
+👥 المستخدمين: {data.get('active_users', 0)}
+📱 الجلسات: {data.get('sessions', 0)}
+📄 المشاهدات: {data.get('page_views', 0)}
+━━━━━━━━━━━━━━━
+_شركة ليفل أب القابضة_"""
+        except:
+            return "⚠️ تعذر جلب الحالة اللحظية"
 
     if message_lower == "موظفين":
-        return await generator.generate_employee_report()
+        # تقرير أداء الموظفين من Firebase
+        try:
+            from ..collectors.firebase_collector import FirebaseCollector
+            firebase = FirebaseCollector()
+            performance = await firebase.get_employee_performance()
+            if performance:
+                lines = ["👥 *أداء الموظفين*", "━━━━━━━━━━━━━━━"]
+                for emp in performance[:10]:
+                    lines.append(f"• {emp['name']}: {emp['sales']} مبيعات | {emp['conversations']} محادثة")
+                lines.append("━━━━━━━━━━━━━━━")
+                lines.append("_شركة ليفل أب القابضة_")
+                return "\n".join(lines)
+            return "لا توجد بيانات موظفين"
+        except:
+            return "⚠️ تعذر جلب بيانات الموظفين"
 
     # ==================== Golden Host ====================
     if message_lower == "بلاغات":
-        firebase = generator.firebase
+        firebase = generator.firebase_collector
         reports = await firebase.get_reports(10)
         if not reports:
             return "📝 لا توجد بلاغات حالياً"
@@ -139,7 +169,7 @@ async def handle_command(message: str, phone: str) -> str:
         return "\n".join(lines)
 
     if message_lower == "استردادات":
-        firebase = generator.firebase
+        firebase = generator.firebase_collector
         refunds = await firebase.get_refunds(10)
         if not refunds:
             return "💰 لا توجد استردادات حالياً"
@@ -154,7 +184,7 @@ async def handle_command(message: str, phone: str) -> str:
         return "\n".join(lines)
 
     if message_lower == "محادثات":
-        firebase = generator.firebase
+        firebase = generator.firebase_collector
         conversations = await firebase.get_conversations(20)
         if not conversations:
             return "💬 لا توجد محادثات حالياً"
@@ -172,7 +202,7 @@ _شركة ليفل أب القابضة_"""
 
     # ==================== Sunday Board ====================
     if message_lower == "مهام":
-        firebase = generator.firebase
+        firebase = generator.firebase_collector
         tasks = await firebase.get_tasks()
 
         pending = len([t for t in tasks if t.get('status') == 'pending'])
@@ -189,7 +219,7 @@ _شركة ليفل أب القابضة_"""
 _شركة ليفل أب القابضة_"""
 
     if message_lower == "متاخرة":
-        firebase = generator.firebase
+        firebase = generator.firebase_collector
         overdue = await firebase.get_overdue_tasks()
 
         if not overdue:
