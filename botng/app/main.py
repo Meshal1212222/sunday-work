@@ -797,6 +797,79 @@ async def sync_data(source: str = "all"):
     }
 
 
+# ==================== Test Report API ====================
+
+@app.post("/api/reports/send-test")
+async def send_test_report_to_private():
+    """إرسال تقرير تجريبي للأرقام الخاصة"""
+    from .reporters.smart_report import SmartReportGenerator
+    from .scheduler.jobs import upload_pdf_and_get_url
+
+    whatsapp = UltraMsgClient()
+    generator = SmartReportGenerator()
+
+    # الأرقام الخاصة
+    recipients = settings.crash_alert_recipients.split(",")
+    results = []
+
+    try:
+        # إنشاء التقرير
+        report = await generator.generate_daily_report()
+
+        for recipient in recipients:
+            recipient = recipient.strip()
+            if not recipient:
+                continue
+
+            # إرسال النص
+            text_result = await whatsapp.send_message(recipient, report["text"])
+            results.append({"phone": recipient, "type": "text", "result": text_result})
+
+            # إرسال PDF
+            pdf_path = report.get("pdf_path")
+            if pdf_path and os.path.exists(pdf_path):
+                pdf_url = await upload_pdf_and_get_url(pdf_path)
+                if pdf_url:
+                    pdf_result = await whatsapp.send_document(
+                        recipient, pdf_url,
+                        f"Golden_Host_Report_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
+                    )
+                    results.append({"phone": recipient, "type": "pdf", "result": pdf_result})
+
+            # إرسال تحليل AI
+            ai_analysis = report.get("ai_analysis")
+            if ai_analysis:
+                ai_message = f"""*🤖 تحليل الذكاء الاصطناعي*
+━━━━━━━━━━━━━━━━━━━━
+
+{ai_analysis}
+
+_تم التحليل بواسطة Botng AI_"""
+                ai_result = await whatsapp.send_message(recipient, ai_message)
+                results.append({"phone": recipient, "type": "ai", "result": ai_result})
+
+        # تنظيف PDF
+        if report.get("pdf_path") and os.path.exists(report["pdf_path"]):
+            os.remove(report["pdf_path"])
+
+        return {
+            "status": "sent",
+            "recipients": recipients,
+            "report_date": report.get("date"),
+            "data_sources": report.get("data_sources"),
+            "results": results,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+
 # ==================== Run ====================
 
 if __name__ == "__main__":
