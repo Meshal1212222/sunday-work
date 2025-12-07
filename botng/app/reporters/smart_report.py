@@ -70,6 +70,10 @@ class SmartReportGenerator:
             # جلب بيانات Firebase (Golden Host & Sunday Board)
             firebase_data = await self.firebase_collector.get_daily_summary(report_date)
 
+            # جلب بيانات التحميلات من Firebase (أمس وأول أمس)
+            downloads_today = await self.firebase_collector.get_downloads(report_date)
+            downloads_yesterday = await self.firebase_collector.get_downloads(comparison_date)
+
             return {
                 "analytics": {
                     "today": ga_today,      # بيانات أمس
@@ -77,11 +81,16 @@ class SmartReportGenerator:
                 },
                 "golden_host": firebase_data.get("golden_host", {}),
                 "sunday_board": firebase_data.get("sunday_board", {}),
+                "downloads": {
+                    "today": downloads_today,
+                    "yesterday": downloads_yesterday
+                },
                 "clarity": {},
                 "report_date": report_date.isoformat(),
                 "data_sources": {
                     "ga4": ga_comparison.get("status") == "success",
-                    "firebase": bool(firebase_data.get("golden_host") or firebase_data.get("sunday_board"))
+                    "firebase": bool(firebase_data.get("golden_host") or firebase_data.get("sunday_board")),
+                    "downloads": downloads_today.get("has_data", False)
                 }
             }
         except Exception as e:
@@ -133,18 +142,25 @@ class SmartReportGenerator:
         completed_today = sunday_board.get("completed_today", 0)
         overdue_tasks = sunday_board.get("overdue_tasks", 0)
 
-        # Clarity metrics (إذا متوفرة)
+        # Clarity metrics (إذا متوفرة) - لا نستخدم قيم افتراضية وهمية!
         clarity_data = clarity.get("data", clarity) if clarity else {}
-        engagement = clarity_data.get("engagement_score", clarity_data.get("engagementScore", 75))
-        rage_clicks = clarity_data.get("rage_clicks", clarity_data.get("rageClicks", 0))
-        dead_clicks = clarity_data.get("dead_clicks", clarity_data.get("deadClicks", 0))
-        quick_backs = clarity_data.get("quick_backs", clarity_data.get("quickBacks", 0))
+        # None = لا توجد بيانات (سيظهر "غير متوفر" في التقرير)
+        engagement = clarity_data.get("engagement_score", clarity_data.get("engagementScore"))
+        rage_clicks = clarity_data.get("rage_clicks", clarity_data.get("rageClicks"))
+        dead_clicks = clarity_data.get("dead_clicks", clarity_data.get("deadClicks"))
+        quick_backs = clarity_data.get("quick_backs", clarity_data.get("quickBacks"))
+        has_clarity_data = engagement is not None
 
-        # التحميلات - تحتاج مصدر خارجي (App Store Connect / Google Play)
-        ios_today = 0
-        ios_yesterday = 0
-        android_today = 0
-        android_yesterday = 0
+        # التحميلات من Firebase
+        downloads = data.get("downloads", {})
+        downloads_today = downloads.get("today", {})
+        downloads_yesterday = downloads.get("yesterday", {})
+
+        ios_today = downloads_today.get("ios", 0)
+        ios_yesterday = downloads_yesterday.get("ios", 0)
+        android_today = downloads_today.get("android", 0)
+        android_yesterday = downloads_yesterday.get("android", 0)
+        has_downloads_data = downloads_today.get("has_data", False)
 
         return {
             # Website Metrics
@@ -183,6 +199,8 @@ class SmartReportGenerator:
             "rage_clicks": rage_clicks,
             "dead_clicks": dead_clicks,
             "quick_backs": quick_backs,
+            "has_clarity_data": has_clarity_data,
+            "has_downloads_data": has_downloads_data,
         }
 
     def _calc_change(self, today: float, yesterday: float) -> Tuple[float, str]:
@@ -238,8 +256,16 @@ class SmartReportGenerator:
         web_status = "ممتاز ✅" if visitors_change >= 0 else "يحتاج مراجعة ⚠️"
         reports_status = "يحتاج متابعة 🔔" if metrics['reports_count'] > 5 else "طبيعي ✅"
         tasks_status = "متأخرة! ⚠️" if metrics['overdue_tasks'] > 0 else "ممتاز ✅"
-        ux_status = "جيدة ✅" if metrics["engagement"] >= 50 else "تحتاج تحسين ⚠️"
-        ux_warning = "⚠️" if metrics["engagement"] < 50 else ""
+
+        # Clarity status - فقط إذا متوفرة البيانات
+        has_clarity = metrics.get("has_clarity_data", False)
+        engagement_val = metrics.get("engagement")
+        if has_clarity and engagement_val is not None:
+            ux_status = "جيدة ✅" if engagement_val >= 50 else "تحتاج تحسين ⚠️"
+            ux_warning = "⚠️" if engagement_val < 50 else ""
+        else:
+            ux_status = "غير متوفر"
+            ux_warning = ""
 
         # مصادر البيانات
         sources_status = []
@@ -254,6 +280,38 @@ class SmartReportGenerator:
                 sources_status.append("⚠️ Firebase")
         sources_text = " | ".join(sources_status) if sources_status else "Google Analytics 4"
 
+        # قسم التحميلات - فقط إذا متوفرة البيانات
+        has_downloads = metrics.get("has_downloads_data", False)
+        if has_downloads:
+            ios_today = metrics.get("ios_today", 0)
+            ios_yesterday = metrics.get("ios_yesterday", 0)
+            android_today = metrics.get("android_today", 0)
+            android_yesterday = metrics.get("android_yesterday", 0)
+            total_today = ios_today + android_today
+            total_yesterday = ios_yesterday + android_yesterday
+            downloads_change, downloads_sign = self._calc_change(total_today, total_yesterday)
+            downloads_icon = "📈" if downloads_change >= 0 else "📉"
+
+            downloads_section = f"""
+*📲 تحميلات التطبيق*
+🍎 iOS: *{ios_today:,}* (أول أمس: {ios_yesterday:,})
+🤖 Android: *{android_today:,}* (أول أمس: {android_yesterday:,})
+📊 الإجمالي: *{total_today:,}* {downloads_icon}{downloads_sign}{downloads_change}%"""
+            downloads_status = "نمو ✅" if downloads_change >= 0 else "تراجع ⚠️"
+        else:
+            downloads_section = ""
+            downloads_status = "غير متوفر"
+
+        # قسم Clarity - فقط إذا متوفرة البيانات
+        if has_clarity and engagement_val is not None:
+            rage_clicks = metrics.get("rage_clicks", 0) or 0
+            clarity_section = f"""
+*🎯 تجربة المستخدم (Clarity)*
+💡 التفاعل: *{engagement_val}%* {ux_warning}
+😤 نقرات الغضب: *{rage_clicks}*"""
+        else:
+            clarity_section = ""
+
         summary = f"""*📊 تقرير Golden Host - إحصائيات أمس*
 {self._get_day_name(yesterday)} {yesterday.day} {self._get_month_name(yesterday)} {yesterday.year}
 ━━━━━━━━━━━━━━━━━━━━
@@ -264,6 +322,7 @@ class SmartReportGenerator:
 👁 المشاهدات: *{metrics['page_views_today']:,}* {pv_icon}{pv_sign}{pv_change}%
 ⏱ معدل الجلسة: *{self._format_duration(metrics['avg_session'])}*
 ↩️ معدل الارتداد: *{metrics['bounce_rate']:.1f}%*
+{downloads_section}
 
 *📱 Golden Host - البلاغات*
 📋 بلاغات جديدة: *{metrics['reports_count']}*
@@ -276,14 +335,12 @@ class SmartReportGenerator:
 📊 إجمالي المهام: *{metrics['total_tasks']}*
 ✅ مكتملة أمس: *{metrics['completed_today']}*
 ⏰ متأخرة: *{metrics['overdue_tasks']}* {"🚨" if metrics['overdue_tasks'] > 0 else ""}
-
-*🎯 تجربة المستخدم (Clarity)*
-💡 التفاعل: *{metrics['engagement']}%* {ux_warning}
-😤 نقرات الغضب: *{metrics['rage_clicks']}*
+{clarity_section}
 
 ━━━━━━━━━━━━━━━━━━━━
 *📌 الملخص*
 🌐 الويب: {web_status}
+📲 التحميلات: {downloads_status}
 📋 البلاغات: {reports_status}
 📋 المهام: {tasks_status}
 🎯 UX: {ux_status}
@@ -491,94 +548,109 @@ _شركة ليفل أب القابضة | Botng_"""
 
         y_pos -= len(table_data) * 18 + 30
 
-        # App Downloads Section
-        c.setFillColor(primary_color)
-        c.setFont("Helvetica-Bold", 14)
-        c.drawString(50, y_pos, "App Downloads")
+        # App Downloads Section - فقط إذا متوفرة البيانات
+        if metrics.get('has_downloads_data', False):
+            c.setFillColor(primary_color)
+            c.setFont("Helvetica-Bold", 14)
+            c.drawString(50, y_pos, "App Downloads")
 
-        y_pos -= 20
+            y_pos -= 20
 
-        # Downloads table
-        c.setFillColor(colors.HexColor("#e8f5e9"))
-        c.rect(50, y_pos - 20, width - 100, 20, fill=True, stroke=False)
-
-        c.setFillColor(colors.black)
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(60, y_pos - 15, "Platform")
-        c.drawString(200, y_pos - 15, "Today")
-        c.drawString(300, y_pos - 15, "Yesterday")
-        c.drawString(400, y_pos - 15, "Change")
-
-        y_pos -= 20
-
-        ios_change, ios_sign = self._calc_change(metrics['ios_today'], metrics['ios_yesterday'])
-        android_change, android_sign = self._calc_change(metrics['android_today'], metrics['android_yesterday'])
-        total_today = metrics['ios_today'] + metrics['android_today']
-        total_yesterday = metrics['ios_yesterday'] + metrics['android_yesterday']
-        total_change, total_sign = self._calc_change(total_today, total_yesterday)
-
-        downloads_data = [
-            ("iOS", metrics['ios_today'], metrics['ios_yesterday'], f"{ios_sign}{ios_change}%"),
-            ("Android", metrics['android_today'], metrics['android_yesterday'], f"{android_sign}{android_change}%"),
-            ("Total", total_today, total_yesterday, f"{total_sign}{total_change}%")
-        ]
-
-        c.setFont("Helvetica", 10)
-        for i, (platform, today_val, yesterday_val, change) in enumerate(downloads_data):
-            row_y = y_pos - (i * 18)
-
-            if i % 2 == 0:
-                c.setFillColor(colors.HexColor("#fafafa"))
-                c.rect(50, row_y - 13, width - 100, 18, fill=True, stroke=False)
+            # Downloads table
+            c.setFillColor(colors.HexColor("#e8f5e9"))
+            c.rect(50, y_pos - 20, width - 100, 20, fill=True, stroke=False)
 
             c.setFillColor(colors.black)
-            c.drawString(60, row_y - 10, platform)
-            c.drawString(200, row_y - 10, str(today_val))
-            c.drawString(300, row_y - 10, str(yesterday_val))
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(60, y_pos - 15, "Platform")
+            c.drawString(200, y_pos - 15, "Today")
+            c.drawString(300, y_pos - 15, "Yesterday")
+            c.drawString(400, y_pos - 15, "Change")
 
-            if "+" in str(change):
-                c.setFillColor(success_color)
-            elif "-" in str(change) and change != "-":
-                c.setFillColor(danger_color)
-            else:
-                c.setFillColor(colors.gray)
-            c.drawString(400, row_y - 10, str(change))
+            y_pos -= 20
 
-        y_pos -= len(downloads_data) * 18 + 30
+            ios_today = metrics.get('ios_today', 0) or 0
+            ios_yesterday = metrics.get('ios_yesterday', 0) or 0
+            android_today = metrics.get('android_today', 0) or 0
+            android_yesterday = metrics.get('android_yesterday', 0) or 0
 
-        # User Behavior Section (Clarity)
-        c.setFillColor(danger_color)
-        c.setFont("Helvetica-Bold", 14)
-        c.drawString(50, y_pos, "User Behavior (Clarity)")
+            ios_change, ios_sign = self._calc_change(ios_today, ios_yesterday)
+            android_change, android_sign = self._calc_change(android_today, android_yesterday)
+            total_today = ios_today + android_today
+            total_yesterday = ios_yesterday + android_yesterday
+            total_change, total_sign = self._calc_change(total_today, total_yesterday)
+
+            downloads_data = [
+                ("iOS", ios_today, ios_yesterday, f"{ios_sign}{ios_change}%"),
+                ("Android", android_today, android_yesterday, f"{android_sign}{android_change}%"),
+                ("Total", total_today, total_yesterday, f"{total_sign}{total_change}%")
+            ]
+
+            c.setFont("Helvetica", 10)
+            for i, (platform, today_val, yesterday_val, change) in enumerate(downloads_data):
+                row_y = y_pos - (i * 18)
+
+                if i % 2 == 0:
+                    c.setFillColor(colors.HexColor("#fafafa"))
+                    c.rect(50, row_y - 13, width - 100, 18, fill=True, stroke=False)
+
+                c.setFillColor(colors.black)
+                c.drawString(60, row_y - 10, platform)
+                c.drawString(200, row_y - 10, str(today_val))
+                c.drawString(300, row_y - 10, str(yesterday_val))
+
+                if "+" in str(change):
+                    c.setFillColor(success_color)
+                elif "-" in str(change) and change != "-":
+                    c.setFillColor(danger_color)
+                else:
+                    c.setFillColor(colors.gray)
+                c.drawString(400, row_y - 10, str(change))
+
+            y_pos -= len(downloads_data) * 18 + 30
+
+        # User Behavior Section (Clarity) - فقط إذا متوفرة البيانات
+        engagement_val = metrics.get('engagement')
+        has_clarity = metrics.get('has_clarity_data', False) and engagement_val is not None
+
+        if has_clarity:
+            c.setFillColor(danger_color)
+            c.setFont("Helvetica-Bold", 14)
+            c.drawString(50, y_pos, "User Behavior (Clarity)")
 
         # Warning if engagement is low
-        if metrics['engagement'] < 50:
+        if has_clarity and engagement_val < 50:
             c.setFillColor(colors.HexColor("#ffebee"))
             c.rect(50, y_pos - 80, width - 100, 70, fill=True, stroke=False)
             c.setStrokeColor(danger_color)
             c.setLineWidth(2)
             c.rect(50, y_pos - 80, width - 100, 70, fill=False, stroke=True)
 
-        y_pos -= 25
+        if has_clarity:
+            y_pos -= 25
 
-        clarity_items = [
-            ("Engagement Score", f"{metrics['engagement']}%", danger_color if metrics['engagement'] < 50 else success_color),
-            ("Rage Clicks", metrics['rage_clicks'], warning_color if metrics['rage_clicks'] > 10 else success_color),
-            ("Dead Clicks", metrics['dead_clicks'], warning_color if metrics['dead_clicks'] > 5 else success_color),
-            ("Quick Backs", metrics['quick_backs'], warning_color if metrics['quick_backs'] > 10 else success_color)
-        ]
+            rage_clicks = metrics.get('rage_clicks', 0) or 0
+            dead_clicks = metrics.get('dead_clicks', 0) or 0
+            quick_backs = metrics.get('quick_backs', 0) or 0
 
-        c.setFont("Helvetica", 10)
-        for i, (label, value, indicator_color) in enumerate(clarity_items):
-            row_y = y_pos - (i * 15)
-            c.setFillColor(colors.black)
-            c.drawString(60, row_y, f"{label}:")
-            c.setFillColor(indicator_color)
-            c.setFont("Helvetica-Bold", 10)
-            c.drawString(180, row_y, str(value))
+            clarity_items = [
+                ("Engagement Score", f"{engagement_val}%", danger_color if engagement_val < 50 else success_color),
+                ("Rage Clicks", rage_clicks, warning_color if rage_clicks > 10 else success_color),
+                ("Dead Clicks", dead_clicks, warning_color if dead_clicks > 5 else success_color),
+                ("Quick Backs", quick_backs, warning_color if quick_backs > 10 else success_color)
+            ]
+
             c.setFont("Helvetica", 10)
+            for i, (label, value, indicator_color) in enumerate(clarity_items):
+                row_y = y_pos - (i * 15)
+                c.setFillColor(colors.black)
+                c.drawString(60, row_y, f"{label}:")
+                c.setFillColor(indicator_color)
+                c.setFont("Helvetica-Bold", 10)
+                c.drawString(180, row_y, str(value))
+                c.setFont("Helvetica", 10)
 
-        y_pos -= len(clarity_items) * 15 + 30
+            y_pos -= len(clarity_items) * 15 + 30
 
         # Summary Section
         c.setFillColor(primary_color)
@@ -591,13 +663,27 @@ _شركة ليفل أب القابضة | Botng_"""
         summary_width = 150
         summary_height = 40
 
+        # تحديد قيم التحميلات للملخص
+        ios_t = metrics.get('ios_today', 0) or 0
+        android_t = metrics.get('android_today', 0) or 0
+        ios_y = metrics.get('ios_yesterday', 0) or 0
+        android_y = metrics.get('android_yesterday', 0) or 0
+        total_downloads_today = ios_t + android_t
+        total_downloads_yesterday = ios_y + android_y
+        has_downloads = metrics.get('has_downloads_data', False)
+
+        # UX status
+        ux_good = has_clarity and engagement_val is not None and engagement_val >= 50
+
         summaries = [
             ("Web Performance", "Excellent" if metrics['visitors_today'] >= metrics['visitors_yesterday'] else "Needs Review",
              success_color if metrics['visitors_today'] >= metrics['visitors_yesterday'] else warning_color),
-            ("App Downloads", "Growing" if total_today >= total_yesterday else "Declining",
-             success_color if total_today >= total_yesterday else warning_color),
-            ("User Experience", "Good" if metrics['engagement'] >= 50 else "Needs Improvement",
-             success_color if metrics['engagement'] >= 50 else danger_color)
+            ("App Downloads",
+             "Growing" if has_downloads and total_downloads_today >= total_downloads_yesterday else ("N/A" if not has_downloads else "Declining"),
+             success_color if has_downloads and total_downloads_today >= total_downloads_yesterday else (colors.gray if not has_downloads else warning_color)),
+            ("User Experience",
+             "Good" if ux_good else ("N/A" if not has_clarity else "Needs Improvement"),
+             success_color if ux_good else (colors.gray if not has_clarity else danger_color))
         ]
 
         summary_spacing = (width - 100 - 3 * summary_width) / 2
