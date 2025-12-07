@@ -28,14 +28,14 @@ async def upload_pdf_and_get_url(pdf_path: str) -> str:
 
 
 async def send_daily_report():
-    """إرسال التقرير اليومي التلقائي للقروب"""
+    """إرسال التقرير اليومي التلقائي للقروب (نص + PDF + تحليل AI)"""
     print(f"جاري إرسال التقرير اليومي... {datetime.now()}")
 
     try:
         generator = SmartReportGenerator()
         whatsapp = UltraMsgClient()
 
-        # إنشاء التقرير (نص + PDF)
+        # إنشاء التقرير (نص + PDF + تحليل AI)
         report = await generator.generate_daily_report()
 
         # تحديد المستلم (القروب أو الأدمن)
@@ -80,6 +80,18 @@ async def send_daily_report():
                 os.remove(pdf_path)
             except:
                 pass
+
+        # إرسال تحليل AI (إذا موجود)
+        ai_analysis = report.get("ai_analysis")
+        if ai_analysis:
+            ai_message = f"""*🤖 تحليل الذكاء الاصطناعي*
+━━━━━━━━━━━━━━━━━━━━
+
+{ai_analysis}
+
+_تم التحليل بواسطة Botng AI_"""
+            await whatsapp.send_message(recipient, ai_message)
+            print("تم إرسال تحليل AI")
 
         print(f"تم إرسال التقرير اليومي بنجاح")
 
