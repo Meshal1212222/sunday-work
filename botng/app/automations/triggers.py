@@ -85,7 +85,7 @@ class AutomationTriggers:
         return {'triggered': False}
 
     async def check_app_crashes(self, threshold: int = 5) -> Dict:
-        """تريقر: crashes في التطبيق"""
+        """تريقر: crashes في التطبيق (للتقرير اليومي)"""
         try:
             crash_data = await self.crashes.get_crashes_count()
             if crash_data.get("status") == "success":
@@ -98,6 +98,22 @@ class AutomationTriggers:
                     }
         except Exception as e:
             print(f"Crash check error: {e}")
+        return {'triggered': False}
+
+    async def check_realtime_crashes(self) -> Dict:
+        """تريقر: crashes جديدة في الوقت الفعلي - تنبيه فوري"""
+        try:
+            new_crash_data = await self.crashes.check_new_crashes()
+            if new_crash_data.get("has_new"):
+                return {
+                    'triggered': True,
+                    'new_count': new_crash_data.get("new_count", 0),
+                    'total': new_crash_data.get("total", 0),
+                    'details': new_crash_data.get("details", []),
+                    'timestamp': new_crash_data.get("timestamp")
+                }
+        except Exception as e:
+            print(f"Realtime crash check error: {e}")
         return {'triggered': False}
 
     # ==================== Actions ====================
@@ -115,6 +131,23 @@ class AutomationTriggers:
 _شركة ليفل أب القابضة_"""
 
         await self.whatsapp.send_message(settings.report_group_id, alert_message)
+
+    async def send_crash_alert(self, message: str):
+        """إرسال تنبيه Crashes للأرقام الخاصة (ليس للقروب)"""
+        alert_message = f"""🚨 *تنبيه Crashes - سري*
+
+{message}
+
+⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}
+━━━━━━━━━━━━━━━
+_شركة ليفل أب القابضة_"""
+
+        # إرسال لكل رقم خاص
+        recipients = settings.crash_alert_recipients.split(",")
+        for recipient in recipients:
+            recipient = recipient.strip()
+            if recipient:
+                await self.whatsapp.send_message(recipient, alert_message)
 
     async def create_task_from_report(self, report: Dict) -> str:
         """إنشاء مهمة من بلاغ"""
@@ -180,37 +213,56 @@ _شركة ليفل أب القابضة_"""
                 priority="high"
             )
 
-        # Check app crashes
-        crashes = await self.check_app_crashes()
-        if crashes.get('triggered'):
+        # Check realtime crashes - فحص لحظي وإرسال للأرقام الخاصة
+        realtime_crashes = await self.check_realtime_crashes()
+        if realtime_crashes.get('triggered'):
             results.append({
-                'trigger': 'app_crashes',
-                'crashes': crashes['crashes']
+                'trigger': 'realtime_crashes',
+                'new_count': realtime_crashes['new_count'],
+                'total': realtime_crashes['total']
             })
-            await self.send_alert(
-                f"🚨 *تنبيه Crashes!*\n\n"
-                f"عدد الـ crashes: *{crashes['crashes']}*\n\n"
-                f"يرجى مراجعة التطبيق فوراً!",
-                priority="high"
+            # تفاصيل الـ crashes الجديدة
+            details_text = "*🆕 Crashes جديدة:*"
+            for detail in realtime_crashes.get('details', [])[:5]:
+                screen = detail.get('screen', detail.get('page', 'N/A'))
+                platform = detail.get('platform', '')
+                version = detail.get('version', '')
+                count = detail.get('count', 0)
+
+                # تقصير اسم الشاشة إذا طويل
+                if len(screen) > 30:
+                    screen = "..." + screen[-27:]
+
+                platform_emoji = "🍎" if "ios" in platform.lower() else "🤖" if "android" in platform.lower() else "🌐"
+                details_text += f"\n{platform_emoji} {screen} ({count}x)"
+                if version and version != "N/A":
+                    details_text += f" v{version}"
+
+            await self.send_crash_alert(
+                f"🚨 *Crash جديد الآن!*\n\n"
+                f"{details_text}\n\n"
+                f"الإجمالي: *{realtime_crashes['total']}* crashes"
             )
 
         return results
 
 
 class AutomationScheduler:
-    """جدولة الأتمتة"""
+    """جدولة الأتمتة - مراقبة لحظية"""
 
     def __init__(self):
         self.triggers = AutomationTriggers()
         self.running = False
 
     async def start(self):
-        """بدء المراقبة"""
+        """بدء المراقبة اللحظية"""
         self.running = True
+        print("🔴 بدء المراقبة اللحظية للـ Crashes...")
         while self.running:
             await self.triggers.run_all_checks()
-            await asyncio.sleep(300)  # Check every 5 minutes
+            await asyncio.sleep(60)  # فحص كل دقيقة للتنبيهات الفورية
 
     def stop(self):
         """إيقاف المراقبة"""
         self.running = False
+        print("⏹️ تم إيقاف المراقبة")

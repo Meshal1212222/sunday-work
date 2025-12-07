@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     admin_phone: str = "966563652525"  # رقم واتساب الأدمن
     debug: bool = True
 
+    # Crash Alerts - أرقام خاصة لتنبيهات الـ Crashes (مفصولة بفاصلة)
+    crash_alert_recipients: str = "966532263391,966563652525"
+
     # API Base URLs
     ultramsg_base_url: str = "https://api.ultramsg.com"
 

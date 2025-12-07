@@ -717,6 +717,61 @@ async def send_report_to_group():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/crashes/send-activation")
+async def send_crash_activation_message():
+    """إرسال رسالة تفعيل نظام مراقبة Crashes للأرقام الخاصة"""
+    whatsapp = UltraMsgClient()
+
+    message = """✅ *تم تفعيل نظام مراقبة Crashes - Golden Host*
+
+━━━━━━━━━━━━━━━
+
+*كيف يعمل النظام:*
+• مراقبة لحظية للتطبيق 24/7
+• فحص كل دقيقة للكشف عن أي crash
+• تنبيه فوري على هذا الرقم
+
+*متى يجيك تنبيه:*
+• أول ما يصير crash جديد في التطبيق
+• يوضح الشاشة اللي صار فيها المشكلة
+• يوضح المنصة (iOS/Android) والإصدار
+
+━━━━━━━━━━━━━━━
+
+*📱 مثال على التنبيه:*
+
+🚨 *تنبيه Crashes - سري*
+
+🚨 *Crash جديد الآن!*
+
+*🆕 Crashes جديدة:*
+🍎 PaymentScreen (1x) v2.1.0
+🤖 CheckoutScreen (2x) v2.0.8
+
+الإجمالي: *3* crashes
+
+━━━━━━━━━━━━━━━
+
+⏰ """ + datetime.now().strftime('%Y-%m-%d') + """
+_شركة ليفل أب القابضة | Botng_"""
+
+    recipients = settings.crash_alert_recipients.split(",")
+    results = []
+
+    for recipient in recipients:
+        recipient = recipient.strip()
+        if recipient:
+            result = await whatsapp.send_message(recipient, message)
+            results.append({"phone": recipient, "result": result})
+
+    return {
+        "status": "sent",
+        "recipients": recipients,
+        "results": results,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+
 # ==================== Data Sync API ====================
 
 @app.post("/api/data/sync")
