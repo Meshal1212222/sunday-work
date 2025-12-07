@@ -242,3 +242,141 @@ class GoogleAnalyticsCollector:
                 "status": "error",
                 "message": str(e)
             }
+
+    async def get_checkout_funnel(self, report_date: date = None) -> Dict[str, Any]:
+        """
+        تحليل Funnel الحجوزات - نسبة الإكمال من صفحة الدفع
+
+        يتتبع:
+        - begin_checkout: المستخدمين اللي وصلوا صفحة الدفع
+        - purchase: المستخدمين اللي أكملوا الحجز
+        - النسبة: معدل التحويل
+        """
+        if not self.client:
+            return {"status": "error", "message": "GA not configured"}
+
+        if report_date is None:
+            report_date = date.today() - timedelta(days=1)
+
+        date_str = report_date.strftime("%Y-%m-%d")
+
+        try:
+            from google.analytics.data_v1beta.types import (
+                RunReportRequest, DateRange, Dimension, Metric, FilterExpression, Filter
+            )
+
+            # جلب أحداث الـ Checkout
+            checkout_events = [
+                "begin_checkout",      # بدأ الدفع
+                "add_payment_info",    # أضاف معلومات الدفع
+                "purchase",            # أكمل الشراء
+                "view_cart",           # شاهد السلة
+                # أحداث مخصصة محتملة
+                "checkout_started",
+                "payment_started",
+                "booking_complete",
+                "reservation_complete"
+            ]
+
+            request = RunReportRequest(
+                property=f"properties/{self.property_id}",
+                date_ranges=[DateRange(start_date=date_str, end_date=date_str)],
+                dimensions=[Dimension(name="eventName")],
+                metrics=[
+                    Metric(name="eventCount"),
+                    Metric(name="totalUsers")
+                ],
+                dimension_filter=FilterExpression(
+                    filter=Filter(
+                        field_name="eventName",
+                        in_list_filter=Filter.InListFilter(values=checkout_events)
+                    )
+                )
+            )
+
+            response = self.client.run_report(request)
+
+            # تجميع البيانات
+            funnel_data = {}
+            for row in response.rows:
+                event_name = row.dimension_values[0].value
+                event_count = int(row.metric_values[0].value or 0)
+                users = int(row.metric_values[1].value or 0)
+                funnel_data[event_name] = {
+                    "count": event_count,
+                    "users": users
+                }
+
+            # حساب نسبة التحويل
+            checkout_started = (
+                funnel_data.get("begin_checkout", {}).get("users", 0) or
+                funnel_data.get("checkout_started", {}).get("users", 0) or
+                funnel_data.get("payment_started", {}).get("users", 0) or
+                funnel_data.get("add_payment_info", {}).get("users", 0)
+            )
+
+            completed = (
+                funnel_data.get("purchase", {}).get("users", 0) or
+                funnel_data.get("booking_complete", {}).get("users", 0) or
+                funnel_data.get("reservation_complete", {}).get("users", 0)
+            )
+
+            # حساب النسب
+            if checkout_started > 0:
+                conversion_rate = (completed / checkout_started) * 100
+                abandonment_rate = 100 - conversion_rate
+                abandoned_count = checkout_started - completed
+            else:
+                conversion_rate = 0
+                abandonment_rate = 0
+                abandoned_count = 0
+
+            return {
+                "status": "success",
+                "date": date_str,
+                "data": {
+                    "checkout_started": checkout_started,      # وصلوا صفحة الدفع
+                    "completed": completed,                     # أكملوا الحجز
+                    "abandoned": abandoned_count,               # لم يكملوا
+                    "conversion_rate": round(conversion_rate, 1),    # نسبة الإكمال %
+                    "abandonment_rate": round(abandonment_rate, 1),  # نسبة التخلي %
+                    "funnel_details": funnel_data               # تفاصيل كل حدث
+                }
+            }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": str(e)
+            }
+
+    async def get_checkout_funnel_comparison(self, report_date: date = None) -> Dict[str, Any]:
+        """مقارنة Funnel أمس بأول أمس"""
+        if report_date is None:
+            report_date = date.today() - timedelta(days=1)
+
+        day_before = report_date - timedelta(days=1)
+
+        today_data = await self.get_checkout_funnel(report_date)
+        yesterday_data = await self.get_checkout_funnel(day_before)
+
+        if today_data.get("status") == "success" and yesterday_data.get("status") == "success":
+            today_rate = today_data["data"]["conversion_rate"]
+            yesterday_rate = yesterday_data["data"]["conversion_rate"]
+
+            if yesterday_rate > 0:
+                rate_change = today_rate - yesterday_rate
+            else:
+                rate_change = today_rate
+
+            return {
+                "status": "success",
+                "data": {
+                    "yesterday": today_data["data"],      # أمس
+                    "day_before": yesterday_data["data"], # أول أمس
+                    "rate_change": round(rate_change, 1), # التغيير في النسبة
+                    "is_improved": rate_change > 0
+                }
+            }
+
+        return today_data  # إرجاع بيانات أمس على الأقل

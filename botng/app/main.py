@@ -696,6 +696,26 @@ async def get_weekly_report():
     }
 
 
+@app.get("/api/reports/checkout-funnel")
+async def get_checkout_funnel():
+    """
+    تحليل Funnel الحجوزات - نسبة الإكمال من صفحة الدفع
+
+    Returns:
+    - checkout_started: عدد المستخدمين اللي وصلوا صفحة الدفع
+    - completed: عدد اللي أكملوا الحجز
+    - abandoned: عدد اللي ما أكملوا
+    - conversion_rate: نسبة الإكمال %
+    - abandonment_rate: نسبة التخلي %
+    """
+    from .collectors.google_analytics import GoogleAnalyticsCollector
+
+    ga = GoogleAnalyticsCollector()
+    funnel_data = await ga.get_checkout_funnel_comparison()
+
+    return funnel_data
+
+
 @app.post("/api/reports/send")
 async def send_report(report_type: str = "daily", phone: str = None):
     """إرسال تقرير عبر واتساب"""
