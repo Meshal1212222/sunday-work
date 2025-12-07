@@ -276,3 +276,45 @@ class FirebaseCollector:
         except Exception as e:
             print(f"Error logging activity: {e}")
             return False
+
+    # ==================== App Downloads ====================
+
+    async def get_downloads(self, report_date: date = None) -> Dict[str, Any]:
+        """جلب بيانات التحميلات من Firebase"""
+        if not self.db:
+            return {"ios": 0, "android": 0, "total": 0, "has_data": False}
+        try:
+            if report_date is None:
+                report_date = date.today() - timedelta(days=1)
+
+            date_str = report_date.isoformat()
+
+            # جلب التحميلات - المسار: goldenhost/downloads/YYYY-MM-DD
+            ref = self.db.child(f'goldenhost/downloads/{date_str}')
+            data = ref.get()
+
+            if data:
+                return {
+                    "ios": data.get("ios", 0),
+                    "android": data.get("android", 0),
+                    "total": data.get("ios", 0) + data.get("android", 0),
+                    "has_data": True
+                }
+
+            # محاولة جلب من مسار بديل
+            ref = self.db.child('goldenhost/downloads')
+            all_data = ref.order_by_child('date').equal_to(date_str).get()
+            if all_data:
+                ios = sum(d.get("ios", 0) for d in all_data.values())
+                android = sum(d.get("android", 0) for d in all_data.values())
+                return {
+                    "ios": ios,
+                    "android": android,
+                    "total": ios + android,
+                    "has_data": True
+                }
+
+            return {"ios": 0, "android": 0, "total": 0, "has_data": False}
+        except Exception as e:
+            print(f"Error fetching downloads: {e}")
+            return {"ios": 0, "android": 0, "total": 0, "has_data": False}
