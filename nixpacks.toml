@@ -1,14 +1,13 @@
 [phases.setup]
-nixPkgs = ["python311", "python311Packages.pip", "python311Packages.virtualenv"]
+nixPkgs = ["python311", "python311Packages.pip"]
 
 [phases.install]
 cmds = [
-    "python -m venv /app/venv",
-    ". /app/venv/bin/activate && cd botng && pip install -r requirements.txt"
+    "cd botng && pip install --break-system-packages -r requirements.txt"
 ]
 
 [phases.build]
 cmds = ["echo 'Build complete'"]
 
 [start]
-cmd = ". /app/venv/bin/activate && cd botng && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+cmd = "cd botng && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"

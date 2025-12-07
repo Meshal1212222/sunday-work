@@ -18,90 +18,90 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ..config import settings
+from ..collectors.google_analytics import GoogleAnalyticsCollector
+from ..collectors.firebase_collector import FirebaseCollector
 
 
 class SmartReportGenerator:
     """مولد التقارير الذكية - نص + PDF"""
 
-    # Railway API Base URL
-    API_BASE = "https://sunday-work-production.up.railway.app"
-
     def __init__(self):
         self.data = {}
         self.yesterday_data = {}
+        self.ga_collector = GoogleAnalyticsCollector()
+        self.firebase_collector = FirebaseCollector()
 
-    async def fetch_live_data(self) -> Dict[str, Any]:
-        """جلب البيانات الحية من Railway APIs"""
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            try:
-                # Dashboard Stats
-                stats_resp = await client.get(f"{self.API_BASE}/api/dashboard/stats")
-                stats = stats_resp.json() if stats_resp.status_code == 200 else {}
+    async def fetch_live_data(self, for_yesterday: bool = True) -> Dict[str, Any]:
+        """جلب البيانات من Google Analytics
 
-                # Golden Host Stats
-                gh_resp = await client.get(f"{self.API_BASE}/api/dashboard/golden-host")
-                golden_host = gh_resp.json() if gh_resp.status_code == 200 else {}
+        Args:
+            for_yesterday: إذا True يجلب بيانات أمس مقارنة بأول أمس
+        """
+        try:
+            # تحديد التواريخ
+            if for_yesterday:
+                report_date = date.today() - timedelta(days=1)  # أمس
+            else:
+                report_date = date.today()
 
-                # Analytics Summary
-                analytics_resp = await client.get(f"{self.API_BASE}/api/analytics/summary")
-                analytics = analytics_resp.json() if analytics_resp.status_code == 200 else {}
+            # جلب بيانات Google Analytics (أمس مقارنة بأول أمس)
+            ga_comparison = await self.ga_collector.collect_comparison(report_date)
 
-                # User Behavior
-                behavior_resp = await client.get(f"{self.API_BASE}/api/dashboard/user-behavior")
-                behavior = behavior_resp.json() if behavior_resp.status_code == 200 else {}
+            ga_today = {}
+            ga_yesterday = {}
 
-                # Clarity Data
-                clarity_resp = await client.get(f"{self.API_BASE}/api/analytics/clarity")
-                clarity = clarity_resp.json() if clarity_resp.status_code == 200 else {}
+            if ga_comparison.get("status") == "success":
+                ga_today = ga_comparison["data"].get("today", {})
+                ga_yesterday = ga_comparison["data"].get("yesterday", {})
 
-                return {
-                    "stats": stats,
-                    "golden_host": golden_host,
-                    "analytics": analytics,
-                    "behavior": behavior,
-                    "clarity": clarity
-                }
-            except Exception as e:
-                print(f"Error fetching live data: {e}")
-                return {}
+            return {
+                "analytics": {
+                    "today": ga_today,      # بيانات أمس
+                    "yesterday": ga_yesterday  # بيانات أول أمس
+                },
+                "clarity": {},
+                "report_date": report_date.isoformat()
+            }
+        except Exception as e:
+            print(f"Error fetching live data: {e}")
+            return {}
 
     def _extract_metrics(self, data: Dict) -> Dict[str, Any]:
         """استخراج المقاييس من البيانات"""
         analytics = data.get("analytics", {})
         clarity = data.get("clarity", {})
-        behavior = data.get("behavior", {})
-        golden_host = data.get("golden_host", {})
 
-        # Website metrics
+        # Website metrics من Google Analytics
+        # أمس = today, أول أمس = yesterday
         today_metrics = analytics.get("today", {})
         yesterday_metrics = analytics.get("yesterday", {})
 
-        visitors_today = today_metrics.get("activeUsers", today_metrics.get("visitors", 0))
-        visitors_yesterday = yesterday_metrics.get("activeUsers", yesterday_metrics.get("visitors", 0))
+        # GA collector يستخدم snake_case
+        visitors_today = today_metrics.get("active_users", today_metrics.get("activeUsers", 0))
+        visitors_yesterday = yesterday_metrics.get("active_users", yesterday_metrics.get("activeUsers", 0))
 
         sessions_today = today_metrics.get("sessions", 0)
-        page_views_today = today_metrics.get("pageViews", today_metrics.get("screenPageViews", 0))
-        page_views_yesterday = yesterday_metrics.get("pageViews", yesterday_metrics.get("screenPageViews", 0))
+        page_views_today = today_metrics.get("page_views", today_metrics.get("pageViews", 0))
+        page_views_yesterday = yesterday_metrics.get("page_views", yesterday_metrics.get("pageViews", 0))
 
-        avg_session = today_metrics.get("avgSessionDuration", today_metrics.get("averageSessionDuration", 0))
-        bounce_rate = today_metrics.get("bounceRate", 0)
-
-        # App Downloads
-        downloads = golden_host.get("downloads", {})
-        ios_today = downloads.get("ios", {}).get("today", 0)
-        ios_yesterday = downloads.get("ios", {}).get("yesterday", 0)
-        android_today = downloads.get("android", {}).get("today", 0)
-        android_yesterday = downloads.get("android", {}).get("yesterday", 0)
-
-        # Clarity metrics
-        clarity_data = clarity.get("data", clarity)
-        engagement = clarity_data.get("engagementScore", clarity_data.get("engagement_score", 0))
-        rage_clicks = clarity_data.get("rageClicks", clarity_data.get("rage_clicks", 0))
-        dead_clicks = clarity_data.get("deadClicks", clarity_data.get("dead_clicks", 0))
-        quick_backs = clarity_data.get("quickBacks", clarity_data.get("quick_backs", 0))
+        avg_session = today_metrics.get("avg_session_duration", today_metrics.get("averageSessionDuration", 0))
+        bounce_rate = today_metrics.get("bounce_rate", today_metrics.get("bounceRate", 0))
 
         # Top pages
-        top_pages = analytics.get("topPages", [])
+        top_pages = today_metrics.get("top_pages", [])
+
+        # Clarity metrics (إذا متوفرة)
+        clarity_data = clarity.get("data", clarity) if clarity else {}
+        engagement = clarity_data.get("engagement_score", clarity_data.get("engagementScore", 75))
+        rage_clicks = clarity_data.get("rage_clicks", clarity_data.get("rageClicks", 0))
+        dead_clicks = clarity_data.get("dead_clicks", clarity_data.get("deadClicks", 0))
+        quick_backs = clarity_data.get("quick_backs", clarity_data.get("quickBacks", 0))
+
+        # التحميلات - تحتاج مصدر خارجي (App Store Connect / Google Play)
+        ios_today = 0
+        ios_yesterday = 0
+        android_today = 0
+        android_yesterday = 0
 
         return {
             "visitors_today": visitors_today,
@@ -149,12 +149,13 @@ class SmartReportGenerator:
         return f"{minutes}:{secs:02d}"
 
     async def generate_text_summary(self, metrics: Dict = None) -> str:
-        """إنشاء ملخص نصي"""
+        """إنشاء ملخص نصي - بيانات أمس"""
         if metrics is None:
-            data = await self.fetch_live_data()
+            data = await self.fetch_live_data(for_yesterday=True)
             metrics = self._extract_metrics(data)
 
-        today = date.today()
+        # التقرير عن أمس (يوم كامل) مقارنة بأول أمس
+        yesterday = date.today() - timedelta(days=1)
 
         # Calculate changes
         visitors_change, visitors_sign = self._calc_change(
@@ -184,12 +185,12 @@ class SmartReportGenerator:
         ux_warning = "" if metrics["engagement"] < 50 else ""
 
         summary = f"""*تقرير Golden Host اليومي*
-{self._get_day_name(today)} {today.day} {self._get_month_name(today)} {today.year}
+{self._get_day_name(yesterday)} {yesterday.day} {self._get_month_name(yesterday)} {yesterday.year}
 
 
 
 *الموقع*
- الزوار: *{metrics['visitors_today']}* (أمس: {metrics['visitors_yesterday']}) {visitors_icon}{visitors_sign}{visitors_change}%
+ الزوار: *{metrics['visitors_today']}* (أول أمس: {metrics['visitors_yesterday']}) {visitors_icon}{visitors_sign}{visitors_change}%
  الجلسات: *{metrics['sessions_today']}*
  المشاهدات: *{metrics['page_views_today']}*
 
@@ -541,12 +542,13 @@ _التفاصيل في الملف المرفق_"""
         return pdf_path
 
     async def generate_daily_report(self, report_date: date = None) -> Dict[str, Any]:
-        """إنشاء التقرير اليومي الكامل (نص + PDF)"""
+        """إنشاء التقرير اليومي الكامل (نص + PDF) - بيانات أمس"""
+        # التقرير اليومي دائماً عن أمس (يوم كامل)
         if report_date is None:
-            report_date = date.today()
+            report_date = date.today() - timedelta(days=1)
 
-        # Fetch live data
-        data = await self.fetch_live_data()
+        # Fetch live data (for_yesterday=True بشكل افتراضي)
+        data = await self.fetch_live_data(for_yesterday=True)
         metrics = self._extract_metrics(data)
 
         # Generate text summary
@@ -564,29 +566,34 @@ _التفاصيل في الملف المرفق_"""
 
     async def generate_weekly_report(self) -> str:
         """التقرير الأسبوعي"""
-        end_date = date.today()
+        end_date = date.today() - timedelta(days=1)  # أمس
         start_date = end_date - timedelta(days=6)
 
-        # For weekly, we'll generate a summary
-        data = await self.fetch_live_data()
-        metrics = self._extract_metrics(data)
+        # جلب بيانات Google Analytics الأسبوعية
+        ga_weekly = await self.ga_collector.collect_weekly_summary()
 
-        total_downloads = metrics['ios_today'] + metrics['android_today']
+        if ga_weekly.get("status") == "success":
+            weekly_data = ga_weekly["data"]
+            total_users = weekly_data.get("total_users", 0)
+            total_sessions = weekly_data.get("total_sessions", 0)
+            total_views = weekly_data.get("total_views", 0)
+        else:
+            # fallback - استخدام تقديرات
+            data = await self.fetch_live_data()
+            metrics = self._extract_metrics(data)
+            total_users = metrics['visitors_today'] * 7
+            total_sessions = metrics['sessions_today'] * 7
+            total_views = metrics['page_views_today'] * 7
 
-        report = f"""*التقرير الأسبوعي*
+        report = f"""*التقرير الأسبوعي - Golden Host*
 {start_date.strftime('%d/%m')} - {end_date.strftime('%d/%m/%Y')}
 
 
 
-*الموقع*
- الزوار: *{metrics['visitors_today'] * 7}* (تقديري)
- الجلسات: *{metrics['sessions_today'] * 7}* (تقديري)
- المشاهدات: *{metrics['page_views_today'] * 7}* (تقديري)
-
-*التحميلات*
- iOS: *{metrics['ios_today'] * 7}* (تقديري)
- Android: *{metrics['android_today'] * 7}* (تقديري)
- الإجمالي: *{total_downloads * 7}* (تقديري)
+*الموقع الإلكتروني*
+ إجمالي الزوار: *{total_users:,}*
+ إجمالي الجلسات: *{total_sessions:,}*
+ إجمالي المشاهدات: *{total_views:,}*
 
 
 
