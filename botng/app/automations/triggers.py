@@ -204,13 +204,25 @@ _شركة ليفل أب القابضة_"""
                 'trigger': 'app_crashes',
                 'crashes': crashes['crashes']
             })
-            # تفاصيل الـ crashes
-            details_text = ""
+            # تفاصيل الـ crashes مع الموقع
+            details_text = "*مواقع الـ Crashes:*"
             for detail in crashes.get('details', [])[:5]:
-                details_text += f"\n• {detail.get('event', 'N/A')}: {detail.get('count', 0)}"
+                page = detail.get('page', 'N/A')
+                platform = detail.get('platform', '')
+                version = detail.get('version', '')
+                count = detail.get('count', 0)
+
+                # تقصير اسم الصفحة إذا طويل
+                if len(page) > 30:
+                    page = "..." + page[-27:]
+
+                platform_emoji = "🍎" if "ios" in platform.lower() else "🤖" if "android" in platform.lower() else "🌐"
+                details_text += f"\n{platform_emoji} {page} ({count}x)"
+                if version and version != "N/A":
+                    details_text += f" v{version}"
 
             await self.send_crash_alert(
-                f"عدد الـ crashes: *{crashes['crashes']}*\n"
+                f"عدد الـ crashes: *{crashes['crashes']}*\n\n"
                 f"{details_text}\n\n"
                 f"يرجى مراجعة التطبيق فوراً!"
             )

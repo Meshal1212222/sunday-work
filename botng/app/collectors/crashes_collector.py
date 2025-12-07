@@ -15,7 +15,7 @@ class CrashesCollector:
             print(f"GA not available for crashes: {e}")
 
     async def get_crashes_count(self, report_date: date = None) -> Dict[str, Any]:
-        """جلب عدد الـ crashes لتاريخ معين"""
+        """جلب عدد الـ crashes لتاريخ معين مع تفاصيل الموقع"""
         if not self.ga_collector or not self.ga_collector.client:
             return {"status": "error", "message": "GA not configured", "crashes": 0}
 
@@ -29,11 +29,16 @@ class CrashesCollector:
                 RunReportRequest, DateRange, Dimension, Metric, FilterExpression, Filter
             )
 
-            # جلب events من نوع app_exception أو crash
+            # جلب crashes مع تفاصيل الموقع (الشاشة/الصفحة)
             request = RunReportRequest(
                 property=f"properties/{self.ga_collector.property_id}",
                 date_ranges=[DateRange(start_date=date_str, end_date=date_str)],
-                dimensions=[Dimension(name="eventName")],
+                dimensions=[
+                    Dimension(name="eventName"),
+                    Dimension(name="pagePath"),      # الصفحة/الشاشة
+                    Dimension(name="platform"),       # iOS/Android/Web
+                    Dimension(name="appVersion"),     # إصدار التطبيق
+                ],
                 metrics=[Metric(name="eventCount")],
                 dimension_filter=FilterExpression(
                     filter=Filter(
@@ -42,7 +47,8 @@ class CrashesCollector:
                             values=["app_exception", "crash", "fatal_error", "error"]
                         )
                     )
-                )
+                ),
+                limit=20  # أهم 20 crash
             )
 
             response = self.ga_collector.client.run_report(request)
@@ -52,12 +58,21 @@ class CrashesCollector:
 
             for row in response.rows:
                 event_name = row.dimension_values[0].value
+                page_path = row.dimension_values[1].value if len(row.dimension_values) > 1 else "N/A"
+                platform = row.dimension_values[2].value if len(row.dimension_values) > 2 else "N/A"
+                app_version = row.dimension_values[3].value if len(row.dimension_values) > 3 else "N/A"
                 count = int(row.metric_values[0].value or 0)
                 total_crashes += count
                 crash_details.append({
                     "event": event_name,
+                    "page": page_path,
+                    "platform": platform,
+                    "version": app_version,
                     "count": count
                 })
+
+            # ترتيب حسب العدد (الأكثر أولاً)
+            crash_details.sort(key=lambda x: x["count"], reverse=True)
 
             return {
                 "status": "success",
