@@ -116,6 +116,23 @@ _شركة ليفل أب القابضة_"""
 
         await self.whatsapp.send_message(settings.report_group_id, alert_message)
 
+    async def send_crash_alert(self, message: str):
+        """إرسال تنبيه Crashes للأرقام الخاصة (ليس للقروب)"""
+        alert_message = f"""🚨 *تنبيه Crashes - سري*
+
+{message}
+
+⏰ {datetime.now().strftime('%Y-%m-%d %H:%M')}
+━━━━━━━━━━━━━━━
+_شركة ليفل أب القابضة_"""
+
+        # إرسال لكل رقم خاص
+        recipients = settings.crash_alert_recipients.split(",")
+        for recipient in recipients:
+            recipient = recipient.strip()
+            if recipient:
+                await self.whatsapp.send_message(recipient, alert_message)
+
     async def create_task_from_report(self, report: Dict) -> str:
         """إنشاء مهمة من بلاغ"""
         task = {
@@ -180,18 +197,22 @@ _شركة ليفل أب القابضة_"""
                 priority="high"
             )
 
-        # Check app crashes
+        # Check app crashes - إرسال للأرقام الخاصة فقط
         crashes = await self.check_app_crashes()
         if crashes.get('triggered'):
             results.append({
                 'trigger': 'app_crashes',
                 'crashes': crashes['crashes']
             })
-            await self.send_alert(
-                f"🚨 *تنبيه Crashes!*\n\n"
-                f"عدد الـ crashes: *{crashes['crashes']}*\n\n"
-                f"يرجى مراجعة التطبيق فوراً!",
-                priority="high"
+            # تفاصيل الـ crashes
+            details_text = ""
+            for detail in crashes.get('details', [])[:5]:
+                details_text += f"\n• {detail.get('event', 'N/A')}: {detail.get('count', 0)}"
+
+            await self.send_crash_alert(
+                f"عدد الـ crashes: *{crashes['crashes']}*\n"
+                f"{details_text}\n\n"
+                f"يرجى مراجعة التطبيق فوراً!"
             )
 
         return results
