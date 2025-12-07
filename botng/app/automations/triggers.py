@@ -4,6 +4,7 @@ import asyncio
 
 from ..collectors.firebase_collector import FirebaseCollector
 from ..collectors.google_analytics import GoogleAnalyticsCollector
+from ..collectors.crashes_collector import CrashesCollector
 from ..integrations.ultramsg import UltraMsgClient
 from ..analyzers.openai_analyzer import OpenAIAnalyzer
 from ..config import settings
@@ -16,6 +17,7 @@ class AutomationTriggers:
         self.firebase = FirebaseCollector()
         self.whatsapp = UltraMsgClient()
         self.ai = OpenAIAnalyzer()
+        self.crashes = CrashesCollector()
         self.triggers: List[Dict] = []
 
     # ==================== Trigger Definitions ====================
@@ -80,6 +82,22 @@ class AutomationTriggers:
                 'total': len(today_convs),
                 'responded': responded
             }
+        return {'triggered': False}
+
+    async def check_app_crashes(self, threshold: int = 5) -> Dict:
+        """تريقر: crashes في التطبيق"""
+        try:
+            crash_data = await self.crashes.get_crashes_count()
+            if crash_data.get("status") == "success":
+                total = crash_data.get("total_crashes", 0)
+                if total >= threshold:
+                    return {
+                        'triggered': True,
+                        'crashes': total,
+                        'details': crash_data.get("details", [])
+                    }
+        except Exception as e:
+            print(f"Crash check error: {e}")
         return {'triggered': False}
 
     # ==================== Actions ====================
@@ -159,6 +177,20 @@ _شركة ليفل أب القابضة_"""
             await self.send_alert(
                 f"⚠️ معدل الرد منخفض: *{response['rate']:.1f}%*\n"
                 f"الإجمالي: {response['total']} | تم الرد: {response['responded']}",
+                priority="high"
+            )
+
+        # Check app crashes
+        crashes = await self.check_app_crashes()
+        if crashes.get('triggered'):
+            results.append({
+                'trigger': 'app_crashes',
+                'crashes': crashes['crashes']
+            })
+            await self.send_alert(
+                f"🚨 *تنبيه Crashes!*\n\n"
+                f"عدد الـ crashes: *{crashes['crashes']}*\n\n"
+                f"يرجى مراجعة التطبيق فوراً!",
                 priority="high"
             )
 
