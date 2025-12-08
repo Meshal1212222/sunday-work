@@ -112,47 +112,34 @@ async def root():
 
 # ==================== Golden Host Routes ====================
 
-@app.get("/golden-host", response_class=HTMLResponse)
+@app.get("/golden-host")
 async def golden_host_landing():
-    """صفحة اختيار Golden Host"""
-    landing_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src", "golden-host", "landing.html")
-    if os.path.exists(landing_path):
-        with open(landing_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
+    """صفحة اختيار Golden Host - redirect للحفاظ على الروابط النسبية"""
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/golden-host/dashboard")
+    return RedirectResponse(url="/src/golden-host/landing.html")
 
 
-@app.get("/golden-host/dashboard", response_class=HTMLResponse)
+@app.get("/golden-host/dashboard")
 async def golden_host_dashboard():
     """لوحة تحكم Golden Host"""
-    dashboard_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src", "golden-host", "dashboard.html")
-    if os.path.exists(dashboard_path):
-        with open(dashboard_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    raise HTTPException(status_code=404, detail="Dashboard not found")
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/src/golden-host/dashboard.html")
 
 
-@app.get("/golden-host/library", response_class=HTMLResponse)
+@app.get("/golden-host/library")
 async def golden_host_library():
     """المكتبة الرقمية - Golden Host"""
-    library_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src", "golden-host", "index.html")
-    if os.path.exists(library_path):
-        with open(library_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    raise HTTPException(status_code=404, detail="Library not found")
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/src/golden-host/index.html")
 
 
 # ==================== Sunday Board Routes ====================
 
-@app.get("/sunday-board", response_class=HTMLResponse)
+@app.get("/sunday-board")
 async def sunday_board():
     """Sunday Board - إدارة المشاريع"""
-    board_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src", "sunday-board", "board-pro.html")
-    if os.path.exists(board_path):
-        with open(board_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    raise HTTPException(status_code=404, detail="Sunday Board not found")
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/src/sunday-board/board-pro.html")
 
 
 # ==================== Health Check ====================
