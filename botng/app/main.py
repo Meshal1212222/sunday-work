@@ -90,12 +90,24 @@ static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+# Serve src folder (Golden Host, Sunday Board dashboards)
+src_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src")
+if os.path.exists(src_dir):
+    app.mount("/src", StaticFiles(directory=src_dir, html=True), name="src")
+    print(f"✅ Serving src folder: {src_dir}")
+
 
 # ==================== Root & Dashboard ====================
 
 @app.get("/")
 async def root():
-    """الصفحة الرئيسية - توجيه للوحة التحكم"""
+    """الصفحة الرئيسية - Level Up Portal"""
+    # Serve the main index.html from src folder
+    src_index = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src", "index.html")
+    if os.path.exists(src_index):
+        with open(src_index, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    # Fallback to dashboard
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/api/dashboard/")
 
