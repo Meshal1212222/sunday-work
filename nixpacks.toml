@@ -3,11 +3,11 @@ nixPkgs = ["python311", "python311Packages.pip"]
 
 [phases.install]
 cmds = [
-    "cd botng && pip install --break-system-packages -r requirements.txt"
+    "pip install --break-system-packages -r botng/requirements.txt"
 ]
 
 [phases.build]
 cmds = ["echo 'Build complete'"]
 
 [start]
-cmd = "cd botng && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+cmd = "uvicorn botng.app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
