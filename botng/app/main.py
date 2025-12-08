@@ -91,10 +91,24 @@ if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Serve src folder (Golden Host, Sunday Board dashboards)
-src_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src")
-if os.path.exists(src_dir):
+# Try multiple paths for different environments (local vs Docker)
+possible_src_paths = [
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src"),  # Local: botng/app -> botng -> project -> src
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "src"),  # Docker: app/app -> app -> src
+    "/app/src"  # Docker absolute fallback
+]
+
+src_dir = None
+for path in possible_src_paths:
+    if os.path.exists(path):
+        src_dir = path
+        break
+
+if src_dir:
     app.mount("/src", StaticFiles(directory=src_dir, html=True), name="src")
     print(f"✅ Serving src folder: {src_dir}")
+else:
+    print(f"⚠️ src folder not found in: {possible_src_paths}")
 
 
 # ==================== المسارات الرئيسية ====================
@@ -102,10 +116,12 @@ if os.path.exists(src_dir):
 @app.get("/")
 async def root():
     """الصفحة الرئيسية - Level Up Portal"""
-    src_index = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src", "index.html")
-    if os.path.exists(src_index):
-        with open(src_index, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
+    # Find src/index.html in possible paths
+    for base_path in possible_src_paths:
+        src_index = os.path.join(base_path, "index.html")
+        if os.path.exists(src_index):
+            with open(src_index, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/botng")
 
