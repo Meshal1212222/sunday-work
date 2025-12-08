@@ -97,19 +97,62 @@ if os.path.exists(src_dir):
     print(f"✅ Serving src folder: {src_dir}")
 
 
-# ==================== Root & Dashboard ====================
+# ==================== المسارات الرئيسية ====================
 
 @app.get("/")
 async def root():
     """الصفحة الرئيسية - Level Up Portal"""
-    # Serve the main index.html from src folder
     src_index = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src", "index.html")
     if os.path.exists(src_index):
         with open(src_index, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
-    # Fallback to dashboard
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/api/dashboard/")
+    return RedirectResponse(url="/botng")
+
+
+# ==================== Golden Host Routes ====================
+
+@app.get("/golden-host", response_class=HTMLResponse)
+async def golden_host_landing():
+    """صفحة اختيار Golden Host"""
+    landing_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src", "golden-host", "landing.html")
+    if os.path.exists(landing_path):
+        with open(landing_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/golden-host/dashboard")
+
+
+@app.get("/golden-host/dashboard", response_class=HTMLResponse)
+async def golden_host_dashboard():
+    """لوحة تحكم Golden Host"""
+    dashboard_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src", "golden-host", "dashboard.html")
+    if os.path.exists(dashboard_path):
+        with open(dashboard_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    raise HTTPException(status_code=404, detail="Dashboard not found")
+
+
+@app.get("/golden-host/library", response_class=HTMLResponse)
+async def golden_host_library():
+    """المكتبة الرقمية - Golden Host"""
+    library_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src", "golden-host", "index.html")
+    if os.path.exists(library_path):
+        with open(library_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    raise HTTPException(status_code=404, detail="Library not found")
+
+
+# ==================== Sunday Board Routes ====================
+
+@app.get("/sunday-board", response_class=HTMLResponse)
+async def sunday_board():
+    """Sunday Board - إدارة المشاريع"""
+    board_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src", "sunday-board", "board-pro.html")
+    if os.path.exists(board_path):
+        with open(board_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    raise HTTPException(status_code=404, detail="Sunday Board not found")
 
 
 # ==================== Health Check ====================
@@ -129,19 +172,22 @@ async def health_check():
 @app.get("/botng", response_class=HTMLResponse)
 async def botng_dashboard():
     """صفحة لوحة تحكم Botng - التكاملات والجدولة"""
-    from .scheduler.jobs import scheduler
+    try:
+        from .scheduler.jobs import scheduler
+    except:
+        scheduler = None
 
     # حالة التكاملات
     integrations = {
         "ultramsg": {
             "name": "UltraMsg (WhatsApp)",
-            "configured": bool(settings.ultramsg_instance_id and settings.ultramsg_token),
+            "configured": bool(settings.ultramsg_instance_id and settings.ultramsg_token) if settings.ultramsg_instance_id else False,
             "details": f"Instance: {settings.ultramsg_instance_id[:10]}..." if settings.ultramsg_instance_id else "غير مُعد"
         },
         "openai": {
             "name": "OpenAI (GPT)",
-            "configured": bool(settings.openai_api_key),
-            "details": f"Model: {settings.openai_model}" if settings.openai_api_key else "غير مُعد"
+            "configured": bool(settings.openai_api_key) if hasattr(settings, 'openai_api_key') else False,
+            "details": f"Model: {settings.openai_model}" if hasattr(settings, 'openai_api_key') and settings.openai_api_key else "غير مُعد"
         },
         "google_analytics": {
             "name": "Google Analytics 4",
@@ -163,14 +209,15 @@ async def botng_dashboard():
     # المهام المجدولة
     scheduled_jobs = []
     try:
-        for job in scheduler.get_jobs():
-            next_run = job.next_run_time
-            scheduled_jobs.append({
-                "id": job.id,
-                "name": job.name,
-                "next_run": next_run.strftime("%Y-%m-%d %H:%M:%S") if next_run else "غير محدد",
-                "next_run_relative": _get_relative_time(next_run) if next_run else "غير محدد"
-            })
+        if scheduler:
+            for job in scheduler.get_jobs():
+                next_run = job.next_run_time
+                scheduled_jobs.append({
+                    "id": job.id,
+                    "name": job.name,
+                    "next_run": next_run.strftime("%Y-%m-%d %H:%M:%S") if next_run else "غير محدد",
+                    "next_run_relative": _get_relative_time(next_run) if next_run else "غير محدد"
+                })
     except:
         pass
 
