@@ -815,15 +815,15 @@ function loadReports(filter = 'all') {
         return;
     }
 
-    // Professional table view
+    // Professional table view - Updated
     container.innerHTML = `
         <div style="overflow-x: auto;">
             <table class="data-table" style="font-size: 0.9rem;">
                 <thead>
                     <tr>
                         <th style="min-width: 100px;">رقم البلاغ</th>
-                        <th style="min-width: 120px;">الموظف</th>
-                        <th style="min-width: 120px;">نوع البلاغ</th>
+                        <th style="min-width: 120px;">اسم الموظف</th>
+                        <th style="min-width: 120px;">رقم الحجز</th>
                         <th style="min-width: 200px;">تفاصيل البلاغ</th>
                         <th style="min-width: 150px;">وقت رفع البلاغ</th>
                         <th style="min-width: 150px;">وقت استقبال البلاغ</th>
@@ -841,21 +841,16 @@ function loadReports(filter = 'all') {
                         const timeSpent = calculateTimeSpent(report);
 
                         const details = report.reportDetails || report.message || '-';
-                        const title = report.subject || report.reportDetails || 'بلاغ';
-                        const category = report.category || '📋 بلاغ عام';
-                        const extraInfo = report.customerInfo || (report.bookingNumber ? `رقم الحجز: ${report.bookingNumber}` : '');
 
                         return `
                         <tr>
                             <td><strong>#${reportNum}</strong></td>
                             <td>${report.employeeName || '-'}</td>
-                            <td><span style="font-size:0.85rem;">${category}</span></td>
+                            <td style="font-weight: 600;">${report.bookingNumber || '-'}</td>
                             <td>
                                 <div style="max-width: 300px;">
-                                    <strong style="color: var(--primary-purple);">${title}</strong><br>
-                                    <span style="font-size:0.85rem; color:#666;">${details.substring(0, 80)}${details.length > 80 ? '...' : ''}</span>
-                                    ${extraInfo ? `<br><span style="font-size:0.8rem; color:#888;">👤 ${extraInfo.substring(0, 50)}</span>` : ''}
-                                    <br><button onclick="viewReportDetails('${report.id}')" style="font-size:0.75rem; margin-top:0.3rem; padding:0.2rem 0.5rem; border:1px solid #ddd; background:white; cursor:pointer; border-radius:4px;">عرض التفاصيل الكاملة</button>
+                                    <span style="font-size:0.85rem; color:#333;">${details.substring(0, 100)}${details.length > 100 ? '...' : ''}</span>
+                                    <br><button onclick="viewReportDetails('${report.id}')" style="font-size:0.75rem; margin-top:0.3rem; padding:0.2rem 0.5rem; border:1px solid #ddd; background:white; cursor:pointer; border-radius:4px;">عرض التفاصيل</button>
                                 </div>
                             </td>
                             <td>${report.submitTime || report.date}</td>
@@ -1327,12 +1322,12 @@ function loadConversations(filter = 'all') {
                 <thead>
                     <tr>
                         <th>رقم المتابعة</th>
-                        <th>الموظف</th>
-                        <th>رقم العميل</th>
-                        <th>النوع</th>
+                        <th>يوزر الموظف</th>
+                        <th>رقم الضيف</th>
+                        <th>رقم المضيف</th>
                         <th>الموضوع</th>
                         <th>الملخص</th>
-                        <th>الإجراء المطلوب</th>
+                        <th>الإجراء المتخذ</th>
                         <th>وقت التسجيل</th>
                         <th>الحالة</th>
                         <th>الإجراءات</th>
@@ -1344,20 +1339,23 @@ function loadConversations(filter = 'all') {
     filteredConversations.forEach(conv => {
         const statusBadge = conv.status === 'pending' ? 'status-pending' : 'status-resolved';
         const statusText = conv.status === 'pending' ? 'قيد المراجعة' : 'مكتمل';
-        const actionColor = conv.requiredAction === 'إجراء عاجل' ? 'color: red; font-weight: 700;' :
-                          conv.requiredAction === 'متابعة من المشرف' ? 'color: orange; font-weight: 600;' :
-                          'color: green;';
+
+        // تحديد لون الإجراء
+        const actionColor = conv.requiredAction === 'إنذار بتعليق العقار' ? 'background: #FF9800; color: white;' :
+                          conv.requiredAction === 'تعليق العقار' ? 'background: #DC3545; color: white;' :
+                          conv.requiredAction === 'تنويه للمضيف' ? 'background: #FFC107; color: #333;' :
+                          'background: #28A745; color: white;';
 
         html += `
             <tr>
                 <td style="font-weight: 600;">#${conv.id.slice(-6)}</td>
-                <td>${conv.employeeName}</td>
-                <td>${conv.customerPhone}</td>
-                <td>${conv.type}</td>
-                <td>${conv.subject}</td>
-                <td>${conv.summary.substring(0, 60)}${conv.summary.length > 60 ? '...' : ''}</td>
-                <td style="${actionColor}">${conv.requiredAction}</td>
-                <td style="font-size: 0.85rem; color: #666;">${conv.recordTime}</td>
+                <td>${conv.employeeUser || conv.employeeName || '-'}</td>
+                <td style="direction: ltr;">${conv.guestPhone || conv.customerPhone || '-'}</td>
+                <td style="direction: ltr;">${conv.hostPhone || '-'}</td>
+                <td>${conv.subject || '-'}</td>
+                <td>${conv.summary ? conv.summary.substring(0, 60) + (conv.summary.length > 60 ? '...' : '') : '-'}</td>
+                <td><span style="padding: 0.3rem 0.8rem; border-radius: 15px; font-size: 0.8rem; ${actionColor}">${conv.requiredAction || '-'}</span></td>
+                <td style="font-size: 0.85rem; color: #666;">${conv.recordTime || '-'}</td>
                 <td><span class="status-badge ${statusBadge}">${statusText}</span></td>
                 <td>
                     <button class="btn-action btn-view" onclick="viewConversationDetails('${conv.id}')" title="عرض">👁️</button>
@@ -1502,12 +1500,12 @@ function loadSales(filter = 'all') {
                     <div style="font-size: 0.9rem;">إجمالي العمليات</div>
                 </div>
                 <div style="background: linear-gradient(135deg, #007BFF, #0056B3); color: white; padding: 1rem; border-radius: 10px; flex: 1; min-width: 200px;">
-                    <div style="font-size: 2rem; font-weight: 700;">${sales.filter(s => s.action === 'تم الحجز').length}</div>
+                    <div style="font-size: 2rem; font-weight: 700;">${sales.filter(s => s.action === 'تم الحجز' || s.action === 'الحجز عبر محادثات التطبيق').length}</div>
                     <div style="font-size: 0.9rem;">حجوزات مكتملة</div>
                 </div>
                 <div style="background: linear-gradient(135deg, #FFC107, #FF9800); color: white; padding: 1rem; border-radius: 10px; flex: 1; min-width: 200px;">
-                    <div style="font-size: 2rem; font-weight: 700;">${sales.filter(s => s.action === 'قيد المتابعة').length}</div>
-                    <div style="font-size: 0.9rem;">قيد المتابعة</div>
+                    <div style="font-size: 2rem; font-weight: 700;">${sales.filter(s => s.action === 'توفير بديل').length}</div>
+                    <div style="font-size: 0.9rem;">توفير بديل</div>
                 </div>
             </div>
         </div>
@@ -1516,14 +1514,10 @@ function loadSales(filter = 'all') {
                 <thead>
                     <tr>
                         <th>التاريخ</th>
-                        <th>الموظف</th>
+                        <th>يوزر الموظف</th>
                         <th>رقم العميل</th>
                         <th>رقم الحجز</th>
-                        <th>الإجراء</th>
-                        <th>الحالة</th>
-                        <th>حالة الحجز</th>
-                        <th>اتصال</th>
-                        <th>واتساب</th>
+                        <th>قناة التواصل</th>
                         <th>ملاحظات</th>
                         <th>الإجراءات</th>
                     </tr>
@@ -1532,22 +1526,20 @@ function loadSales(filter = 'all') {
     `;
 
     filteredSales.forEach(sale => {
-        const actionColor = sale.action === 'تم الحجز' ? 'color: #28A745; font-weight: 700;' :
-                          sale.action === 'قيد المتابعة' ? 'color: #FFC107; font-weight: 600;' :
-                          sale.action === 'لم يرد' ? 'color: #DC3545;' :
-                          '';
+        // تحديد لون قناة التواصل
+        const channelColor = sale.action === 'اتصال' ? 'background: #28A745; color: white;' :
+                          sale.action === 'واتس' ? 'background: #25D366; color: white;' :
+                          sale.action === 'توفير بديل' ? 'background: #FFC107; color: #333;' :
+                          sale.action === 'الحجز عبر محادثات التطبيق' ? 'background: #007BFF; color: white;' :
+                          'background: #6c757d; color: white;';
 
         html += `
             <tr>
                 <td style="font-size: 0.85rem;">${sale.date}</td>
-                <td>${sale.employeeName}</td>
-                <td style="direction: ltr;">${sale.customerNumber}</td>
-                <td>${sale.bookingNumber || '-'}</td>
-                <td style="${actionColor}">${sale.action}</td>
-                <td>${sale.status || '-'}</td>
-                <td>${sale.bookingStatus || '-'}</td>
-                <td>${sale.callConfirmed === 'نعم' ? '✅' : '❌'}</td>
-                <td>${sale.whatsappSent === 'نعم' ? '✅' : '❌'}</td>
+                <td>${sale.employeeUser || sale.employeeName || '-'}</td>
+                <td style="direction: ltr; font-weight: 600;">${sale.customerNumber || '-'}</td>
+                <td style="font-weight: 600;">${sale.bookingNumber || '-'}</td>
+                <td><span style="padding: 0.3rem 0.8rem; border-radius: 15px; font-size: 0.85rem; ${channelColor}">${sale.action || '-'}</span></td>
                 <td style="max-width: 200px; font-size: 0.85rem;">${sale.notes ? sale.notes.substring(0, 50) + (sale.notes.length > 50 ? '...' : '') : '-'}</td>
                 <td>
                     <button class="btn-action btn-view" onclick="viewSaleDetails('${sale.id}')" title="عرض">👁️</button>
