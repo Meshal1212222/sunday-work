@@ -1890,12 +1890,16 @@
             event.preventDefault();
 
             const employeeName = document.getElementById('employeeName').value.trim();
-            const category = document.getElementById('reportCategory').value;
-            const subject = document.getElementById('reportSubject').value.trim();
+            const bookingNumber = document.getElementById('reportBookingNumber').value.trim();
             const message = document.getElementById('reportMessage').value.trim();
-            const customerInfo = document.getElementById('customerInfo').value.trim();
+            const submitTime = document.getElementById('reportSubmitTime').value;
+            const receiveTime = document.getElementById('reportReceiveTime').value;
+            const resolveTime = document.getElementById('reportResolveTime').value;
+            const recipient = document.getElementById('reportRecipient').value.trim();
+            const resolutionSummary = document.getElementById('resolutionSummary').value.trim();
+            const review = document.getElementById('reportReview').value.trim();
 
-            if (!employeeName || !category || !subject || !message) {
+            if (!employeeName || !bookingNumber || !message || !submitTime) {
                 alert('⚠️ يرجى تعبئة جميع الحقول المطلوبة');
                 return;
             }
@@ -1903,17 +1907,16 @@
             const report = {
                 id: 'report_' + Date.now(),
                 employeeName: employeeName,
-                category: category,
-                subject: subject,
+                bookingNumber: bookingNumber,
                 message: message,
-                customerInfo: customerInfo,
-                status: 'pending',
-                submitTime: new Date().toLocaleString('ar-SA'),
-                receivedTime: null,
-                resolvedTime: null,
-                receivedBy: null,
-                resolutionSummary: null,
-                review: null
+                submitTime: submitTime,
+                receiveTime: receiveTime || null,
+                resolveTime: resolveTime || null,
+                recipient: recipient || null,
+                resolutionSummary: resolutionSummary || null,
+                review: review || null,
+                status: resolveTime ? 'resolved' : (receiveTime ? 'in_progress' : 'pending'),
+                recordTime: new Date().toLocaleString('ar-SA')
             };
 
             // Save to localStorage
@@ -1999,13 +2002,13 @@
             event.preventDefault();
 
             const employeeName = document.getElementById('convEmployeeName').value.trim();
-            const customerPhone = document.getElementById('customerPhone').value.trim();
-            const type = document.getElementById('conversationType').value;
+            const guestPhone = document.getElementById('guestPhone').value.trim();
+            const hostPhone = document.getElementById('hostPhone').value.trim();
             const subject = document.getElementById('conversationSubject').value.trim();
             const summary = document.getElementById('conversationSummary').value.trim();
             const requiredAction = document.getElementById('requiredAction').value;
 
-            if (!employeeName || !customerPhone || !type || !subject || !summary) {
+            if (!employeeName || !guestPhone || !hostPhone || !subject || !summary || !requiredAction) {
                 alert('⚠️ يرجى تعبئة جميع الحقول المطلوبة');
                 return;
             }
@@ -2013,12 +2016,12 @@
             const conversation = {
                 id: 'conv_' + Date.now(),
                 employeeName: employeeName,
-                customerPhone: customerPhone,
-                type: type,
+                guestPhone: guestPhone,
+                hostPhone: hostPhone,
                 subject: subject,
                 summary: summary,
                 requiredAction: requiredAction,
-                status: requiredAction === 'لا يوجد' ? 'completed' : 'pending',
+                status: 'pending',
                 recordTime: new Date().toLocaleString('ar-SA'),
                 reviewedBy: null,
                 reviewTime: null,
@@ -2118,6 +2121,8 @@
         🚨
     </button>
 
+    <!-- قسم الاستردادات ملغي - الإلغاء يتم من النظام -->
+    <!--
     <button onclick="showRefundModal()" style="
         position: fixed;
         bottom: 100px;
@@ -2136,6 +2141,7 @@
     " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="طلب استرداد">
         💰
     </button>
+    -->
 
     <button onclick="showConversationModal()" style="
         position: fixed;
@@ -2211,9 +2217,9 @@
             <form id="reportForm" onsubmit="submitReport(event)" style="display: flex; flex-direction: column; gap: 1rem;">
                 <div>
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        اسمك <span style="color: red;">*</span>
+                        اسم الموظف <span style="color: red;">*</span>
                     </label>
-                    <input type="text" id="employeeName" required style="
+                    <input type="text" id="employeeName" required placeholder="اسمك الكامل" style="
                         width: 100%;
                         padding: 0.8rem;
                         border: 2px solid #ddd;
@@ -2225,32 +2231,9 @@
 
                 <div>
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        نوع البلاغ <span style="color: red;">*</span>
+                        رقم الحجز <span style="color: red;">*</span>
                     </label>
-                    <select id="reportCategory" required style="
-                        width: 100%;
-                        padding: 0.8rem;
-                        border: 2px solid #ddd;
-                        border-radius: 8px;
-                        font-family: 'Cairo', sans-serif;
-                        font-size: 1rem;
-                    ">
-                        <option value="">اختر نوع البلاغ</option>
-                        <option value="عميل صعب">🔴 عميل صعب / مشكلة مع عميل</option>
-                        <option value="استفسار">❓ استفسار / طلب توضيح</option>
-                        <option value="مشكلة تقنية">⚙️ مشكلة تقنية في النظام</option>
-                        <option value="شكوى">⚠️ شكوى</option>
-                        <option value="اقتراح">💡 اقتراح تحسين</option>
-                        <option value="طارئ">🚨 حالة طارئة</option>
-                        <option value="أخرى">📋 أخرى</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        عنوان البلاغ <span style="color: red;">*</span>
-                    </label>
-                    <input type="text" id="reportSubject" required placeholder="مثال: عميل يطلب استرداد بدون سبب" style="
+                    <input type="text" id="reportBookingNumber" required placeholder="رقم الحجز المتعلق بالبلاغ" style="
                         width: 100%;
                         padding: 0.8rem;
                         border: 2px solid #ddd;
@@ -2275,11 +2258,82 @@
                     "></textarea>
                 </div>
 
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
+                            وقت تقديم البلاغ <span style="color: red;">*</span>
+                        </label>
+                        <input type="datetime-local" id="reportSubmitTime" required style="
+                            width: 100%;
+                            padding: 0.8rem;
+                            border: 2px solid #ddd;
+                            border-radius: 8px;
+                            font-family: 'Cairo', sans-serif;
+                            font-size: 0.9rem;
+                        ">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
+                            وقت استلام البلاغ
+                        </label>
+                        <input type="datetime-local" id="reportReceiveTime" style="
+                            width: 100%;
+                            padding: 0.8rem;
+                            border: 2px solid #ddd;
+                            border-radius: 8px;
+                            font-family: 'Cairo', sans-serif;
+                            font-size: 0.9rem;
+                        ">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
+                            وقت حل البلاغ
+                        </label>
+                        <input type="datetime-local" id="reportResolveTime" style="
+                            width: 100%;
+                            padding: 0.8rem;
+                            border: 2px solid #ddd;
+                            border-radius: 8px;
+                            font-family: 'Cairo', sans-serif;
+                            font-size: 0.9rem;
+                        ">
+                    </div>
+                </div>
+
                 <div>
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        معلومات العميل (اختياري)
+                        مستلم البلاغ
                     </label>
-                    <textarea id="customerInfo" rows="3" placeholder="رقم الحجز، اسم العميل، رقم الهاتف، إلخ..." style="
+                    <input type="text" id="reportRecipient" placeholder="اسم الشخص الذي استلم البلاغ" style="
+                        width: 100%;
+                        padding: 0.8rem;
+                        border: 2px solid #ddd;
+                        border-radius: 8px;
+                        font-family: 'Cairo', sans-serif;
+                        font-size: 1rem;
+                    ">
+                </div>
+
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
+                        ملخص الحل
+                    </label>
+                    <textarea id="resolutionSummary" rows="3" placeholder="كيف تم حل البلاغ..." style="
+                        width: 100%;
+                        padding: 0.8rem;
+                        border: 2px solid #ddd;
+                        border-radius: 8px;
+                        font-family: 'Cairo', sans-serif;
+                        font-size: 1rem;
+                        resize: vertical;
+                    "></textarea>
+                </div>
+
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
+                        المراجعة
+                    </label>
+                    <textarea id="reportReview" rows="2" placeholder="ملاحظات المراجعة..." style="
                         width: 100%;
                         padding: 0.8rem;
                         border: 2px solid #ddd;
@@ -2525,9 +2579,9 @@
             <form id="conversationForm" onsubmit="submitConversation(event)" style="display: flex; flex-direction: column; gap: 1rem;">
                 <div>
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        اسم الموظف <span style="color: red;">*</span>
+                        يوزر الموظف <span style="color: red;">*</span>
                     </label>
-                    <input type="text" id="convEmployeeName" required style="
+                    <input type="text" id="convEmployeeName" required placeholder="مثال: ahmed_123" style="
                         width: 100%;
                         padding: 0.8rem;
                         border: 2px solid #ddd;
@@ -2539,9 +2593,9 @@
 
                 <div>
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        رقم العميل <span style="color: red;">*</span>
+                        رقم الضيف <span style="color: red;">*</span>
                     </label>
-                    <input type="text" id="customerPhone" required placeholder="مثال: 0501234567" style="
+                    <input type="text" id="guestPhone" required placeholder="مثال: 0501234567" style="
                         width: 100%;
                         padding: 0.8rem;
                         border: 2px solid #ddd;
@@ -2553,9 +2607,9 @@
 
                 <div>
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        نوع المحادثة <span style="color: red;">*</span>
+                        رقم المضيف <span style="color: red;">*</span>
                     </label>
-                    <select id="conversationType" required style="
+                    <input type="text" id="hostPhone" required placeholder="مثال: 0501234567" style="
                         width: 100%;
                         padding: 0.8rem;
                         border: 2px solid #ddd;
@@ -2563,13 +2617,6 @@
                         font-family: 'Cairo', sans-serif;
                         font-size: 1rem;
                     ">
-                        <option value="">اختر النوع</option>
-                        <option value="استفسار">استفسار</option>
-                        <option value="متابعة حجز">متابعة حجز</option>
-                        <option value="شكوى">شكوى</option>
-                        <option value="طلب دعم">طلب دعم</option>
-                        <option value="اقتراح">اقتراح</option>
-                    </select>
                 </div>
 
                 <div>
@@ -2603,9 +2650,9 @@
 
                 <div>
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        الإجراء المطلوب
+                        الإجراء <span style="color: red;">*</span>
                     </label>
-                    <select id="requiredAction" style="
+                    <select id="requiredAction" required style="
                         width: 100%;
                         padding: 0.8rem;
                         border: 2px solid #ddd;
@@ -2613,9 +2660,9 @@
                         font-family: 'Cairo', sans-serif;
                         font-size: 1rem;
                     ">
-                        <option value="لا يوجد">لا يوجد - للعلم فقط</option>
-                        <option value="متابعة من المشرف">يحتاج متابعة من المشرف</option>
-                        <option value="إجراء عاجل">إجراء عاجل مطلوب</option>
+                        <option value="">اختر الإجراء</option>
+                        <option value="تحذير المضيف">تحذير المضيف</option>
+                        <option value="ايقاف العقار">ايقاف العقار</option>
                     </select>
                 </div>
 
@@ -2691,9 +2738,9 @@
             <form id="salesForm" onsubmit="submitSales(event)" style="display: flex; flex-direction: column; gap: 1rem;">
                 <div>
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        اسم موظف المبيعات <span style="color: red;">*</span>
+                        يوزر الموظف <span style="color: red;">*</span>
                     </label>
-                    <input type="text" id="salesEmployeeName" required style="
+                    <input type="text" id="salesEmployeeName" required placeholder="مثال: ahmed_123" style="
                         width: 100%;
                         padding: 0.8rem;
                         border: 2px solid #ddd;
@@ -2719,9 +2766,9 @@
 
                 <div>
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        رقم الحجز (اختياري)
+                        رقم الحجز <span style="color: red;">*</span>
                     </label>
-                    <input type="text" id="salesBookingNumber" style="
+                    <input type="text" id="salesBookingNumber" required placeholder="رقم الحجز مطلوب" style="
                         width: 100%;
                         padding: 0.8rem;
                         border: 2px solid #ddd;
@@ -2733,7 +2780,7 @@
 
                 <div>
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        الإجراء المتخذ <span style="color: red;">*</span>
+                        قناة التواصل <span style="color: red;">*</span>
                     </label>
                     <select id="salesAction" required style="
                         width: 100%;
@@ -2743,87 +2790,11 @@
                         font-family: 'Cairo', sans-serif;
                         font-size: 1rem;
                     ">
-                        <option value="">اختر الإجراء</option>
-                        <option value="تم الاتصال">تم الاتصال</option>
-                        <option value="لم يرد">لم يرد</option>
-                        <option value="رقم خاطئ">رقم خاطئ</option>
-                        <option value="تم الحجز">تم الحجز</option>
-                        <option value="قيد المتابعة">قيد المتابعة</option>
-                        <option value="غير مهتم">غير مهتم</option>
-                        <option value="سيتواصل لاحقاً">سيتواصل لاحقاً</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        الحالة
-                    </label>
-                    <select id="salesStatus" style="
-                        width: 100%;
-                        padding: 0.8rem;
-                        border: 2px solid #ddd;
-                        border-radius: 8px;
-                        font-family: 'Cairo', sans-serif;
-                        font-size: 1rem;
-                    ">
-                        <option value="">لا يوجد</option>
-                        <option value="جديد">جديد</option>
-                        <option value="قيد المعالجة">قيد المعالجة</option>
-                        <option value="مكتمل">مكتمل</option>
-                        <option value="ملغي">ملغي</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        حالة الحجز
-                    </label>
-                    <select id="bookingStatus" style="
-                        width: 100%;
-                        padding: 0.8rem;
-                        border: 2px solid #ddd;
-                        border-radius: 8px;
-                        font-family: 'Cairo', sans-serif;
-                        font-size: 1rem;
-                    ">
-                        <option value="">لا يوجد</option>
-                        <option value="مؤكد">مؤكد</option>
-                        <option value="قيد الانتظار">قيد الانتظار</option>
-                        <option value="ملغي">ملغي</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        تأكيد الاتصال
-                    </label>
-                    <select id="callConfirmed" style="
-                        width: 100%;
-                        padding: 0.8rem;
-                        border: 2px solid #ddd;
-                        border-radius: 8px;
-                        font-family: 'Cairo', sans-serif;
-                        font-size: 1rem;
-                    ">
-                        <option value="نعم">نعم</option>
-                        <option value="لا">لا</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #333;">
-                        تأكيد إرسال رسالة الواتساب
-                    </label>
-                    <select id="whatsappSent" style="
-                        width: 100%;
-                        padding: 0.8rem;
-                        border: 2px solid #ddd;
-                        border-radius: 8px;
-                        font-family: 'Cairo', sans-serif;
-                        font-size: 1rem;
-                    ">
-                        <option value="نعم">نعم</option>
-                        <option value="لا">لا</option>
+                        <option value="">اختر قناة التواصل</option>
+                        <option value="اتصال">اتصال</option>
+                        <option value="واتس">واتس</option>
+                        <option value="توفير بديل">توفير بديل</option>
+                        <option value="الحجز عبر محادثات التطبيق">الحجز عبر محادثات التطبيق</option>
                     </select>
                 </div>
 
