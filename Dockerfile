@@ -1,6 +1,9 @@
 FROM python:3.11-slim
 
-# Build version: 2.0 - Sunday Board Pro (2026-01-19)
+# ========================================
+# Build version: 3.0 - FRESH BUILD
+# Date: 2026-01-19 - Fixed duplicate Dockerfile
+# ========================================
 WORKDIR /app
 
 # Copy requirements and install dependencies
@@ -12,6 +15,12 @@ COPY botng/ .
 
 # Copy src folder (Golden Host, Sunday Board dashboards)
 COPY src/ ./src/
+
+# Verify src folder was copied
+RUN echo "=== Verifying src folder ===" && \
+    ls -la /app/src/ && \
+    ls -la /app/src/sunday-board/ && \
+    echo "=== src folder OK ==="
 
 # Expose port
 EXPOSE 8000
