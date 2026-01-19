@@ -10,15 +10,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
-    <script src="firebase-config.js"></script>
-
     <!-- React & Babel -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
@@ -38,6 +32,17 @@
             min-height: 100vh;
         }
 
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #F8F9FA;
+            font-size: 18px;
+            color: #6C5CE7;
+        }
+
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 10px;
@@ -50,23 +55,726 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%);
             border-radius: 10px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            background: linear-gradient(135deg, #A29BFE 0%, #6C5CE7 100%);
         }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div class="loading">جاري التحميل...</div>
+    </div>
 
-    <script type="text/babel" src="js/SundayBoardPro.jsx"></script>
-    <script type="text/babel">
-        const { createRoot } = ReactDOM;
-        const root = createRoot(document.getElementById('root'));
-        root.render(<SundayBoardPro />);
+    <script type="text/babel" data-type="module">
+// ==================== 🎨 SUNDAY BOARD PRO v2.0 ====================
+// Based on professional UI designs with Workspaces, Folders, Subitems, and Discussion Panel
+
+const { useState, useEffect, useRef } = React;
+
+// ==================== 🎨 THEME & COLORS ====================
+const THEME = {
+  primary: '#6C5CE7',
+  primaryLight: '#A29BFE',
+  primaryDark: '#5B4D8C',
+  success: '#00B894',
+  warning: '#FDCB6E',
+  danger: '#E74C3C',
+  info: '#0984E3',
+  dark: '#2D3436',
+  gray: '#636E72',
+  lightGray: '#B2BEC3',
+  background: '#F8F9FA',
+  white: '#FFFFFF',
+  sidebarBg: '#F5F6F8',
+  gradients: {
+    primary: 'linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%)',
+    pink: 'linear-gradient(135deg, #FD79A8 0%, #FDCB6E 100%)',
+    green: 'linear-gradient(135deg, #00B894 0%, #55EFC4 100%)',
+    blue: 'linear-gradient(135deg, #0984E3 0%, #74B9FF 100%)',
+    orange: 'linear-gradient(135deg, #E17055 0%, #FDCB6E 100%)',
+  }
+};
+
+// ==================== 📊 STATUS OPTIONS ====================
+const STATUS_OPTIONS = [
+  { id: 'working', label: 'Working on it', color: '#FDCB6E', icon: '🔄' },
+  { id: 'stuck', label: 'Stuck', color: '#E74C3C', icon: '🚫' },
+  { id: 'done', label: 'Done', color: '#00B894', icon: '✅' },
+  { id: 'pending', label: 'Pending', color: '#B2BEC3', icon: '⏳' },
+  { id: 'review', label: 'In Review', color: '#0984E3', icon: '👀' },
+];
+
+// ==================== 🎨 SUNDAY LOGO ====================
+const SundayLogo = ({ size = 'medium', collapsed = false }) => {
+  const sizes = { small: 28, medium: 36, large: 48 };
+  const iconSize = sizes[size];
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <svg width={iconSize} height={iconSize} viewBox="0 0 100 100" fill="none">
+        <defs>
+          <linearGradient id="logo-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#5DD4D4" />
+            <stop offset="100%" stopColor="#3DBABA" />
+          </linearGradient>
+          <linearGradient id="logo-pink" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FF6B9D" />
+            <stop offset="100%" stopColor="#F85A76" />
+          </linearGradient>
+          <linearGradient id="logo-green" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#5FD4A0" />
+            <stop offset="100%" stopColor="#3FB87E" />
+          </linearGradient>
+          <linearGradient id="logo-orange" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FFB84D" />
+            <stop offset="100%" stopColor="#FF9E2C" />
+          </linearGradient>
+        </defs>
+        <circle cx="35" cy="65" r="26" fill="url(#logo-green)" />
+        <circle cx="35" cy="35" r="26" fill="url(#logo-cyan)" />
+        <circle cx="65" cy="35" r="26" fill="url(#logo-pink)" />
+        <circle cx="65" cy="65" r="26" fill="url(#logo-orange)" />
+        <path d="M 50,38 L 53,47 L 62,50 L 53,53 L 50,62 L 47,53 L 38,50 L 47,47 Z" fill="white" />
+      </svg>
+      {!collapsed && (
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+          <span style={{
+            fontFamily: 'Poppins, sans-serif',
+            fontSize: `${iconSize * 0.55}px`,
+            fontWeight: '700',
+            color: THEME.primaryDark
+          }}>
+            Sunday
+          </span>
+          <span style={{
+            fontFamily: 'Poppins, sans-serif',
+            fontSize: `${iconSize * 0.28}px`,
+            color: THEME.gray
+          }}>
+            Work Management
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== 📁 WORKSPACE DATA ====================
+const INITIAL_WORKSPACES = [
+  {
+    id: 'ws1',
+    name: 'Main Workspace',
+    icon: '🏢',
+    color: THEME.primary,
+    folders: [
+      {
+        id: 'folder1',
+        name: 'Projects',
+        icon: '📁',
+        expanded: true,
+        boards: [
+          { id: 'board1', name: 'Golden Host', icon: '🏠', color: '#6C5CE7' },
+          { id: 'board2', name: 'Development', icon: '💻', color: '#00B894' },
+          { id: 'board3', name: 'Marketing', icon: '📈', color: '#E17055' },
+        ]
+      },
+      {
+        id: 'folder2',
+        name: 'Operations',
+        icon: '⚙️',
+        expanded: false,
+        boards: [
+          { id: 'board4', name: 'Support', icon: '🎧', color: '#0984E3' },
+          { id: 'board5', name: 'HR', icon: '👥', color: '#FD79A8' },
+        ]
+      }
+    ]
+  }
+];
+
+// ==================== 📋 BOARD DATA ====================
+const INITIAL_GROUPS = [
+  {
+    id: 'group1',
+    title: 'Sprint 1 - Development',
+    color: '#6C5CE7',
+    collapsed: false,
+    items: [
+      {
+        id: 'item1',
+        name: 'Setup project infrastructure',
+        status: 'done',
+        priority: 'high',
+        person: { name: 'Ahmed', avatar: '👨‍💻', color: '#6C5CE7' },
+        date: '2026-01-20',
+        creation: '2026-01-15',
+        subitems: [
+          { id: 'sub1', name: 'Configure database', status: 'done', person: { name: 'Ahmed', avatar: '👨‍💻' } },
+          { id: 'sub2', name: 'Setup CI/CD', status: 'done', person: { name: 'Sara', avatar: '👩‍💼' } },
+        ]
+      },
+      {
+        id: 'item2',
+        name: 'Design user authentication flow',
+        status: 'working',
+        priority: 'critical',
+        person: { name: 'Sara', avatar: '👩‍💼', color: '#FD79A8' },
+        date: '2026-01-22',
+        creation: '2026-01-16',
+        subitems: [
+          { id: 'sub3', name: 'Login page design', status: 'done', person: { name: 'Mohammed', avatar: '👨‍🎨' } },
+          { id: 'sub4', name: 'Forgot password flow', status: 'working', person: { name: 'Sara', avatar: '👩‍💼' } },
+        ]
+      },
+      {
+        id: 'item3',
+        name: 'API documentation',
+        status: 'review',
+        priority: 'medium',
+        person: { name: 'Khalid', avatar: '👨‍💼', color: '#00B894' },
+        date: '2026-01-25',
+        creation: '2026-01-17',
+        subitems: []
+      },
+    ]
+  },
+  {
+    id: 'group2',
+    title: 'Sprint 2 - Features',
+    color: '#00B894',
+    collapsed: false,
+    items: [
+      {
+        id: 'item4',
+        name: 'Dashboard analytics',
+        status: 'pending',
+        priority: 'high',
+        person: { name: 'Layla', avatar: '👩‍💻', color: '#E17055' },
+        date: '2026-01-28',
+        creation: '2026-01-18',
+        subitems: []
+      },
+      {
+        id: 'item5',
+        name: 'Notification system',
+        status: 'stuck',
+        priority: 'critical',
+        person: { name: 'Mohammed', avatar: '👨‍🎨', color: '#0984E3' },
+        date: '2026-01-24',
+        creation: '2026-01-14',
+        subitems: []
+      },
+    ]
+  },
+];
+
+// ==================== 🚀 MAIN APP ====================
+const SundayBoardPro = () => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showDiscussion, setShowDiscussion] = useState(false);
+  const [currentView, setCurrentView] = useState('board');
+  const [workspaces, setWorkspaces] = useState(INITIAL_WORKSPACES);
+  const [selectedBoard, setSelectedBoard] = useState('board1');
+  const [groups, setGroups] = useState(INITIAL_GROUPS);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedSubitems, setExpandedSubitems] = useState(new Set(['item1', 'item2']));
+
+  const toggleSubitems = (itemId) => {
+    setExpandedSubitems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) newSet.delete(itemId);
+      else newSet.add(itemId);
+      return newSet;
+    });
+  };
+
+  const toggleFolder = (folderId) => {
+    setWorkspaces(prev => prev.map(ws => ({
+      ...ws,
+      folders: ws.folders.map(folder =>
+        folder.id === folderId ? { ...folder, expanded: !folder.expanded } : folder
+      )
+    })));
+  };
+
+  return (
+    <div style={{
+      display: 'flex',
+      minHeight: '100vh',
+      fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, sans-serif',
+      background: THEME.background,
+      direction: 'rtl'
+    }}>
+      {/* Sidebar */}
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        workspaces={workspaces}
+        selectedBoard={selectedBoard}
+        onSelectBoard={setSelectedBoard}
+        onToggleFolder={toggleFolder}
+        currentView={currentView}
+        onChangeView={setCurrentView}
+      />
+
+      {/* Main Content */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Header
+          boardName="Golden Host"
+          onToggleDiscussion={() => setShowDiscussion(!showDiscussion)}
+          showDiscussion={showDiscussion}
+          searchQuery={searchQuery}
+          onSearch={setSearchQuery}
+          currentView={currentView}
+          onChangeView={setCurrentView}
+        />
+
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          <MainContent
+            groups={groups}
+            currentView={currentView}
+            expandedSubitems={expandedSubitems}
+            toggleSubitems={toggleSubitems}
+            searchQuery={searchQuery}
+          />
+
+          {showDiscussion && <DiscussionPanel onClose={() => setShowDiscussion(false)} />}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== 📂 SIDEBAR ====================
+const Sidebar = ({ collapsed, onToggle, workspaces, selectedBoard, onSelectBoard, onToggleFolder, currentView, onChangeView }) => (
+  <div style={{
+    width: collapsed ? '60px' : '280px',
+    background: THEME.white,
+    borderLeft: `1px solid ${THEME.lightGray}30`,
+    display: 'flex',
+    flexDirection: 'column',
+    transition: 'width 0.3s ease',
+    overflow: 'hidden'
+  }}>
+    <div style={{
+      padding: collapsed ? '16px 12px' : '20px',
+      borderBottom: `1px solid ${THEME.lightGray}30`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: collapsed ? 'center' : 'space-between'
+    }}>
+      <SundayLogo size="medium" collapsed={collapsed} />
+      {!collapsed && (
+        <button onClick={onToggle} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: THEME.gray }}>
+          ◀
+        </button>
+      )}
+    </div>
+
+    {!collapsed && (
+      <div style={{ padding: '16px' }}>
+        <QuickAction icon="🏠" label="Home" active={currentView === 'home'} onClick={() => onChangeView('home')} />
+        <QuickAction icon="📋" label="My Work" active={currentView === 'mywork'} onClick={() => onChangeView('mywork')} badge="5" />
+        <QuickAction icon="🔔" label="Notifications" badge="3" />
+        <QuickAction icon="⭐" label="Favorites" />
+      </div>
+    )}
+
+    <div style={{ flex: 1, overflow: 'auto', padding: collapsed ? '8px' : '0 16px 16px' }}>
+      {!collapsed && (
+        <div style={{ fontSize: '11px', fontWeight: '600', color: THEME.gray, textTransform: 'uppercase', letterSpacing: '0.5px', padding: '8px 0', marginTop: '8px' }}>
+          Workspaces
+        </div>
+      )}
+
+      {workspaces.map(workspace => (
+        <WorkspaceItem
+          key={workspace.id}
+          workspace={workspace}
+          collapsed={collapsed}
+          selectedBoard={selectedBoard}
+          onSelectBoard={onSelectBoard}
+          onToggleFolder={onToggleFolder}
+        />
+      ))}
+    </div>
+
+    <div style={{
+      padding: collapsed ? '12px' : '16px',
+      borderTop: `1px solid ${THEME.lightGray}30`,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      justifyContent: collapsed ? 'center' : 'flex-start'
+    }}>
+      <div style={{
+        width: '36px',
+        height: '36px',
+        borderRadius: '50%',
+        background: THEME.gradients.primary,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '16px',
+        color: 'white'
+      }}>
+        👤
+      </div>
+      {!collapsed && (
+        <div>
+          <div style={{ fontSize: '14px', fontWeight: '600', color: THEME.dark }}>Meshal</div>
+          <div style={{ fontSize: '12px', color: THEME.gray }}>Admin</div>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const QuickAction = ({ icon, label, active, onClick, badge }) => (
+  <button onClick={onClick} style={{
+    width: '100%',
+    padding: '10px 12px',
+    background: active ? `${THEME.primary}15` : 'transparent',
+    border: 'none',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    cursor: 'pointer',
+    marginBottom: '4px'
+  }}>
+    <span style={{ fontSize: '18px' }}>{icon}</span>
+    <span style={{ flex: 1, textAlign: 'right', fontSize: '14px', fontWeight: active ? '600' : '500', color: active ? THEME.primary : THEME.dark }}>{label}</span>
+    {badge && <span style={{ background: THEME.danger, color: 'white', fontSize: '11px', fontWeight: '600', padding: '2px 6px', borderRadius: '10px' }}>{badge}</span>}
+  </button>
+);
+
+const WorkspaceItem = ({ workspace, collapsed, selectedBoard, onSelectBoard, onToggleFolder }) => {
+  const [expanded, setExpanded] = useState(true);
+
+  if (collapsed) {
+    return (
+      <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: `${workspace.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', margin: '8px auto', cursor: 'pointer' }}>
+        {workspace.icon}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginBottom: '8px' }}>
+      <button onClick={() => setExpanded(!expanded)} style={{ width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+        <span style={{ width: '28px', height: '28px', borderRadius: '6px', background: `${workspace.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>{workspace.icon}</span>
+        <span style={{ flex: 1, textAlign: 'right', fontSize: '14px', fontWeight: '600', color: THEME.dark }}>{workspace.name}</span>
+        <span style={{ color: THEME.gray, fontSize: '12px', transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s ease' }}>▼</span>
+      </button>
+
+      {expanded && workspace.folders.map(folder => (
+        <FolderItem key={folder.id} folder={folder} selectedBoard={selectedBoard} onSelectBoard={onSelectBoard} onToggle={() => onToggleFolder(folder.id)} />
+      ))}
+    </div>
+  );
+};
+
+const FolderItem = ({ folder, selectedBoard, onSelectBoard, onToggle }) => (
+  <div style={{ marginRight: '16px' }}>
+    <button onClick={onToggle} style={{ width: '100%', padding: '6px 12px', background: 'transparent', border: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '2px' }}>
+      <span style={{ color: THEME.gray, fontSize: '10px', transform: folder.expanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s ease' }}>▼</span>
+      <span style={{ fontSize: '14px' }}>{folder.icon}</span>
+      <span style={{ flex: 1, textAlign: 'right', fontSize: '13px', fontWeight: '500', color: THEME.gray }}>{folder.name}</span>
+    </button>
+
+    {folder.expanded && folder.boards.map(board => (
+      <BoardItem key={board.id} board={board} selected={selectedBoard === board.id} onSelect={() => onSelectBoard(board.id)} />
+    ))}
+  </div>
+);
+
+const BoardItem = ({ board, selected, onSelect }) => (
+  <button onClick={onSelect} style={{
+    width: 'calc(100% - 24px)',
+    marginRight: '24px',
+    padding: '8px 12px',
+    background: selected ? `${board.color}15` : 'transparent',
+    border: selected ? `1px solid ${board.color}40` : '1px solid transparent',
+    borderRadius: '6px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    cursor: 'pointer',
+    marginBottom: '2px'
+  }}>
+    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: board.color }}></span>
+    <span style={{ fontSize: '14px' }}>{board.icon}</span>
+    <span style={{ flex: 1, textAlign: 'right', fontSize: '13px', fontWeight: selected ? '600' : '500', color: selected ? board.color : THEME.dark }}>{board.name}</span>
+  </button>
+);
+
+// ==================== 🔝 HEADER ====================
+const Header = ({ boardName, onToggleDiscussion, showDiscussion, searchQuery, onSearch, currentView, onChangeView }) => (
+  <div style={{ background: THEME.white, borderBottom: `1px solid ${THEME.lightGray}30` }}>
+    <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: '700', color: THEME.dark, margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ width: '36px', height: '36px', borderRadius: '8px', background: THEME.gradients.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🏠</span>
+          {boardName}
+        </h1>
+        <span style={{ background: `${THEME.success}20`, color: THEME.success, padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' }}>● Active</span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ position: 'relative' }}>
+          <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => onSearch(e.target.value)} style={{ padding: '8px 16px 8px 40px', border: `1px solid ${THEME.lightGray}50`, borderRadius: '8px', fontSize: '14px', width: '200px', outline: 'none', direction: 'rtl' }} />
+          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: THEME.gray }}>🔍</span>
+        </div>
+
+        <button onClick={onToggleDiscussion} style={{
+          padding: '8px 16px',
+          background: showDiscussion ? THEME.primary : 'transparent',
+          border: `1px solid ${showDiscussion ? THEME.primary : THEME.lightGray}50`,
+          borderRadius: '8px',
+          color: showDiscussion ? 'white' : THEME.dark,
+          fontSize: '14px',
+          fontWeight: '500',
+          cursor: 'pointer'
+        }}>
+          💬 Discussion
+        </button>
+
+        <button style={{ padding: '8px 20px', background: THEME.gradients.primary, border: 'none', borderRadius: '8px', color: 'white', fontSize: '14px', fontWeight: '600', cursor: 'pointer', boxShadow: `0 4px 12px ${THEME.primary}40` }}>
+          ✨ New Task
+        </button>
+      </div>
+    </div>
+
+    <div style={{ display: 'flex', gap: '4px', padding: '0 24px', borderTop: `1px solid ${THEME.lightGray}20` }}>
+      <ViewTab icon="📊" label="Board" active={currentView === 'board'} onClick={() => onChangeView('board')} />
+      <ViewTab icon="📅" label="Date" active={currentView === 'date'} onClick={() => onChangeView('date')} />
+      <ViewTab icon="🏷️" label="Status" active={currentView === 'status'} onClick={() => onChangeView('status')} />
+      <ViewTab icon="🔥" label="Priority" active={currentView === 'priority'} onClick={() => onChangeView('priority')} />
+    </div>
+  </div>
+);
+
+const ViewTab = ({ icon, label, active, onClick }) => (
+  <button onClick={onClick} style={{
+    padding: '12px 16px',
+    background: 'transparent',
+    border: 'none',
+    borderBottom: active ? `2px solid ${THEME.primary}` : '2px solid transparent',
+    color: active ? THEME.primary : THEME.gray,
+    fontSize: '13px',
+    fontWeight: active ? '600' : '500',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px'
+  }}>
+    <span>{icon}</span>
+    <span>{label}</span>
+  </button>
+);
+
+// ==================== 📋 MAIN CONTENT ====================
+const MainContent = ({ groups, currentView, expandedSubitems, toggleSubitems, searchQuery }) => (
+  <div style={{ flex: 1, overflow: 'auto', padding: '24px', background: THEME.background }}>
+    <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      <FilterButton icon="👤" label="Person" />
+      <FilterButton icon="🏷️" label="Status" />
+      <FilterButton icon="🔥" label="Priority" />
+      <FilterButton icon="📅" label="Date" />
+    </div>
+
+    {groups.map(group => (
+      <GroupCard key={group.id} group={group} expandedSubitems={expandedSubitems} toggleSubitems={toggleSubitems} searchQuery={searchQuery} />
+    ))}
+
+    <button style={{ width: '100%', padding: '16px', background: THEME.white, border: `2px dashed ${THEME.lightGray}50`, borderRadius: '12px', color: THEME.gray, fontSize: '14px', fontWeight: '500', cursor: 'pointer', marginTop: '16px' }}>
+      ➕ Add New Group
+    </button>
+  </div>
+);
+
+const FilterButton = ({ icon, label }) => (
+  <button style={{ padding: '6px 12px', background: THEME.white, border: `1px solid ${THEME.lightGray}50`, borderRadius: '6px', color: THEME.dark, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+    <span>{icon}</span>
+    <span>{label}</span>
+    <span style={{ color: THEME.lightGray }}>▼</span>
+  </button>
+);
+
+// ==================== 📦 GROUP CARD ====================
+const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery }) => {
+  const [collapsed, setCollapsed] = useState(group.collapsed);
+
+  const filteredItems = searchQuery
+    ? group.items.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : group.items;
+
+  const stats = { total: filteredItems.length, done: filteredItems.filter(i => i.status === 'done').length };
+
+  return (
+    <div style={{ background: THEME.white, borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+      <div onClick={() => setCollapsed(!collapsed)} style={{ background: group.color, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ color: 'white', fontSize: '14px', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}>▼</span>
+          <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '600', margin: 0 }}>{group.title}</h3>
+          <span style={{ background: 'rgba(255,255,255,0.2)', color: 'white', padding: '2px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: '500' }}>{stats.done}/{stats.total}</span>
+        </div>
+        <button style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>⋯</button>
+      </div>
+
+      {!collapsed && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 120px 120px 130px 120px', background: '#F8F9FA', borderBottom: `1px solid ${THEME.lightGray}30`, fontSize: '12px', fontWeight: '600', color: THEME.gray }}>
+            <div style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><input type="checkbox" /></div>
+            <div style={{ padding: '12px' }}>Task</div>
+            <div style={{ padding: '12px', textAlign: 'center' }}>Creation</div>
+            <div style={{ padding: '12px', textAlign: 'center' }}>Person</div>
+            <div style={{ padding: '12px', textAlign: 'center' }}>Status</div>
+            <div style={{ padding: '12px', textAlign: 'center' }}>Date</div>
+          </div>
+
+          {filteredItems.map(item => (
+            <TaskRow key={item.id} item={item} expanded={expandedSubitems.has(item.id)} onToggle={() => toggleSubitems(item.id)} groupColor={group.color} />
+          ))}
+
+          <button style={{ width: '100%', padding: '12px 20px', background: 'transparent', border: 'none', color: group.color, fontSize: '14px', fontWeight: '500', cursor: 'pointer', textAlign: 'right' }}>
+            ➕ Add Task
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== 📝 TASK ROW ====================
+const TaskRow = ({ item, expanded, onToggle, groupColor }) => {
+  const [hovered, setHovered] = useState(false);
+  const status = STATUS_OPTIONS.find(s => s.id === item.status) || STATUS_OPTIONS[3];
+  const hasSubitems = item.subitems && item.subitems.length > 0;
+
+  return (
+    <>
+      <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 120px 120px 130px 120px', borderBottom: `1px solid ${THEME.lightGray}20`, background: hovered ? '#F8F9FA' : 'white' }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><input type="checkbox" /></div>
+
+        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {hasSubitems && (
+            <button onClick={onToggle} style={{ width: '20px', height: '20px', borderRadius: '4px', background: expanded ? `${groupColor}20` : 'transparent', border: `1px solid ${THEME.lightGray}50`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: THEME.gray }}>
+              {expanded ? '▼' : '▶'}
+            </button>
+          )}
+          <span style={{ fontSize: '14px', fontWeight: '500', color: THEME.dark }}>{item.name}</span>
+          {hasSubitems && <span style={{ background: `${groupColor}20`, color: groupColor, padding: '2px 6px', borderRadius: '8px', fontSize: '11px', fontWeight: '500' }}>{item.subitems.length}</span>}
+        </div>
+
+        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: '13px', color: THEME.gray }}>{new Date(item.creation).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+        </div>
+
+        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {item.person ? (
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: item.person.color || THEME.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: 'white', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} title={item.person.name}>
+              {item.person.avatar}
+            </div>
+          ) : (
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: `2px dashed ${THEME.lightGray}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: THEME.lightGray, fontSize: '14px', cursor: 'pointer' }}>+</div>
+          )}
+        </div>
+
+        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: status.color, color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', minWidth: '90px', textAlign: 'center' }}>{status.label}</div>
+        </div>
+
+        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: '13px', color: new Date(item.date) < new Date() && item.status !== 'done' ? THEME.danger : THEME.gray, fontWeight: new Date(item.date) < new Date() && item.status !== 'done' ? '600' : '400' }}>
+            {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </span>
+        </div>
+      </div>
+
+      {expanded && hasSubitems && (
+        <div style={{ background: '#FAFAFA' }}>
+          {item.subitems.map((subitem, index) => (
+            <SubitemRow key={subitem.id} subitem={subitem} isLast={index === item.subitems.length - 1} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+};
+
+const SubitemRow = ({ subitem, isLast }) => {
+  const status = STATUS_OPTIONS.find(s => s.id === subitem.status) || STATUS_OPTIONS[3];
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 120px 120px 130px 120px', borderBottom: isLast ? 'none' : `1px solid ${THEME.lightGray}15`, fontSize: '13px' }}>
+      <div style={{ padding: '10px' }}></div>
+      <div style={{ padding: '10px 10px 10px 50px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ color: THEME.lightGray }}>↳</span>
+        <span style={{ color: THEME.gray }}>{subitem.name}</span>
+      </div>
+      <div style={{ padding: '10px' }}></div>
+      <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {subitem.person ? (
+          <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: THEME.lightGray, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>{subitem.person.avatar}</div>
+        ) : (
+          <span style={{ color: THEME.lightGray }}>-</span>
+        )}
+      </div>
+      <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: `${status.color}30`, color: status.color, padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '600' }}>{status.label}</div>
+      </div>
+      <div style={{ padding: '10px' }}></div>
+    </div>
+  );
+};
+
+// ==================== 💬 DISCUSSION PANEL ====================
+const DiscussionPanel = ({ onClose }) => {
+  const [message, setMessage] = useState('');
+  const [discussions] = useState([
+    { id: 'd1', user: { name: 'Ahmed', avatar: '👨‍💻' }, message: 'Great progress on the infrastructure setup!', timestamp: new Date() },
+    { id: 'd2', user: { name: 'Sara', avatar: '👩‍💼' }, message: 'I need help with the OAuth integration.', timestamp: new Date() },
+  ]);
+
+  return (
+    <div style={{ width: '360px', background: THEME.white, borderRight: `1px solid ${THEME.lightGray}30`, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '16px 20px', borderBottom: `1px solid ${THEME.lightGray}30`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: THEME.dark, margin: 0 }}>💬 Board Discussion</h3>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '20px', color: THEME.gray, cursor: 'pointer' }}>×</button>
+      </div>
+
+      <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+        {discussions.map(d => (
+          <div key={d.id} style={{ marginBottom: '16px', display: 'flex', gap: '10px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: THEME.gradients.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>{d.user.avatar}</div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: THEME.dark }}>{d.user.name}</div>
+              <p style={{ fontSize: '14px', color: THEME.dark, margin: '4px 0 0 0' }}>{d.message}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ padding: '16px', borderTop: `1px solid ${THEME.lightGray}30` }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Write a message..." style={{ flex: 1, padding: '12px', border: `1px solid ${THEME.lightGray}50`, borderRadius: '8px', fontSize: '14px', resize: 'none', minHeight: '44px', outline: 'none', direction: 'rtl' }} />
+          <button style={{ width: '44px', height: '44px', borderRadius: '8px', background: THEME.gradients.primary, border: 'none', color: 'white', fontSize: '18px', cursor: 'pointer' }}>➤</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== 🚀 RENDER ====================
+const { createRoot } = ReactDOM;
+const root = createRoot(document.getElementById('root'));
+root.render(<SundayBoardPro />);
     </script>
 </body>
 </html>
