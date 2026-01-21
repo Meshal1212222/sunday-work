@@ -1,8 +1,8 @@
 FROM python:3.11-slim
 
 # ========================================
-# Build version: 3.0 - FRESH BUILD
-# Date: 2026-01-19 - Fixed duplicate Dockerfile
+# Build version: 4.0 - FORCE REBUILD
+# Date: 2026-01-21 - Fixed Monday.com API query
 # ========================================
 WORKDIR /app
 
