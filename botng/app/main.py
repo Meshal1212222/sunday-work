@@ -173,7 +173,7 @@ async def get_monday_boards():
     """Proxy for Monday.com API - fixes CORS issues"""
     import httpx
 
-    MONDAY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5NjA1NTM2MCwiYWFpIjoxMSwidWlkIjo3MzAxNjAyMywiaWFkIjoiMjAyNS0wMS0xOFQxNTozNzo1NS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjY0MTU1MDUsInJnbiI6ImV1YzEifQ.lhOhB67B9pz1NWXf_RFCo7v2gWjhlZRbOqmwCgmzCZE"
+    MONDAY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I"
 
     query = """
     {

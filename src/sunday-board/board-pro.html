@@ -558,7 +558,7 @@ const SundayBoardPro = () => {
         console.log('🔄 Checking Firebase for saved data...');
         let savedData = null;
         if (window.loadFromFirebase) {
-          savedData = await window.loadFromFirebase('sunday/board_data');
+          savedData = await window.loadFromFirebase('sunday/board_data_v2');
         }
 
         if (savedData && savedData.groups && savedData.groups.length > 0) {
@@ -609,7 +609,7 @@ const SundayBoardPro = () => {
 
             // Save to Firebase for future use
             if (window.saveToFirebase) {
-              await window.saveToFirebase('sunday/board_data', importedData);
+              await window.saveToFirebase('sunday/board_data_v2', importedData);
               console.log('✅ Data saved to Firebase');
             }
 
