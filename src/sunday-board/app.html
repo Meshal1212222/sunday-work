@@ -907,6 +907,10 @@
                             <button class="lang-btn" onclick="setLang('en')">EN</button>
                             <button class="lang-btn active" onclick="setLang('ar')">عربي</button>
                         </div>
+                        <button class="btn btn-secondary" onclick="syncFromMonday()" style="background:#FF3D57;color:#fff;border:none">
+                            <span>🔄</span>
+                            <span>Monday.com</span>
+                        </button>
                         <button class="invite-btn">
                             <span>👤</span>
                             <span data-i18n="invite">Invite</span>
@@ -1051,6 +1055,226 @@
                 console.error('❌ Firebase init error:', error);
                 return false;
             }
+        }
+
+        // ============ MONDAY.COM API ============
+        const MONDAY_API = {
+            url: 'https://api.monday.com/v2',
+            token: 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
+        };
+
+        // Make Monday.com API request
+        async function mondayQuery(query, variables = {}) {
+            try {
+                const response = await fetch(MONDAY_API.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': MONDAY_API.token,
+                        'API-Version': '2024-01'
+                    },
+                    body: JSON.stringify({ query, variables })
+                });
+                const result = await response.json();
+                return result.data;
+            } catch (error) {
+                console.error('Monday API error:', error);
+                return null;
+            }
+        }
+
+        // Get all boards from Monday.com
+        async function getMondayBoards() {
+            const query = `
+                query {
+                    boards(limit: 50) {
+                        id
+                        name
+                        description
+                        state
+                        board_folder_id
+                        groups {
+                            id
+                            title
+                            color
+                        }
+                    }
+                }
+            `;
+            const data = await mondayQuery(query);
+            return data?.boards || [];
+        }
+
+        // Get items from a Monday.com board
+        async function getMondayBoardItems(boardId) {
+            const query = `
+                query($boardId: [ID!]) {
+                    boards(ids: $boardId) {
+                        groups {
+                            id
+                            title
+                            color
+                            items_page(limit: 100) {
+                                items {
+                                    id
+                                    name
+                                    created_at
+                                    column_values {
+                                        id
+                                        text
+                                        type
+                                        value
+                                    }
+                                    subitems {
+                                        id
+                                        name
+                                        column_values {
+                                            id
+                                            text
+                                            type
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `;
+            const data = await mondayQuery(query, { boardId: [boardId] });
+            return data?.boards?.[0]?.groups || [];
+        }
+
+        // Convert Monday.com data to Sunday Board format
+        function convertMondayToSundayFormat(mondayGroups) {
+            return mondayGroups.map((group, index) => ({
+                id: parseInt(group.id) || Date.now() + index,
+                title: group.title,
+                color: group.color || '#6C5CE7',
+                expanded: true,
+                items: (group.items_page?.items || []).map(item => {
+                    // Parse column values
+                    const columns = item.column_values || [];
+                    const statusCol = columns.find(c => c.type === 'status' || c.id.includes('status'));
+                    const dateCol = columns.find(c => c.type === 'date' || c.id.includes('date'));
+                    const personCol = columns.find(c => c.type === 'people' || c.id.includes('person'));
+
+                    let status = 'pending';
+                    if (statusCol?.text) {
+                        const statusText = statusCol.text.toLowerCase();
+                        if (statusText.includes('done') || statusText.includes('مكتمل')) status = 'done';
+                        else if (statusText.includes('working') || statusText.includes('قيد')) status = 'working';
+                        else if (statusText.includes('stuck') || statusText.includes('متوقف')) status = 'stuck';
+                    }
+
+                    let person = null;
+                    if (personCol?.text) {
+                        person = { name: personCol.text, color: '#6C5CE7' };
+                    }
+
+                    return {
+                        id: parseInt(item.id) || Date.now(),
+                        name: item.name,
+                        person: person,
+                        status: status,
+                        date: dateCol?.text || item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+                        subitems: (item.subitems || []).map(sub => ({
+                            id: parseInt(sub.id) || Date.now(),
+                            name: sub.name,
+                            person: null,
+                            status: 'pending',
+                            date: new Date().toISOString().split('T')[0]
+                        }))
+                    };
+                })
+            }));
+        }
+
+        // Sync from Monday.com button
+        let mondayBoards = [];
+        async function syncFromMonday() {
+            showLoadingOverlay('جاري جلب البيانات من Monday.com...');
+            try {
+                mondayBoards = await getMondayBoards();
+                if (mondayBoards.length > 0) {
+                    console.log('📦 Found', mondayBoards.length, 'boards from Monday.com');
+                    showBoardSelector(mondayBoards);
+                } else {
+                    alert('لم يتم العثور على بوردات في حسابك');
+                }
+            } catch (error) {
+                console.error('Error syncing from Monday:', error);
+                alert('خطأ في الاتصال بـ Monday.com');
+            }
+            hideLoadingOverlay();
+        }
+
+        // Load specific board from Monday.com
+        async function loadMondayBoard(boardId) {
+            showLoadingOverlay('جاري تحميل البورد...');
+            try {
+                const groups = await getMondayBoardItems(boardId);
+                const convertedGroups = convertMondayToSundayFormat(groups);
+
+                if (convertedGroups.length > 0) {
+                    data.groups = convertedGroups;
+                    renderBoard();
+                    autoSave();
+                    closeBoardSelector();
+                    alert('تم تحميل البورد بنجاح!');
+                }
+            } catch (error) {
+                console.error('Error loading Monday board:', error);
+                alert('خطأ في تحميل البورد');
+            }
+            hideLoadingOverlay();
+        }
+
+        function showLoadingOverlay(text) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.querySelector('.loading-text').textContent = text || 'جاري التحميل...';
+                overlay.style.display = 'flex';
+            }
+        }
+
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.style.display = 'none';
+        }
+
+        function showBoardSelector(boards) {
+            let selector = document.getElementById('boardSelector');
+            if (!selector) {
+                selector = document.createElement('div');
+                selector.id = 'boardSelector';
+                selector.className = 'modal-overlay show';
+                document.body.appendChild(selector);
+            }
+            selector.innerHTML = `
+                <div class="modal" style="max-width:500px;max-height:80vh;overflow:auto">
+                    <div class="modal-header">
+                        <h3>اختر بورد من Monday.com</h3>
+                        <button class="panel-close" onclick="closeBoardSelector()">×</button>
+                    </div>
+                    <div class="modal-body" style="padding:0">
+                        ${boards.map(b => `
+                            <div onclick="loadMondayBoard('${b.id}')" style="padding:16px 24px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:12px;transition:background 0.2s">
+                                <div style="width:40px;height:40px;background:#6C5CE7;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600">${b.name[0]}</div>
+                                <div>
+                                    <div style="font-weight:600;font-size:15px">${b.name}</div>
+                                    <div style="font-size:12px;color:var(--gray)">${b.groups?.length || 0} مجموعات</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            selector.classList.add('show');
+        }
+
+        function closeBoardSelector() {
+            const selector = document.getElementById('boardSelector');
+            if (selector) selector.classList.remove('show');
         }
 
         // ============ FIREBASE DATA OPERATIONS ============
