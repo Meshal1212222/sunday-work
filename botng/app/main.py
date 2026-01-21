@@ -154,16 +154,16 @@ async def golden_host_library():
 
 @app.get("/sunday-board")
 async def sunday_board():
-    """Sunday Board - إدارة المشاريع"""
-    # Try to serve the full app from static file
+    """Sunday Board Pro - إدارة المشاريع المتقدم"""
+    # Try to serve the professional board-pro.html
     for base_path in possible_src_paths:
-        app_path = os.path.join(base_path, "sunday-board", "app.html")
-        if os.path.exists(app_path):
-            with open(app_path, "r", encoding="utf-8") as f:
+        pro_path = os.path.join(base_path, "sunday-board", "board-pro.html")
+        if os.path.exists(pro_path):
+            with open(pro_path, "r", encoding="utf-8") as f:
                 return HTMLResponse(content=f.read())
     # Fallback redirect
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/src/sunday-board/app.html")
+    return RedirectResponse(url="/src/sunday-board/board-pro.html")
 
 
 # ==================== Health Check ====================
