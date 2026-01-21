@@ -178,27 +178,24 @@ async def get_monday_boards():
     # Query for ALL boards (active + archived)
     query = """
     {
-        boards(limit: 100, order_by: created_at, state: all) {
+        boards(limit: 100, state: all) {
             id
             name
             description
             state
             board_kind
-            created_at
             updated_at
             groups {
                 id
                 title
                 color
                 position
-                archived
             }
             items_page(limit: 500) {
                 items {
                     id
                     name
                     state
-                    created_at
                     updated_at
                     group {
                         id
@@ -216,9 +213,6 @@ async def get_monday_boards():
                     subitems {
                         id
                         name
-                        state
-                        created_at
-                        updated_at
                         column_values {
                             id
                             text
@@ -237,7 +231,6 @@ async def get_monday_boards():
             email
             photo_thumb
             title
-            created_at
         }
     }
     """
@@ -271,30 +264,23 @@ async def get_monday_analytics():
     import httpx
     from datetime import datetime, timedelta
 
-    # Get activity from last 90 days
+    # Get all boards and items for analytics
     query = """
     {
         boards(limit: 100, state: all) {
             id
             name
             state
-            activity_logs(limit: 1000) {
-                id
-                event
-                data
-                created_at
-                user_id
-            }
             items_page(limit: 500) {
                 items {
                     id
                     name
                     state
-                    created_at
                     updated_at
                     column_values {
                         id
                         text
+                        value
                         type
                         column {
                             title
