@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sunday Board</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         :root {
             --primary: #6C5CE7;
@@ -846,6 +849,21 @@
     </style>
 </head>
 <body class="rtl">
+    <!-- Save Indicator -->
+    <div id="saveIndicator" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#00C875;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:500;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;">
+        ✅ <span id="saveText">تم الحفظ</span>
+    </div>
+    <style>
+        #saveIndicator.show { opacity: 1; }
+        .loading-overlay { position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:9999; }
+        .loading-spinner { width:50px;height:50px;border:4px solid #E6E9EF;border-top-color:#6C5CE7;border-radius:50%;animation:spin 1s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .loading-text { margin-top:16px;font-size:16px;color:#676879; }
+    </style>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">جاري تحميل البيانات...</div>
+    </div>
     <div class="app">
         <!-- Sidebar -->
         <div class="sidebar">
@@ -889,6 +907,10 @@
                             <button class="lang-btn" onclick="setLang('en')">EN</button>
                             <button class="lang-btn active" onclick="setLang('ar')">عربي</button>
                         </div>
+                        <button class="btn btn-secondary" onclick="syncFromMonday()" style="background:#FF3D57;color:#fff;border:none">
+                            <span>🔄</span>
+                            <span>Monday.com</span>
+                        </button>
                         <button class="invite-btn">
                             <span>👤</span>
                             <span data-i18n="invite">Invite</span>
@@ -1003,6 +1025,369 @@
     </div>
 
     <script>
+        // ============ FIREBASE CONFIG ============
+        const firebaseConfig = {
+            apiKey: "AIzaSyACk3UhHouKfGsOu3ZJfaOhqLqucumn2UQ",
+            authDomain: "sunday-fb28c.firebaseapp.com",
+            databaseURL: "https://sunday-fb28c-default-rtdb.firebaseio.com",
+            projectId: "sunday-fb28c",
+            storageBucket: "sunday-fb28c.firebasestorage.app",
+            messagingSenderId: "24752239756",
+            appId: "1:24752239756:web:386c2c72624eb67ba337a9"
+        };
+
+        // Initialize Firebase
+        let firebaseApp, database;
+        let firebaseReady = false;
+
+        function initFirebase() {
+            try {
+                if (!firebase.apps.length) {
+                    firebaseApp = firebase.initializeApp(firebaseConfig);
+                } else {
+                    firebaseApp = firebase.apps[0];
+                }
+                database = firebase.database();
+                firebaseReady = true;
+                console.log('✅ Firebase initialized');
+                return true;
+            } catch (error) {
+                console.error('❌ Firebase init error:', error);
+                return false;
+            }
+        }
+
+        // ============ MONDAY.COM API ============
+        const MONDAY_API = {
+            url: 'https://api.monday.com/v2',
+            token: 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I'
+        };
+
+        // Make Monday.com API request
+        async function mondayQuery(query, variables = {}) {
+            try {
+                const response = await fetch(MONDAY_API.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': MONDAY_API.token,
+                        'API-Version': '2024-01'
+                    },
+                    body: JSON.stringify({ query, variables })
+                });
+                const result = await response.json();
+                return result.data;
+            } catch (error) {
+                console.error('Monday API error:', error);
+                return null;
+            }
+        }
+
+        // Get all boards from Monday.com
+        async function getMondayBoards() {
+            const query = `
+                query {
+                    boards(limit: 50) {
+                        id
+                        name
+                        description
+                        state
+                        board_folder_id
+                        groups {
+                            id
+                            title
+                            color
+                        }
+                    }
+                }
+            `;
+            const data = await mondayQuery(query);
+            return data?.boards || [];
+        }
+
+        // Get items from a Monday.com board
+        async function getMondayBoardItems(boardId) {
+            const query = `
+                query($boardId: [ID!]) {
+                    boards(ids: $boardId) {
+                        groups {
+                            id
+                            title
+                            color
+                            items_page(limit: 100) {
+                                items {
+                                    id
+                                    name
+                                    created_at
+                                    column_values {
+                                        id
+                                        text
+                                        type
+                                        value
+                                    }
+                                    subitems {
+                                        id
+                                        name
+                                        column_values {
+                                            id
+                                            text
+                                            type
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            `;
+            const data = await mondayQuery(query, { boardId: [boardId] });
+            return data?.boards?.[0]?.groups || [];
+        }
+
+        // Convert Monday.com data to Sunday Board format
+        function convertMondayToSundayFormat(mondayGroups) {
+            return mondayGroups.map((group, index) => ({
+                id: parseInt(group.id) || Date.now() + index,
+                title: group.title,
+                color: group.color || '#6C5CE7',
+                expanded: true,
+                items: (group.items_page?.items || []).map(item => {
+                    // Parse column values
+                    const columns = item.column_values || [];
+                    const statusCol = columns.find(c => c.type === 'status' || c.id.includes('status'));
+                    const dateCol = columns.find(c => c.type === 'date' || c.id.includes('date'));
+                    const personCol = columns.find(c => c.type === 'people' || c.id.includes('person'));
+
+                    let status = 'pending';
+                    if (statusCol?.text) {
+                        const statusText = statusCol.text.toLowerCase();
+                        if (statusText.includes('done') || statusText.includes('مكتمل')) status = 'done';
+                        else if (statusText.includes('working') || statusText.includes('قيد')) status = 'working';
+                        else if (statusText.includes('stuck') || statusText.includes('متوقف')) status = 'stuck';
+                    }
+
+                    let person = null;
+                    if (personCol?.text) {
+                        person = { name: personCol.text, color: '#6C5CE7' };
+                    }
+
+                    return {
+                        id: parseInt(item.id) || Date.now(),
+                        name: item.name,
+                        person: person,
+                        status: status,
+                        date: dateCol?.text || item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+                        subitems: (item.subitems || []).map(sub => ({
+                            id: parseInt(sub.id) || Date.now(),
+                            name: sub.name,
+                            person: null,
+                            status: 'pending',
+                            date: new Date().toISOString().split('T')[0]
+                        }))
+                    };
+                })
+            }));
+        }
+
+        // Sync from Monday.com button
+        let mondayBoards = [];
+        async function syncFromMonday() {
+            showLoadingOverlay('جاري جلب البيانات من Monday.com...');
+            try {
+                mondayBoards = await getMondayBoards();
+                if (mondayBoards.length > 0) {
+                    console.log('📦 Found', mondayBoards.length, 'boards from Monday.com');
+                    showBoardSelector(mondayBoards);
+                } else {
+                    alert('لم يتم العثور على بوردات في حسابك');
+                }
+            } catch (error) {
+                console.error('Error syncing from Monday:', error);
+                alert('خطأ في الاتصال بـ Monday.com');
+            }
+            hideLoadingOverlay();
+        }
+
+        // Load specific board from Monday.com
+        async function loadMondayBoard(boardId) {
+            showLoadingOverlay('جاري تحميل البورد...');
+            try {
+                const groups = await getMondayBoardItems(boardId);
+                const convertedGroups = convertMondayToSundayFormat(groups);
+
+                if (convertedGroups.length > 0) {
+                    data.groups = convertedGroups;
+                    renderBoard();
+                    autoSave();
+                    closeBoardSelector();
+                    alert('تم تحميل البورد بنجاح!');
+                }
+            } catch (error) {
+                console.error('Error loading Monday board:', error);
+                alert('خطأ في تحميل البورد');
+            }
+            hideLoadingOverlay();
+        }
+
+        function showLoadingOverlay(text) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.querySelector('.loading-text').textContent = text || 'جاري التحميل...';
+                overlay.style.display = 'flex';
+            }
+        }
+
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.style.display = 'none';
+        }
+
+        function showBoardSelector(boards) {
+            let selector = document.getElementById('boardSelector');
+            if (!selector) {
+                selector = document.createElement('div');
+                selector.id = 'boardSelector';
+                selector.className = 'modal-overlay show';
+                document.body.appendChild(selector);
+            }
+            selector.innerHTML = `
+                <div class="modal" style="max-width:500px;max-height:80vh;overflow:auto">
+                    <div class="modal-header">
+                        <h3>اختر بورد من Monday.com</h3>
+                        <button class="panel-close" onclick="closeBoardSelector()">×</button>
+                    </div>
+                    <div class="modal-body" style="padding:0">
+                        ${boards.map(b => `
+                            <div onclick="loadMondayBoard('${b.id}')" style="padding:16px 24px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:12px;transition:background 0.2s">
+                                <div style="width:40px;height:40px;background:#6C5CE7;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600">${b.name[0]}</div>
+                                <div>
+                                    <div style="font-weight:600;font-size:15px">${b.name}</div>
+                                    <div style="font-size:12px;color:var(--gray)">${b.groups?.length || 0} مجموعات</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            selector.classList.add('show');
+        }
+
+        function closeBoardSelector() {
+            const selector = document.getElementById('boardSelector');
+            if (selector) selector.classList.remove('show');
+        }
+
+        // ============ FIREBASE DATA OPERATIONS ============
+        async function saveToFirebase(path, data) {
+            if (!firebaseReady) return false;
+            try {
+                await database.ref(path).set(data);
+                console.log(`✅ Saved to ${path}`);
+                return true;
+            } catch (error) {
+                console.error(`❌ Error saving to ${path}:`, error);
+                return false;
+            }
+        }
+
+        async function loadFromFirebase(path) {
+            if (!firebaseReady) return null;
+            try {
+                const snapshot = await database.ref(path).once('value');
+                const data = snapshot.val();
+                console.log(`✅ Loaded from ${path}`);
+                return data;
+            } catch (error) {
+                console.error(`❌ Error loading from ${path}:`, error);
+                return null;
+            }
+        }
+
+        // Sunday Board specific paths
+        const PATHS = {
+            boards: 'sunday/boards',
+            tasks: 'sunday/tasks',
+            groups: 'sunday/groups',
+            settings: 'sunday/settings'
+        };
+
+        // Save all board data
+        async function saveBoardData() {
+            if (!firebaseReady) return;
+            const boardId = 'main'; // Default board
+            await saveToFirebase(`${PATHS.groups}/${boardId}`, data.groups);
+            await saveToFirebase(`${PATHS.boards}/${boardId}/folders`, data.folders);
+            showSaveIndicator();
+        }
+
+        // Load all board data
+        async function loadBoardData() {
+            if (!firebaseReady) return false;
+            const boardId = 'main';
+
+            try {
+                const [groups, folders] = await Promise.all([
+                    loadFromFirebase(`${PATHS.groups}/${boardId}`),
+                    loadFromFirebase(`${PATHS.boards}/${boardId}/folders`)
+                ]);
+
+                if (groups && Array.isArray(groups)) {
+                    data.groups = groups;
+                } else if (groups && typeof groups === 'object') {
+                    data.groups = Object.values(groups);
+                }
+
+                if (folders && Array.isArray(folders)) {
+                    data.folders = folders;
+                } else if (folders && typeof folders === 'object') {
+                    data.folders = Object.values(folders);
+                }
+
+                console.log('✅ Board data loaded from Firebase');
+                return true;
+            } catch (error) {
+                console.error('❌ Error loading board data:', error);
+                return false;
+            }
+        }
+
+        // Auto-save debounce
+        let saveTimeout;
+        function autoSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveBoardData();
+            }, 1000);
+        }
+
+        // Show save indicator
+        function showSaveIndicator() {
+            const indicator = document.getElementById('saveIndicator');
+            if (indicator) {
+                indicator.classList.add('show');
+                setTimeout(() => indicator.classList.remove('show'), 2000);
+            }
+        }
+
+        // Listen for realtime changes
+        function listenToChanges() {
+            if (!firebaseReady) return;
+            const boardId = 'main';
+
+            database.ref(`${PATHS.groups}/${boardId}`).on('value', (snapshot) => {
+                const newGroups = snapshot.val();
+                if (newGroups) {
+                    const groupsArray = Array.isArray(newGroups) ? newGroups : Object.values(newGroups);
+                    // Only update if different from current
+                    if (JSON.stringify(groupsArray) !== JSON.stringify(data.groups)) {
+                        data.groups = groupsArray;
+                        renderBoard();
+                        console.log('🔄 Realtime update received');
+                    }
+                }
+            });
+        }
+
         // ============ TRANSLATIONS ============
         const translations = {
             ar: {
@@ -1262,11 +1647,11 @@
         function formatDate(d) { return new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }); }
 
         // ============ ACTIONS ============
-        function toggleFolder(id) { data.folders.find(f=>f.id===id).expanded ^= 1; renderFolders(); }
-        function toggleGroup(id) { data.groups.find(g=>g.id===id).expanded ^= 1; renderBoard(); }
+        function toggleFolder(id) { data.folders.find(f=>f.id===id).expanded ^= 1; renderFolders(); autoSave(); }
+        function toggleGroup(id) { data.groups.find(g=>g.id===id).expanded ^= 1; renderBoard(); autoSave(); }
         function toggleSubitems(gid, iid) { document.getElementById(`sub-${gid}-${iid}`).classList.toggle('hidden'); }
-        function toggleCheck(gid, iid) { const i = data.groups.find(g=>g.id===gid).items.find(i=>i.id===iid); i.status = i.status==='done'?'pending':'done'; renderBoard(); }
-        function selectBoard(id) { data.folders.forEach(f=>f.items.forEach(i=>i.active=i.id===id)); renderFolders(); }
+        function toggleCheck(gid, iid) { const i = data.groups.find(g=>g.id===gid).items.find(i=>i.id===iid); i.status = i.status==='done'?'pending':'done'; renderBoard(); autoSave(); }
+        function selectBoard(id) { data.folders.forEach(f=>f.items.forEach(i=>i.active=i.id===id)); renderFolders(); autoSave(); }
 
         function openItemPanel(gid, iid) {
             selectedGroup = data.groups.find(g=>g.id===gid);
@@ -1298,10 +1683,10 @@
             d.classList.add('show');
         }
 
-        function setStatus(s) { if(selectedItem) { selectedItem.status=s; renderBoard(); } document.getElementById('statusDropdown').classList.remove('show'); }
-        function deleteItem() { if(selectedItem&&selectedGroup) { selectedGroup.items=selectedGroup.items.filter(i=>i.id!==selectedItem.id); renderBoard(); } document.getElementById('contextMenu').classList.remove('show'); }
-        function duplicateItem() { if(selectedItem&&selectedGroup) { const n=JSON.parse(JSON.stringify(selectedItem)); n.id=Date.now(); n.name+=' (copy)'; selectedGroup.items.push(n); renderBoard(); } document.getElementById('contextMenu').classList.remove('show'); }
-        function addSubitem() { if(selectedItem) { selectedItem.subitems.push({id:Date.now(),name:'New subitem',person:null,status:'pending',date:new Date().toISOString().split('T')[0]}); renderBoard(); } document.getElementById('contextMenu').classList.remove('show'); }
+        function setStatus(s) { if(selectedItem) { selectedItem.status=s; renderBoard(); autoSave(); } document.getElementById('statusDropdown').classList.remove('show'); }
+        function deleteItem() { if(selectedItem&&selectedGroup) { selectedGroup.items=selectedGroup.items.filter(i=>i.id!==selectedItem.id); renderBoard(); autoSave(); } document.getElementById('contextMenu').classList.remove('show'); }
+        function duplicateItem() { if(selectedItem&&selectedGroup) { const n=JSON.parse(JSON.stringify(selectedItem)); n.id=Date.now(); n.name+=' (copy)'; selectedGroup.items.push(n); renderBoard(); autoSave(); } document.getElementById('contextMenu').classList.remove('show'); }
+        function addSubitem() { if(selectedItem) { selectedItem.subitems.push({id:Date.now(),name:'New subitem',person:null,status:'pending',date:new Date().toISOString().split('T')[0]}); renderBoard(); autoSave(); } document.getElementById('contextMenu').classList.remove('show'); }
         function openItem() { if(selectedItem&&selectedGroup) openItemPanel(selectedGroup.id,selectedItem.id); document.getElementById('contextMenu').classList.remove('show'); }
         function copyLink() { alert('Link copied!'); document.getElementById('contextMenu').classList.remove('show'); }
         function archiveItem() { alert('Archived!'); document.getElementById('contextMenu').classList.remove('show'); }
@@ -1309,11 +1694,13 @@
         function addTaskToGroup(gid) {
             data.groups.find(g=>g.id===gid).items.push({id:Date.now(),name:'New item',person:null,status:'pending',date:new Date().toISOString().split('T')[0],subitems:[]});
             renderBoard();
+            autoSave();
         }
 
         function addNewGroup() {
             data.groups.push({id:Date.now(),title:'New Group',color:'#'+Math.floor(Math.random()*16777215).toString(16),expanded:true,items:[]});
             renderBoard();
+            autoSave();
         }
 
         function openNewItemModal() {
@@ -1332,6 +1719,7 @@
                 renderBoard();
                 closeModal();
                 document.getElementById('newTaskName').value = '';
+                autoSave();
             }
         }
 
@@ -1357,10 +1745,44 @@
             document.getElementById('statusDropdown').classList.remove('show');
         });
 
-        // Init
-        renderFolders();
-        renderBoard();
-        setLang('ar');
+        // ============ INIT ============
+        async function init() {
+            console.log('🚀 Starting Sunday Board...');
+
+            // Initialize Firebase
+            initFirebase();
+
+            // Try to load data from Firebase
+            const loaded = await loadBoardData();
+
+            if (loaded) {
+                console.log('📦 Data loaded from Firebase');
+            } else {
+                console.log('📦 Using default data');
+            }
+
+            // Hide loading overlay
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.style.display = 'none';
+
+            // Render UI
+            renderFolders();
+            renderBoard();
+            setLang('ar');
+
+            // Start listening for realtime changes
+            listenToChanges();
+
+            // Save initial data if nothing in Firebase
+            if (!loaded) {
+                setTimeout(() => saveBoardData(), 2000);
+            }
+
+            console.log('✅ Sunday Board ready!');
+        }
+
+        // Start the app
+        init();
     </script>
 </body>
 </html>
