@@ -378,9 +378,8 @@ const SundayBoardPro = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
 
-  // Internal data import function - fetches ALL data from Monday.com
+  // Internal data import function - fetches ALL data via backend proxy
   const importExternalData = async () => {
-    const API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5NjA1NTM2MCwiYWFpIjoxMSwidWlkIjo3MzAxNjAyMywiaWFkIjoiMjAyNS0wMS0xOFQxNTozNzo1NS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjY0MTU1MDUsInJnbiI6ImV1YzEifQ.lhOhB67B9pz1NWXf_RFCo7v2gWjhlZRbOqmwCgmzCZE';
 
     // Map status text to our status IDs
     const mapStatus = (text) => {
@@ -415,73 +414,23 @@ const SundayBoardPro = () => {
     };
 
     try {
-      console.log('🔄 Fetching data from Monday.com...');
+      console.log('🔄 Fetching data via backend proxy...');
 
-      // Fetch ALL boards with groups and ALL items
-      const response = await fetch('https://api.monday.com/v2', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': API_TOKEN,
-          'API-Version': '2024-01'
-        },
-        body: JSON.stringify({
-          query: `{
-            boards(limit: 50, order_by: created_at) {
-              id
-              name
-              description
-              state
-              groups {
-                id
-                title
-                color
-                position
-              }
-              items_page(limit: 500) {
-                cursor
-                items {
-                  id
-                  name
-                  state
-                  group {
-                    id
-                    title
-                  }
-                  column_values {
-                    id
-                    text
-                    value
-                    type
-                    column {
-                      title
-                    }
-                  }
-                  subitems {
-                    id
-                    name
-                    column_values {
-                      id
-                      text
-                    }
-                  }
-                }
-              }
-            }
-          }`
-        })
-      });
+      // Use backend proxy to avoid CORS issues
+      const response = await fetch('/api/monday/boards');
+      const result = await response.json();
 
-      const data = await response.json();
-      console.log('📊 Monday.com Response:', data);
+      console.log('📊 Proxy response:', result);
 
-      if (data.errors) {
-        console.error('❌ Monday.com API errors:', data.errors);
+      if (!result.success) {
+        console.error('❌ API Error:', result.error || result.errors);
         return null;
       }
 
-      if (data.data?.boards && data.data.boards.length > 0) {
-        const boards = data.data.boards.filter(b => b.state !== 'deleted');
+      const data = result.data;
+
+      if (data?.boards && data.boards.length > 0) {
+        const boards = data.boards.filter(b => b.state !== 'deleted');
         console.log(`✅ Found ${boards.length} boards`);
 
         // Create workspaces from boards
@@ -583,7 +532,7 @@ const SundayBoardPro = () => {
 
         return {
           workspaces: newWorkspaces,
-          groups: nonEmptyGroups.length > 0 ? nonEmptyGroups : allGroups,
+          groups: allGroups.length > 0 ? allGroups : INITIAL_GROUPS,
           boards: boards
         };
       }
@@ -755,6 +704,75 @@ const SundayBoardPro = () => {
     })));
   };
 
+  // Add new task to a group
+  const addNewTask = (groupId) => {
+    const taskName = prompt('اسم المهمة الجديدة:');
+    if (!taskName) return;
+
+    setGroups(prev => prev.map(group => {
+      if (group.id === groupId) {
+        return {
+          ...group,
+          items: [...group.items, {
+            id: `item_${Date.now()}`,
+            name: taskName,
+            status: 'pending',
+            priority: 'medium',
+            person: { name: '-', avatar: '👤', color: THEME.primary },
+            date: '-',
+            creation: new Date().toISOString().split('T')[0],
+            subitems: []
+          }]
+        };
+      }
+      return group;
+    }));
+  };
+
+  // Add new group
+  const addNewGroup = () => {
+    const groupName = prompt('اسم المجموعة الجديدة:');
+    if (!groupName) return;
+
+    const colors = ['#6C5CE7', '#00B894', '#E17055', '#0984E3', '#FD79A8', '#FDCB6E'];
+    setGroups(prev => [...prev, {
+      id: `grp_${Date.now()}`,
+      title: groupName,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      collapsed: false,
+      items: []
+    }]);
+  };
+
+  // Update task status
+  const updateTaskStatus = (groupId, taskId, newStatus) => {
+    setGroups(prev => prev.map(group => {
+      if (group.id === groupId) {
+        return {
+          ...group,
+          items: group.items.map(item =>
+            item.id === taskId ? { ...item, status: newStatus } : item
+          )
+        };
+      }
+      return group;
+    }));
+  };
+
+  // Delete task
+  const deleteTask = (groupId, taskId) => {
+    if (!confirm('هل تريد حذف هذه المهمة؟')) return;
+    setGroups(prev => prev.map(group => {
+      if (group.id === groupId) {
+        return {
+          ...group,
+          items: group.items.filter(item => item.id !== taskId)
+        };
+      }
+      return group;
+    }));
+  };
+
   // Show loading screen
   if (isLoading) {
     return (
@@ -814,6 +832,10 @@ const SundayBoardPro = () => {
             expandedSubitems={expandedSubitems}
             toggleSubitems={toggleSubitems}
             searchQuery={searchQuery}
+            onAddTask={addNewTask}
+            onAddGroup={addNewGroup}
+            onUpdateStatus={updateTaskStatus}
+            onDeleteTask={deleteTask}
           />
 
           {showDiscussion && <DiscussionPanel onClose={() => setShowDiscussion(false)} />}
@@ -1059,7 +1081,7 @@ const ViewTab = ({ icon, label, active, onClick }) => (
 );
 
 // ==================== 📋 MAIN CONTENT ====================
-const MainContent = ({ groups, currentView, expandedSubitems, toggleSubitems, searchQuery }) => (
+const MainContent = ({ groups, currentView, expandedSubitems, toggleSubitems, searchQuery, onAddTask, onAddGroup, onUpdateStatus, onDeleteTask }) => (
   <div style={{ flex: 1, overflow: 'auto', padding: '24px', background: THEME.background }}>
     <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
       <FilterButton icon="👤" label="Person" />
@@ -1069,11 +1091,25 @@ const MainContent = ({ groups, currentView, expandedSubitems, toggleSubitems, se
     </div>
 
     {groups.map(group => (
-      <GroupCard key={group.id} group={group} expandedSubitems={expandedSubitems} toggleSubitems={toggleSubitems} searchQuery={searchQuery} />
+      <GroupCard
+        key={group.id}
+        group={group}
+        expandedSubitems={expandedSubitems}
+        toggleSubitems={toggleSubitems}
+        searchQuery={searchQuery}
+        onAddTask={onAddTask}
+        onUpdateStatus={onUpdateStatus}
+        onDeleteTask={onDeleteTask}
+      />
     ))}
 
-    <button style={{ width: '100%', padding: '16px', background: THEME.white, border: `2px dashed ${THEME.lightGray}50`, borderRadius: '12px', color: THEME.gray, fontSize: '14px', fontWeight: '500', cursor: 'pointer', marginTop: '16px' }}>
-      ➕ Add New Group
+    <button
+      onClick={onAddGroup}
+      style={{ width: '100%', padding: '16px', background: THEME.white, border: `2px dashed ${THEME.lightGray}50`, borderRadius: '12px', color: THEME.gray, fontSize: '14px', fontWeight: '500', cursor: 'pointer', marginTop: '16px', transition: 'all 0.2s ease' }}
+      onMouseOver={(e) => { e.target.style.borderColor = THEME.primary; e.target.style.color = THEME.primary; }}
+      onMouseOut={(e) => { e.target.style.borderColor = `${THEME.lightGray}50`; e.target.style.color = THEME.gray; }}
+    >
+      ➕ إضافة مجموعة جديدة
     </button>
   </div>
 );
@@ -1087,7 +1123,7 @@ const FilterButton = ({ icon, label }) => (
 );
 
 // ==================== 📦 GROUP CARD ====================
-const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery }) => {
+const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery, onAddTask, onUpdateStatus, onDeleteTask }) => {
   const [collapsed, setCollapsed] = useState(group.collapsed);
 
   const filteredItems = searchQuery
@@ -1097,33 +1133,47 @@ const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery }) => 
   const stats = { total: filteredItems.length, done: filteredItems.filter(i => i.status === 'done').length };
 
   return (
-    <div style={{ background: THEME.white, borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+    <div style={{ background: THEME.white, borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', animation: 'fadeIn 0.3s ease' }}>
       <div onClick={() => setCollapsed(!collapsed)} style={{ background: group.color, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ color: 'white', fontSize: '14px', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}>▼</span>
           <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '600', margin: 0 }}>{group.title}</h3>
           <span style={{ background: 'rgba(255,255,255,0.2)', color: 'white', padding: '2px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: '500' }}>{stats.done}/{stats.total}</span>
         </div>
-        <button style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>⋯</button>
+        <button onClick={(e) => e.stopPropagation()} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>⋯</button>
       </div>
 
       {!collapsed && (
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 120px 120px 130px 120px', background: '#F8F9FA', borderBottom: `1px solid ${THEME.lightGray}30`, fontSize: '12px', fontWeight: '600', color: THEME.gray }}>
             <div style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><input type="checkbox" /></div>
-            <div style={{ padding: '12px' }}>Task</div>
-            <div style={{ padding: '12px', textAlign: 'center' }}>Creation</div>
-            <div style={{ padding: '12px', textAlign: 'center' }}>Person</div>
-            <div style={{ padding: '12px', textAlign: 'center' }}>Status</div>
-            <div style={{ padding: '12px', textAlign: 'center' }}>Date</div>
+            <div style={{ padding: '12px' }}>المهمة</div>
+            <div style={{ padding: '12px', textAlign: 'center' }}>الإنشاء</div>
+            <div style={{ padding: '12px', textAlign: 'center' }}>المسؤول</div>
+            <div style={{ padding: '12px', textAlign: 'center' }}>الحالة</div>
+            <div style={{ padding: '12px', textAlign: 'center' }}>التاريخ</div>
           </div>
 
           {filteredItems.map(item => (
-            <TaskRow key={item.id} item={item} expanded={expandedSubitems.has(item.id)} onToggle={() => toggleSubitems(item.id)} groupColor={group.color} />
+            <TaskRow
+              key={item.id}
+              item={item}
+              groupId={group.id}
+              expanded={expandedSubitems.has(item.id)}
+              onToggle={() => toggleSubitems(item.id)}
+              groupColor={group.color}
+              onUpdateStatus={onUpdateStatus}
+              onDeleteTask={onDeleteTask}
+            />
           ))}
 
-          <button style={{ width: '100%', padding: '12px 20px', background: 'transparent', border: 'none', color: group.color, fontSize: '14px', fontWeight: '500', cursor: 'pointer', textAlign: 'right' }}>
-            ➕ Add Task
+          <button
+            onClick={() => onAddTask && onAddTask(group.id)}
+            style={{ width: '100%', padding: '12px 20px', background: 'transparent', border: 'none', color: group.color, fontSize: '14px', fontWeight: '500', cursor: 'pointer', textAlign: 'right', transition: 'background 0.2s' }}
+            onMouseOver={(e) => e.target.style.background = `${group.color}10`}
+            onMouseOut={(e) => e.target.style.background = 'transparent'}
+          >
+            ➕ إضافة مهمة
           </button>
         </div>
       )}
@@ -1132,14 +1182,25 @@ const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery }) => 
 };
 
 // ==================== 📝 TASK ROW ====================
-const TaskRow = ({ item, expanded, onToggle, groupColor }) => {
+const TaskRow = ({ item, groupId, expanded, onToggle, groupColor, onUpdateStatus, onDeleteTask }) => {
   const [hovered, setHovered] = useState(false);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
   const status = STATUS_OPTIONS.find(s => s.id === item.status) || STATUS_OPTIONS[3];
   const hasSubitems = item.subitems && item.subitems.length > 0;
 
+  const handleStatusClick = (e) => {
+    e.stopPropagation();
+    setShowStatusMenu(!showStatusMenu);
+  };
+
+  const handleStatusChange = (newStatus) => {
+    if (onUpdateStatus) onUpdateStatus(groupId, item.id, newStatus);
+    setShowStatusMenu(false);
+  };
+
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 120px 120px 130px 120px', borderBottom: `1px solid ${THEME.lightGray}20`, background: hovered ? '#F8F9FA' : 'white' }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 120px 120px 130px 120px', borderBottom: `1px solid ${THEME.lightGray}20`, background: hovered ? '#F8F9FA' : 'white', position: 'relative' }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
         <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><input type="checkbox" /></div>
 
         <div style={{ padding: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1150,14 +1211,17 @@ const TaskRow = ({ item, expanded, onToggle, groupColor }) => {
           )}
           <span style={{ fontSize: '14px', fontWeight: '500', color: THEME.dark }}>{item.name}</span>
           {hasSubitems && <span style={{ background: `${groupColor}20`, color: groupColor, padding: '2px 6px', borderRadius: '8px', fontSize: '11px', fontWeight: '500' }}>{item.subitems.length}</span>}
+          {hovered && (
+            <button onClick={() => onDeleteTask && onDeleteTask(groupId, item.id)} style={{ marginRight: 'auto', background: 'transparent', border: 'none', color: THEME.danger, cursor: 'pointer', fontSize: '16px', opacity: 0.6 }} title="حذف">🗑️</button>
+          )}
         </div>
 
         <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: '13px', color: THEME.gray }}>{new Date(item.creation).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+          <span style={{ fontSize: '13px', color: THEME.gray }}>{item.creation ? new Date(item.creation).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-'}</span>
         </div>
 
         <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {item.person ? (
+          {item.person && item.person.name !== '-' ? (
             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: item.person.color || THEME.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: 'white', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} title={item.person.name}>
               {item.person.avatar}
             </div>
@@ -1166,13 +1230,28 @@ const TaskRow = ({ item, expanded, onToggle, groupColor }) => {
           )}
         </div>
 
-        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: status.color, color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', minWidth: '90px', textAlign: 'center' }}>{status.label}</div>
+        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <div onClick={handleStatusClick} style={{ background: status.color, color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', minWidth: '90px', textAlign: 'center', transition: 'transform 0.1s' }}>
+            {status.icon} {status.label}
+          </div>
+          {showStatusMenu && (
+            <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', background: 'white', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', zIndex: 100, padding: '8px', minWidth: '140px' }}>
+              {STATUS_OPTIONS.map(opt => (
+                <div key={opt.id} onClick={() => handleStatusChange(opt.id)} style={{ padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', background: item.status === opt.id ? `${opt.color}20` : 'transparent' }}
+                  onMouseOver={(e) => e.target.style.background = `${opt.color}20`}
+                  onMouseOut={(e) => e.target.style.background = item.status === opt.id ? `${opt.color}20` : 'transparent'}
+                >
+                  <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: opt.color }}></span>
+                  {opt.label}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: '13px', color: new Date(item.date) < new Date() && item.status !== 'done' ? THEME.danger : THEME.gray, fontWeight: new Date(item.date) < new Date() && item.status !== 'done' ? '600' : '400' }}>
-            {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          <span style={{ fontSize: '13px', color: item.date && item.date !== '-' && new Date(item.date) < new Date() && item.status !== 'done' ? THEME.danger : THEME.gray, fontWeight: item.date && item.date !== '-' && new Date(item.date) < new Date() && item.status !== 'done' ? '600' : '400' }}>
+            {item.date && item.date !== '-' ? new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-'}
           </span>
         </div>
       </div>

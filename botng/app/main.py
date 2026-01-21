@@ -166,6 +166,83 @@ async def sunday_board():
     return RedirectResponse(url="/src/sunday-board/board-pro.html")
 
 
+# ==================== Monday.com Proxy (CORS Fix) ====================
+
+@app.get("/api/monday/boards")
+async def get_monday_boards():
+    """Proxy for Monday.com API - fixes CORS issues"""
+    import httpx
+
+    MONDAY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5NjA1NTM2MCwiYWFpIjoxMSwidWlkIjo3MzAxNjAyMywiaWFkIjoiMjAyNS0wMS0xOFQxNTozNzo1NS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjY0MTU1MDUsInJnbiI6ImV1YzEifQ.lhOhB67B9pz1NWXf_RFCo7v2gWjhlZRbOqmwCgmzCZE"
+
+    query = """
+    {
+        boards(limit: 50, order_by: created_at) {
+            id
+            name
+            description
+            state
+            groups {
+                id
+                title
+                color
+                position
+            }
+            items_page(limit: 500) {
+                items {
+                    id
+                    name
+                    state
+                    group {
+                        id
+                        title
+                    }
+                    column_values {
+                        id
+                        text
+                        value
+                        type
+                        column {
+                            title
+                        }
+                    }
+                    subitems {
+                        id
+                        name
+                        column_values {
+                            id
+                            text
+                        }
+                    }
+                }
+            }
+        }
+    }
+    """
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                "https://api.monday.com/v2",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": MONDAY_TOKEN,
+                    "API-Version": "2024-01"
+                },
+                json={"query": query}
+            )
+
+            data = response.json()
+
+            if "errors" in data:
+                return {"success": False, "errors": data["errors"]}
+
+            return {"success": True, "data": data.get("data", {})}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 # ==================== Health Check ====================
 
 @app.get("/api/health")
