@@ -416,8 +416,13 @@ const SundayBoardPro = () => {
     try {
       console.log('🔄 Fetching data via backend proxy...');
 
-      // Use backend proxy to avoid CORS issues
-      const response = await fetch('/api/monday/boards');
+      // Use backend proxy to avoid CORS issues - with 10 second timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch('/api/monday/boards', { signal: controller.signal });
+      clearTimeout(timeoutId);
+
       const result = await response.json();
 
       console.log('📊 Proxy response:', result);
@@ -617,10 +622,13 @@ const SundayBoardPro = () => {
           } else {
             // No external data - use default data
             console.log('ℹ️ Using default data');
+            setGroups(INITIAL_GROUPS);
           }
         }
       } catch (error) {
         console.error('❌ Error loading data:', error);
+        // On any error, ensure we show default data
+        setGroups(INITIAL_GROUPS);
       } finally {
         setIsLoading(false);
       }
