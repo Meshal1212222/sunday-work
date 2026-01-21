@@ -19,8 +19,54 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-    <!-- Firebase Config -->
-    <script src="firebase-config.js"></script>
+    <!-- Firebase Config - Embedded -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyACk3UhHouKfGsOu3ZJfaOhqLqucumn2UQ",
+            authDomain: "sunday-fb28c.firebaseapp.com",
+            databaseURL: "https://sunday-fb28c-default-rtdb.firebaseio.com",
+            projectId: "sunday-fb28c",
+            storageBucket: "sunday-fb28c.firebasestorage.app",
+            messagingSenderId: "24752239756",
+            appId: "1:24752239756:web:386c2c72624eb67ba337a9"
+        };
+
+        let firebaseApp, database;
+        window.initFirebase = function() {
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) {
+                    firebaseApp = firebase.initializeApp(firebaseConfig);
+                } else {
+                    firebaseApp = firebase.apps[0];
+                }
+                database = firebase.database();
+                console.log('✅ Firebase initialized');
+                return true;
+            }
+            return false;
+        };
+
+        window.saveToFirebase = async function(path, data) {
+            if (!database) return false;
+            try {
+                await database.ref(path).set(data);
+                return true;
+            } catch (e) { console.error(e); return false; }
+        };
+
+        window.loadFromFirebase = async function(path) {
+            if (!database) return null;
+            try {
+                const snap = await database.ref(path).once('value');
+                return snap.val();
+            } catch (e) { console.error(e); return null; }
+        };
+
+        window.SundayBoardDB = {
+            async saveGroups(boardId, groups) { return await window.saveToFirebase(`sunday/groups/${boardId}`, groups); },
+            async loadGroups(boardId) { return await window.loadFromFirebase(`sunday/groups/${boardId}`); }
+        };
+    </script>
 
     <style>
         * {
