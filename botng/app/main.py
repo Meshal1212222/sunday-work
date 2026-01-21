@@ -40,13 +40,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"⚠️ Scheduler warning: {e}")
 
-    # Start Crash Monitoring (Real-time)
-    try:
-        automation_scheduler = AutomationScheduler()
-        asyncio.create_task(automation_scheduler.start())
-        print("✅ Crash monitoring started (Real-time)")
-    except Exception as e:
-        print(f"⚠️ Crash monitoring warning: {e}")
+    # Start Crash Monitoring (Real-time) - DISABLED
+    # try:
+    #     automation_scheduler = AutomationScheduler()
+    #     asyncio.create_task(automation_scheduler.start())
+    #     print("✅ Crash monitoring started (Real-time)")
+    # except Exception as e:
+    #     print(f"⚠️ Crash monitoring warning: {e}")
+    print("⏸️ Crash monitoring DISABLED")
 
     print("✅ Botng is ready!")
 
