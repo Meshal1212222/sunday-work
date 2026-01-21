@@ -375,6 +375,8 @@ const SundayBoardPro = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedSubitems, setExpandedSubitems] = useState(new Set(['item1', 'item2']));
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
 
@@ -620,21 +622,20 @@ const SundayBoardPro = () => {
 
             console.log('✅ Data imported and saved');
           } else {
-            // No external data - use default data
-            console.log('ℹ️ Using default data');
-            setGroups(INITIAL_GROUPS);
+            // API failed - show error
+            console.error('❌ فشل استيراد البيانات من API');
+            setLoadError('فشل تحميل البيانات. تأكد من اتصال الإنترنت وحاول مرة أخرى.');
           }
         }
       } catch (error) {
         console.error('❌ Error loading data:', error);
-        // On any error, ensure we show default data
-        setGroups(INITIAL_GROUPS);
+        setLoadError('حدث خطأ: ' + error.message);
       } finally {
         setIsLoading(false);
       }
     };
     init();
-  }, []);
+  }, [retryCount]);
 
   // Handle board selection - load groups for selected board
   const handleSelectBoard = (boardId) => {
@@ -914,8 +915,8 @@ const SundayBoardPro = () => {
     }));
   };
 
-  // Show loading screen
-  if (isLoading) {
+  // Show loading or error screen
+  if (isLoading || loadError) {
     return (
       <div style={{
         display: 'flex',
@@ -927,7 +928,19 @@ const SundayBoardPro = () => {
         gap: '20px'
       }}>
         <SundayLogo size="large" />
-        <div style={{ fontSize: '18px', color: THEME.primary, fontWeight: '500' }}>جاري التحميل...</div>
+        {isLoading ? (
+          <div style={{ fontSize: '18px', color: THEME.primary, fontWeight: '500' }}>جاري التحميل...</div>
+        ) : loadError ? (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '16px', color: THEME.danger, fontWeight: '500', marginBottom: '15px' }}>{loadError}</div>
+            <button
+              onClick={() => { setLoadError(null); setIsLoading(true); setRetryCount(c => c + 1); }}
+              style={{ padding: '10px 25px', background: THEME.primary, color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: '500' }}
+            >
+              إعادة المحاولة
+            </button>
+          </div>
+        ) : null}
       </div>
     );
   }
