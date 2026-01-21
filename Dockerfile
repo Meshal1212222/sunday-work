@@ -1,8 +1,9 @@
 FROM python:3.11-slim
 
 # ========================================
-# Build version: 4.0 - FORCE REBUILD
-# Date: 2026-01-21 - Fixed Monday.com API query
+# Build version: 5.0 - UI/UX MAJOR UPGRADE
+# Date: 2026-01-21 - Professional Design with Arabic Fonts
+# Features: Cairo Arabic Font, Better Spacing, Tree Design
 # ========================================
 WORKDIR /app
 

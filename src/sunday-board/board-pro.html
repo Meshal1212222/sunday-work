@@ -5,10 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sunday Board Pro - نظام إدارة المشاريع المتقدم</title>
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts - Arabic & Latin -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
     <!-- React & Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -76,9 +79,13 @@
         }
 
         body {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Cairo', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             overflow-x: hidden;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 14px;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         #root {
@@ -95,6 +102,30 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             font-size: 18px;
             color: white;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        /* Better text rendering */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Cairo', 'Inter', sans-serif;
+            font-weight: 700;
+        }
+
+        /* Button reset */
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        /* Input reset */
+        input, textarea, select {
+            font-family: inherit;
+            font-size: 14px;
         }
 
         /* Animations */
@@ -118,9 +149,15 @@
             50% { transform: translateY(-5px); }
         }
 
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .animate-fade { animation: fadeIn 0.3s ease-out; }
         .animate-pulse:hover { animation: pulse 0.3s ease-in-out; }
         .animate-float { animation: float 3s ease-in-out infinite; }
+        .animate-spin { animation: spin 1s linear infinite; }
 
         /* Glass Effect */
         .glass {
@@ -233,21 +270,23 @@ const SundayLogo = ({ size = 'medium', collapsed = false }) => {
         <path d="M 50,38 L 53,47 L 62,50 L 53,53 L 50,62 L 47,53 L 38,50 L 47,47 Z" fill="white" />
       </svg>
       {!collapsed && (
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
           <span style={{
-            fontFamily: 'Poppins, sans-serif',
+            fontFamily: "'Inter', 'Cairo', sans-serif",
             fontSize: `${iconSize * 0.55}px`,
-            fontWeight: '700',
-            color: THEME.primaryDark
+            fontWeight: '800',
+            color: THEME.primaryDark,
+            letterSpacing: '-0.5px'
           }}>
             Sunday
           </span>
           <span style={{
-            fontFamily: 'Poppins, sans-serif',
+            fontFamily: "'Cairo', 'Inter', sans-serif",
             fontSize: `${iconSize * 0.28}px`,
-            color: THEME.gray
+            color: THEME.gray,
+            fontWeight: '500'
           }}>
-            Work Management
+            إدارة المشاريع
           </span>
         </div>
       )}
@@ -953,17 +992,46 @@ const SundayBoardPro = () => {
         minHeight: '100vh',
         background: THEME.background,
         flexDirection: 'column',
-        gap: '20px'
+        gap: '24px',
+        fontFamily: "'Cairo', 'Inter', sans-serif"
       }}>
         <SundayLogo size="large" />
         {isLoading ? (
-          <div style={{ fontSize: '18px', color: THEME.primary, fontWeight: '500' }}>جاري التحميل...</div>
+          <div style={{
+            fontSize: '18px',
+            color: THEME.primary,
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <span style={{
+              width: '24px',
+              height: '24px',
+              border: `3px solid ${THEME.primary}30`,
+              borderTop: `3px solid ${THEME.primary}`,
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }}></span>
+            جاري التحميل...
+          </div>
         ) : loadError ? (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '16px', color: THEME.danger, fontWeight: '500', marginBottom: '15px' }}>{loadError}</div>
+            <div style={{ fontSize: '16px', color: THEME.danger, fontWeight: '600', marginBottom: '20px' }}>{loadError}</div>
             <button
               onClick={() => { setLoadError(null); setIsLoading(true); setRetryCount(c => c + 1); }}
-              style={{ padding: '10px 25px', background: THEME.primary, color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: '500' }}
+              style={{
+                padding: '12px 32px',
+                background: THEME.gradients.primary,
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '15px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                boxShadow: `0 4px 15px ${THEME.primary}40`,
+                transition: 'transform 0.2s ease'
+              }}
             >
               إعادة المحاولة
             </button>
@@ -977,9 +1045,10 @@ const SundayBoardPro = () => {
     <div style={{
       display: 'flex',
       minHeight: '100vh',
-      fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, sans-serif',
+      fontFamily: "'Cairo', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       background: THEME.background,
-      direction: 'rtl'
+      direction: 'rtl',
+      fontSize: '14px'
     }}>
       {/* Sidebar */}
       <Sidebar
@@ -1041,24 +1110,38 @@ const SundayBoardPro = () => {
 // ==================== 📂 SIDEBAR ====================
 const Sidebar = ({ collapsed, onToggle, workspaces, selectedBoard, onSelectBoard, onToggleFolder, currentView, onChangeView }) => (
   <div style={{
-    width: collapsed ? '60px' : '280px',
+    width: collapsed ? '70px' : '280px',
     background: THEME.white,
-    borderLeft: `1px solid ${THEME.lightGray}30`,
+    borderLeft: `1px solid ${THEME.lightGray}20`,
     display: 'flex',
     flexDirection: 'column',
-    transition: 'width 0.3s ease',
-    overflow: 'hidden'
+    transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    overflow: 'hidden',
+    boxShadow: '2px 0 10px rgba(0,0,0,0.03)'
   }}>
     <div style={{
-      padding: collapsed ? '16px 12px' : '20px',
-      borderBottom: `1px solid ${THEME.lightGray}30`,
+      padding: collapsed ? '20px 15px' : '24px',
+      borderBottom: `1px solid ${THEME.lightGray}20`,
       display: 'flex',
       alignItems: 'center',
       justifyContent: collapsed ? 'center' : 'space-between'
     }}>
       <SundayLogo size="medium" collapsed={collapsed} />
       {!collapsed && (
-        <button onClick={onToggle} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: THEME.gray }}>
+        <button onClick={onToggle} style={{
+          background: `${THEME.lightGray}15`,
+          border: 'none',
+          cursor: 'pointer',
+          fontSize: '14px',
+          color: THEME.gray,
+          width: '32px',
+          height: '32px',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.2s ease'
+        }}>
           ◀
         </button>
       )}
@@ -1127,19 +1210,46 @@ const Sidebar = ({ collapsed, onToggle, workspaces, selectedBoard, onSelectBoard
 const QuickAction = ({ icon, label, active, onClick, badge }) => (
   <button onClick={onClick} style={{
     width: '100%',
-    padding: '10px 12px',
-    background: active ? `${THEME.primary}15` : 'transparent',
-    border: 'none',
-    borderRadius: '8px',
+    padding: '12px 14px',
+    background: active ? `${THEME.primary}12` : 'transparent',
+    border: active ? `1px solid ${THEME.primary}25` : '1px solid transparent',
+    borderRadius: '10px',
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: '14px',
     cursor: 'pointer',
-    marginBottom: '4px'
+    marginBottom: '6px',
+    transition: 'all 0.2s ease'
   }}>
-    <span style={{ fontSize: '18px' }}>{icon}</span>
-    <span style={{ flex: 1, textAlign: 'right', fontSize: '14px', fontWeight: active ? '600' : '500', color: active ? THEME.primary : THEME.dark }}>{label}</span>
-    {badge && <span style={{ background: THEME.danger, color: 'white', fontSize: '11px', fontWeight: '600', padding: '2px 6px', borderRadius: '10px' }}>{badge}</span>}
+    <span style={{
+      fontSize: '20px',
+      width: '36px',
+      height: '36px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: active ? `${THEME.primary}15` : `${THEME.lightGray}15`,
+      borderRadius: '10px'
+    }}>{icon}</span>
+    <span style={{
+      flex: 1,
+      textAlign: 'right',
+      fontSize: '15px',
+      fontWeight: active ? '700' : '500',
+      color: active ? THEME.primary : THEME.dark
+    }}>{label}</span>
+    {badge && (
+      <span style={{
+        background: `linear-gradient(135deg, ${THEME.danger}, #FF6B6B)`,
+        color: 'white',
+        fontSize: '11px',
+        fontWeight: '700',
+        padding: '4px 8px',
+        borderRadius: '12px',
+        minWidth: '22px',
+        textAlign: 'center'
+      }}>{badge}</span>
+    )}
   </button>
 );
 
@@ -1205,71 +1315,173 @@ const BoardItem = ({ board, selected, onSelect }) => (
 
 // ==================== 🔝 HEADER ====================
 const Header = ({ boardName, onToggleDiscussion, showDiscussion, searchQuery, onSearch, currentView, onChangeView, isSaving, lastSaved }) => (
-  <div style={{ background: THEME.white, borderBottom: `1px solid ${THEME.lightGray}30` }}>
-    <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '700', color: THEME.dark, margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ width: '36px', height: '36px', borderRadius: '8px', background: THEME.gradients.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🏠</span>
+  <div style={{ background: THEME.white, borderBottom: `1px solid ${THEME.lightGray}15`, boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+    <div style={{ padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+        <h1 style={{
+          fontSize: '22px',
+          fontWeight: '700',
+          color: THEME.dark,
+          margin: 0,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '14px',
+          fontFamily: "'Cairo', sans-serif"
+        }}>
+          <span style={{
+            width: '42px',
+            height: '42px',
+            borderRadius: '12px',
+            background: THEME.gradients.primary,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '20px',
+            boxShadow: `0 4px 12px ${THEME.primary}30`
+          }}>🏠</span>
           {boardName}
         </h1>
-        <span style={{ background: `${THEME.success}20`, color: THEME.success, padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' }}>● Active</span>
+        <span style={{
+          background: `${THEME.success}15`,
+          color: THEME.success,
+          padding: '6px 14px',
+          borderRadius: '20px',
+          fontSize: '13px',
+          fontWeight: '600',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: THEME.success }}></span>
+          نشط
+        </span>
         {isSaving && (
-          <span style={{ background: `${THEME.warning}20`, color: THEME.warning, padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' }}>💾 Saving...</span>
+          <span style={{
+            background: `${THEME.warning}15`,
+            color: '#B45309',
+            padding: '6px 14px',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            <span style={{
+              width: '14px',
+              height: '14px',
+              border: '2px solid #B4530930',
+              borderTop: '2px solid #B45309',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }}></span>
+            جاري الحفظ...
+          </span>
         )}
         {!isSaving && lastSaved && (
-          <span style={{ background: `${THEME.info}15`, color: THEME.info, padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '500' }}>☁️ Synced</span>
+          <span style={{
+            background: `${THEME.info}12`,
+            color: THEME.info,
+            padding: '6px 14px',
+            borderRadius: '20px',
+            fontSize: '12px',
+            fontWeight: '600'
+          }}>☁️ تم المزامنة</span>
         )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         <div style={{ position: 'relative' }}>
-          <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => onSearch(e.target.value)} style={{ padding: '8px 16px 8px 40px', border: `1px solid ${THEME.lightGray}50`, borderRadius: '8px', fontSize: '14px', width: '200px', outline: 'none', direction: 'rtl' }} />
-          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: THEME.gray }}>🔍</span>
+          <input
+            type="text"
+            placeholder="بحث..."
+            value={searchQuery}
+            onChange={(e) => onSearch(e.target.value)}
+            style={{
+              padding: '10px 18px 10px 42px',
+              border: `2px solid ${THEME.lightGray}30`,
+              borderRadius: '12px',
+              fontSize: '14px',
+              width: '220px',
+              outline: 'none',
+              direction: 'rtl',
+              background: '#FAFAFA',
+              transition: 'all 0.2s ease'
+            }}
+          />
+          <span style={{
+            position: 'absolute',
+            left: '14px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: THEME.gray,
+            fontSize: '16px'
+          }}>🔍</span>
         </div>
 
         <button onClick={onToggleDiscussion} style={{
-          padding: '8px 16px',
+          padding: '10px 18px',
           background: showDiscussion ? THEME.primary : 'transparent',
-          border: `1px solid ${showDiscussion ? THEME.primary : THEME.lightGray}50`,
-          borderRadius: '8px',
+          border: `2px solid ${showDiscussion ? THEME.primary : THEME.lightGray}40`,
+          borderRadius: '12px',
           color: showDiscussion ? 'white' : THEME.dark,
           fontSize: '14px',
-          fontWeight: '500',
-          cursor: 'pointer'
+          fontWeight: '600',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          transition: 'all 0.2s ease'
         }}>
-          💬 Discussion
+          💬 المحادثة
         </button>
 
-        <button style={{ padding: '8px 20px', background: THEME.gradients.primary, border: 'none', borderRadius: '8px', color: 'white', fontSize: '14px', fontWeight: '600', cursor: 'pointer', boxShadow: `0 4px 12px ${THEME.primary}40` }}>
-          ✨ New Task
+        <button style={{
+          padding: '10px 22px',
+          background: THEME.gradients.primary,
+          border: 'none',
+          borderRadius: '12px',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: '700',
+          cursor: 'pointer',
+          boxShadow: `0 4px 15px ${THEME.primary}40`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          transition: 'all 0.2s ease'
+        }}>
+          ✨ مهمة جديدة
         </button>
       </div>
     </div>
 
-    <div style={{ display: 'flex', gap: '4px', padding: '0 24px', borderTop: `1px solid ${THEME.lightGray}20` }}>
-      <ViewTab icon="📊" label="Board" active={currentView === 'board'} onClick={() => onChangeView('board')} />
-      <ViewTab icon="📅" label="Date" active={currentView === 'date'} onClick={() => onChangeView('date')} />
-      <ViewTab icon="🏷️" label="Status" active={currentView === 'status'} onClick={() => onChangeView('status')} />
-      <ViewTab icon="🔥" label="Priority" active={currentView === 'priority'} onClick={() => onChangeView('priority')} />
+    <div style={{ display: 'flex', gap: '6px', padding: '0 28px 0', borderTop: `1px solid ${THEME.lightGray}15` }}>
+      <ViewTab icon="📊" label="البورد" active={currentView === 'board'} onClick={() => onChangeView('board')} />
+      <ViewTab icon="📅" label="التاريخ" active={currentView === 'date'} onClick={() => onChangeView('date')} />
+      <ViewTab icon="🏷️" label="الحالة" active={currentView === 'status'} onClick={() => onChangeView('status')} />
+      <ViewTab icon="🔥" label="الأولوية" active={currentView === 'priority'} onClick={() => onChangeView('priority')} />
     </div>
   </div>
 );
 
 const ViewTab = ({ icon, label, active, onClick }) => (
   <button onClick={onClick} style={{
-    padding: '12px 16px',
-    background: 'transparent',
+    padding: '14px 18px',
+    background: active ? `${THEME.primary}08` : 'transparent',
     border: 'none',
-    borderBottom: active ? `2px solid ${THEME.primary}` : '2px solid transparent',
+    borderBottom: active ? `3px solid ${THEME.primary}` : '3px solid transparent',
     color: active ? THEME.primary : THEME.gray,
-    fontSize: '13px',
-    fontWeight: active ? '600' : '500',
+    fontSize: '14px',
+    fontWeight: active ? '700' : '500',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    gap: '6px'
+    gap: '8px',
+    transition: 'all 0.2s ease',
+    marginBottom: '-1px'
   }}>
-    <span>{icon}</span>
+    <span style={{ fontSize: '16px' }}>{icon}</span>
     <span>{label}</span>
   </button>
 );
@@ -1604,27 +1816,94 @@ const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery, onAdd
     : group.items;
 
   const stats = { total: filteredItems.length, done: filteredItems.filter(i => i.status === 'done').length };
+  const progress = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 
   return (
-    <div style={{ background: THEME.white, borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', animation: 'fadeIn 0.3s ease' }}>
-      <div onClick={() => setCollapsed(!collapsed)} style={{ background: group.color, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ color: 'white', fontSize: '14px', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}>▼</span>
-          <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '600', margin: 0 }}>{group.title}</h3>
-          <span style={{ background: 'rgba(255,255,255,0.2)', color: 'white', padding: '2px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: '500' }}>{stats.done}/{stats.total}</span>
+    <div style={{
+      background: THEME.white,
+      borderRadius: '16px',
+      overflow: 'hidden',
+      marginBottom: '20px',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+      border: `1px solid ${THEME.lightGray}15`,
+      animation: 'fadeIn 0.3s ease'
+    }}>
+      <div
+        onClick={() => setCollapsed(!collapsed)}
+        style={{
+          background: `linear-gradient(135deg, ${group.color}, ${group.color}DD)`,
+          padding: '18px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'pointer'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <span style={{
+            color: 'white',
+            fontSize: '12px',
+            transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+            transition: 'transform 0.3s ease',
+            opacity: 0.9
+          }}>▼</span>
+          <h3 style={{
+            color: 'white',
+            fontSize: '17px',
+            fontWeight: '700',
+            margin: 0,
+            fontFamily: "'Cairo', sans-serif"
+          }}>{group.title}</h3>
+          <div style={{
+            background: 'rgba(255,255,255,0.25)',
+            color: 'white',
+            padding: '6px 14px',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <span>{stats.done}/{stats.total}</span>
+            <span style={{ opacity: 0.7 }}>|</span>
+            <span>{progress}%</span>
+          </div>
         </div>
-        <button onClick={(e) => e.stopPropagation()} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>⋯</button>
+        <button
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            color: 'white',
+            fontSize: '16px',
+            cursor: 'pointer',
+            transition: 'background 0.2s'
+          }}
+        >⋯</button>
       </div>
 
       {!collapsed && (
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 120px 120px 130px 120px', background: '#F8F9FA', borderBottom: `1px solid ${THEME.lightGray}30`, fontSize: '12px', fontWeight: '600', color: THEME.gray }}>
-            <div style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><input type="checkbox" /></div>
-            <div style={{ padding: '12px' }}>المهمة</div>
-            <div style={{ padding: '12px', textAlign: 'center' }}>الإنشاء</div>
-            <div style={{ padding: '12px', textAlign: 'center' }}>المسؤول</div>
-            <div style={{ padding: '12px', textAlign: 'center' }}>الحالة</div>
-            <div style={{ padding: '12px', textAlign: 'center' }}>التاريخ</div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '50px 1fr 120px 120px 140px 120px',
+            background: '#F8FAFC',
+            borderBottom: `2px solid ${THEME.lightGray}20`,
+            fontSize: '13px',
+            fontWeight: '700',
+            color: THEME.gray
+          }}>
+            <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+            </div>
+            <div style={{ padding: '14px', fontFamily: "'Cairo', sans-serif" }}>المهمة</div>
+            <div style={{ padding: '14px', textAlign: 'center' }}>الإنشاء</div>
+            <div style={{ padding: '14px', textAlign: 'center' }}>المسؤول</div>
+            <div style={{ padding: '14px', textAlign: 'center' }}>الحالة</div>
+            <div style={{ padding: '14px', textAlign: 'center' }}>التاريخ</div>
           </div>
 
           {filteredItems.map(item => (
@@ -1683,49 +1962,210 @@ const TaskRow = ({ item, groupId, expanded, onToggle, groupColor, onUpdateStatus
 
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 120px 120px 130px 120px', borderBottom: `1px solid ${THEME.lightGray}20`, background: hovered ? '#F8F9FA' : 'white', position: 'relative' }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><input type="checkbox" /></div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '50px 1fr 120px 120px 140px 120px',
+          borderBottom: `1px solid ${THEME.lightGray}15`,
+          background: hovered ? '#F8FAFC' : 'white',
+          position: 'relative',
+          transition: 'background 0.15s ease'
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => { setHovered(false); setShowStatusMenu(false); }}
+      >
+        <div style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <input type="checkbox" style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: groupColor }} />
+        </div>
 
-        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button onClick={() => setShowSubitems(!showSubitems)} style={{ width: '20px', height: '20px', borderRadius: '4px', background: hasSubitems && showSubitems ? `${groupColor}20` : 'transparent', border: `1px solid ${THEME.lightGray}50`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: THEME.gray }}>
+        <div style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => setShowSubitems(!showSubitems)}
+            style={{
+              width: '26px',
+              height: '26px',
+              borderRadius: '8px',
+              background: hasSubitems ? (showSubitems ? `${groupColor}15` : 'white') : 'transparent',
+              border: hasSubitems ? `2px solid ${groupColor}` : `2px dashed ${THEME.lightGray}60`,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '11px',
+              color: hasSubitems ? groupColor : THEME.lightGray,
+              fontWeight: '700',
+              transition: 'all 0.2s ease'
+            }}
+          >
             {hasSubitems ? (showSubitems ? '▼' : '▶') : '+'}
           </button>
-          <span style={{ fontSize: '14px', fontWeight: '500', color: THEME.dark }}>{item.name}</span>
-          {hasSubitems && <span style={{ background: `${groupColor}20`, color: groupColor, padding: '2px 6px', borderRadius: '8px', fontSize: '11px', fontWeight: '500' }}>{item.subitems.length}</span>}
+          <span style={{
+            fontSize: '15px',
+            fontWeight: '600',
+            color: THEME.dark,
+            fontFamily: "'Cairo', sans-serif"
+          }}>{item.name}</span>
+          {hasSubitems && (
+            <span style={{
+              background: `linear-gradient(135deg, ${groupColor}, ${groupColor}CC)`,
+              color: 'white',
+              padding: '4px 10px',
+              borderRadius: '12px',
+              fontSize: '12px',
+              fontWeight: '700',
+              boxShadow: `0 2px 6px ${groupColor}40`
+            }}>{item.subitems.length}</span>
+          )}
           {hovered && (
-            <>
-              <button onClick={handleAddSubtask} style={{ background: `${groupColor}15`, border: 'none', color: groupColor, cursor: 'pointer', fontSize: '12px', padding: '2px 8px', borderRadius: '4px' }} title="إضافة مهمة فرعية">+ فرعية</button>
-              <button onClick={() => onDeleteTask && onDeleteTask(groupId, item.id)} style={{ marginRight: 'auto', background: 'transparent', border: 'none', color: THEME.danger, cursor: 'pointer', fontSize: '16px', opacity: 0.6 }} title="حذف">🗑️</button>
-            </>
+            <div style={{ display: 'flex', gap: '8px', marginRight: 'auto' }}>
+              <button
+                onClick={handleAddSubtask}
+                style={{
+                  background: `linear-gradient(135deg, ${groupColor}, ${groupColor}DD)`,
+                  border: 'none',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  boxShadow: `0 2px 8px ${groupColor}40`,
+                  transition: 'transform 0.1s'
+                }}
+                title="إضافة مهمة فرعية"
+              >+ فرعية</button>
+              <button
+                onClick={() => onDeleteTask && onDeleteTask(groupId, item.id)}
+                style={{
+                  background: '#FEE2E2',
+                  border: 'none',
+                  color: '#DC2626',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  padding: '6px 10px',
+                  borderRadius: '8px'
+                }}
+                title="حذف"
+              >🗑️</button>
+            </div>
           )}
         </div>
 
-        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: '13px', color: THEME.gray }}>{item.creation ? new Date(item.creation).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-'}</span>
+        <div style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{
+            fontSize: '13px',
+            color: THEME.gray,
+            background: '#F1F5F9',
+            padding: '4px 10px',
+            borderRadius: '6px',
+            fontWeight: '500'
+          }}>
+            {item.creation ? new Date(item.creation).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : '-'}
+          </span>
         </div>
 
-        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {item.person && item.person.name !== '-' ? (
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: item.person.color || THEME.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: 'white', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} title={item.person.name}>
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: `linear-gradient(135deg, ${item.person.color || THEME.primary}, ${item.person.color || THEME.primary}99)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '15px',
+                color: 'white',
+                border: '3px solid white',
+                boxShadow: '0 3px 10px rgba(0,0,0,0.12)',
+                fontWeight: '700'
+              }}
+              title={item.person.name}
+            >
               {item.person.avatar}
             </div>
           ) : (
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: `2px dashed ${THEME.lightGray}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: THEME.lightGray, fontSize: '14px', cursor: 'pointer' }}>+</div>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              border: `2px dashed ${THEME.lightGray}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: THEME.lightGray,
+              fontSize: '16px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}>+</div>
           )}
         </div>
 
-        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-          <div onClick={handleStatusClick} style={{ background: status.color, color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', minWidth: '90px', textAlign: 'center', transition: 'transform 0.1s' }}>
-            {status.icon} {status.label}
+        <div style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <div
+            onClick={handleStatusClick}
+            style={{
+              background: `linear-gradient(135deg, ${status.color}, ${status.color}DD)`,
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              minWidth: '100px',
+              textAlign: 'center',
+              boxShadow: `0 3px 10px ${status.color}40`,
+              transition: 'transform 0.1s, box-shadow 0.1s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
+            }}
+          >
+            <span style={{ fontSize: '14px' }}>{status.icon}</span>
+            <span>{status.label}</span>
           </div>
           {showStatusMenu && (
-            <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', background: 'white', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', zIndex: 100, padding: '8px', minWidth: '140px' }}>
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'white',
+              borderRadius: '12px',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+              zIndex: 100,
+              padding: '10px',
+              minWidth: '160px',
+              border: '1px solid #E5E7EB'
+            }}>
               {STATUS_OPTIONS.map(opt => (
-                <div key={opt.id} onClick={() => handleStatusChange(opt.id)} style={{ padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', background: item.status === opt.id ? `${opt.color}20` : 'transparent' }}
-                  onMouseOver={(e) => e.target.style.background = `${opt.color}20`}
-                  onMouseOut={(e) => e.target.style.background = item.status === opt.id ? `${opt.color}20` : 'transparent'}
+                <div
+                  key={opt.id}
+                  onClick={() => handleStatusChange(opt.id)}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    background: item.status === opt.id ? `${opt.color}15` : 'transparent',
+                    transition: 'background 0.15s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = `${opt.color}15`}
+                  onMouseOut={(e) => e.currentTarget.style.background = item.status === opt.id ? `${opt.color}15` : 'transparent'}
                 >
-                  <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: opt.color }}></span>
+                  <span style={{
+                    width: '14px',
+                    height: '14px',
+                    borderRadius: '50%',
+                    background: `linear-gradient(135deg, ${opt.color}, ${opt.color}CC)`,
+                    boxShadow: `0 2px 4px ${opt.color}40`
+                  }}></span>
                   {opt.label}
                 </div>
               ))}
@@ -1733,15 +2173,22 @@ const TaskRow = ({ item, groupId, expanded, onToggle, groupColor, onUpdateStatus
           )}
         </div>
 
-        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: '13px', color: item.date && item.date !== '-' && new Date(item.date) < new Date() && item.status !== 'done' ? THEME.danger : THEME.gray, fontWeight: item.date && item.date !== '-' && new Date(item.date) < new Date() && item.status !== 'done' ? '600' : '400' }}>
-            {item.date && item.date !== '-' ? new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-'}
+        <div style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{
+            fontSize: '13px',
+            padding: '4px 10px',
+            borderRadius: '6px',
+            fontWeight: item.date && item.date !== '-' && new Date(item.date) < new Date() && item.status !== 'done' ? '700' : '500',
+            color: item.date && item.date !== '-' && new Date(item.date) < new Date() && item.status !== 'done' ? 'white' : THEME.gray,
+            background: item.date && item.date !== '-' && new Date(item.date) < new Date() && item.status !== 'done' ? THEME.danger : '#F1F5F9'
+          }}>
+            {item.date && item.date !== '-' ? new Date(item.date).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : '-'}
           </span>
         </div>
       </div>
 
       {showSubitems && hasSubitems && (
-        <div style={{ background: '#FAFAFA' }}>
+        <div style={{ background: '#FAFBFC', borderRight: `4px solid ${groupColor}30` }}>
           {item.subitems.map((subitem, index) => (
             <SubitemRow
               key={subitem.id}
@@ -1763,7 +2210,7 @@ const TaskRow = ({ item, groupId, expanded, onToggle, groupColor, onUpdateStatus
   );
 };
 
-// Recursive SubitemRow - Tree Design with connecting lines
+// Recursive SubitemRow - Professional Tree Design
 const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onAddSubtask, onDeleteSubtask, onUpdateSubtaskStatus, parentPath }) => {
   const [hovered, setHovered] = useState(false);
   const [expanded, setExpanded] = useState(true);
@@ -1771,11 +2218,11 @@ const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onA
   const status = STATUS_OPTIONS.find(s => s.id === subitem.status) || STATUS_OPTIONS[3];
   const hasSubitems = subitem.subitems && subitem.subitems.length > 0;
 
-  // Tree line colors
-  const lineColor = '#D0D5DD';
-  const indentBase = 50;
-  const indentStep = 28;
-  const totalIndent = indentBase + (depth * indentStep);
+  // Tree styling
+  const lineColor = groupColor + '40';
+  const nodeColor = groupColor;
+  const indentStep = 32;
+  const totalIndent = depth * indentStep;
 
   const handleAddSubtask = (e) => {
     e.stopPropagation();
@@ -1797,83 +2244,123 @@ const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onA
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '50px 1fr 120px 120px 130px 120px',
+          gridTemplateColumns: '50px 1fr 120px 120px 140px 120px',
           fontSize: '13px',
-          background: hovered ? '#F8FAFC' : '#FAFBFC',
-          borderBottom: `1px solid #F0F0F0`,
+          background: hovered ? '#F1F5F9' : '#FAFBFC',
+          borderBottom: `1px solid ${THEME.lightGray}12`,
           position: 'relative',
-          minHeight: '44px'
+          minHeight: '52px',
+          transition: 'background 0.15s ease'
         }}
         onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseLeave={() => { setHovered(false); setShowStatusMenu(false); }}
       >
-        {/* Tree Lines Column */}
+        {/* Tree Lines Column - More professional look */}
         <div style={{ padding: '0', position: 'relative' }}>
-          {/* Vertical line from parent */}
+          {/* Vertical connecting line */}
           <div style={{
             position: 'absolute',
-            right: `${25 - (depth * 2)}px`,
+            right: '22px',
             top: 0,
             bottom: isLast ? '50%' : 0,
-            width: '2px',
-            background: lineColor
+            width: '3px',
+            background: `linear-gradient(to bottom, ${lineColor}, ${lineColor})`,
+            borderRadius: '2px'
           }} />
-          {/* Horizontal line to item */}
+          {/* Horizontal connecting line */}
           <div style={{
             position: 'absolute',
-            right: `${25 - (depth * 2)}px`,
+            right: '22px',
             top: '50%',
-            width: '15px',
-            height: '2px',
-            background: lineColor
+            width: '18px',
+            height: '3px',
+            background: lineColor,
+            borderRadius: '2px'
+          }} />
+          {/* Node dot */}
+          <div style={{
+            position: 'absolute',
+            right: '36px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '10px',
+            height: '10px',
+            borderRadius: '50%',
+            background: hasSubitems ? nodeColor : 'white',
+            border: `3px solid ${nodeColor}`,
+            boxShadow: `0 2px 6px ${nodeColor}40`
           }} />
         </div>
 
         {/* Task Name with Tree Structure */}
         <div style={{
-          padding: '10px 12px',
-          paddingRight: `${totalIndent}px`,
+          padding: '14px 16px',
+          paddingRight: `${totalIndent + 24}px`,
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
+          gap: '12px',
           position: 'relative'
         }}>
-          {/* Expand/Collapse or Node Icon */}
-          <div style={{
-            width: '22px',
-            height: '22px',
-            borderRadius: '6px',
-            background: hasSubitems ? (expanded ? `${groupColor}15` : 'white') : 'white',
-            border: `2px solid ${hasSubitems ? groupColor : lineColor}`,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '10px',
-            color: hasSubitems ? groupColor : lineColor,
-            fontWeight: 'bold',
-            flexShrink: 0,
-            transition: 'all 0.2s ease'
-          }} onClick={() => hasSubitems && setExpanded(!expanded)}>
-            {hasSubitems ? (expanded ? '−' : '+') : '○'}
-          </div>
+          {/* Expand/Collapse Button */}
+          {hasSubitems ? (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '8px',
+                background: expanded ? `${groupColor}15` : 'white',
+                border: `2px solid ${groupColor}`,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '12px',
+                color: groupColor,
+                fontWeight: '800',
+                flexShrink: 0,
+                transition: 'all 0.2s ease',
+                boxShadow: `0 2px 6px ${groupColor}25`
+              }}
+            >
+              {expanded ? '−' : '+'}
+            </button>
+          ) : (
+            <div style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: '8px',
+              background: '#F8FAFC',
+              border: `2px solid ${THEME.lightGray}40`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '16px',
+              color: THEME.lightGray,
+              flexShrink: 0
+            }}>
+              ◦
+            </div>
+          )}
 
           {/* Task Name */}
           <span style={{
             color: THEME.dark,
-            fontWeight: '500',
-            fontSize: '13px'
+            fontWeight: '600',
+            fontSize: '14px',
+            fontFamily: "'Cairo', sans-serif"
           }}>{subitem.name}</span>
 
           {/* Subtasks Count Badge */}
           {hasSubitems && (
             <span style={{
-              background: groupColor,
+              background: `linear-gradient(135deg, ${groupColor}, ${groupColor}CC)`,
               color: 'white',
-              padding: '2px 8px',
-              borderRadius: '10px',
-              fontSize: '10px',
-              fontWeight: '600'
+              padding: '4px 10px',
+              borderRadius: '12px',
+              fontSize: '11px',
+              fontWeight: '700',
+              boxShadow: `0 2px 6px ${groupColor}40`
             }}>
               {subitem.subitems.length}
             </span>
@@ -1881,19 +2368,20 @@ const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onA
 
           {/* Action Buttons */}
           {hovered && (
-            <div style={{ display: 'flex', gap: '6px', marginRight: 'auto' }}>
+            <div style={{ display: 'flex', gap: '8px', marginRight: 'auto' }}>
               <button
                 onClick={handleAddSubtask}
                 style={{
-                  background: groupColor,
+                  background: `linear-gradient(135deg, ${groupColor}, ${groupColor}DD)`,
                   border: 'none',
                   color: 'white',
                   cursor: 'pointer',
-                  fontSize: '11px',
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s'
+                  fontSize: '12px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  boxShadow: `0 2px 8px ${groupColor}40`,
+                  transition: 'transform 0.1s'
                 }}
                 title="إضافة مهمة فرعية"
               >
@@ -1906,74 +2394,86 @@ const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onA
                   border: 'none',
                   color: '#DC2626',
                   cursor: 'pointer',
-                  fontSize: '12px',
-                  padding: '4px 8px',
-                  borderRadius: '6px'
+                  fontSize: '13px',
+                  padding: '6px 10px',
+                  borderRadius: '8px',
+                  transition: 'background 0.1s'
                 }}
                 title="حذف"
               >
-                🗑
+                🗑️
               </button>
             </div>
           )}
         </div>
 
         {/* Creation Date */}
-        <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ color: THEME.lightGray, fontSize: '12px' }}>-</span>
+        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{
+            color: THEME.lightGray,
+            fontSize: '12px',
+            background: '#F8FAFC',
+            padding: '4px 8px',
+            borderRadius: '6px'
+          }}>-</span>
         </div>
 
         {/* Person */}
-        <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {subitem.person ? (
             <div style={{
-              width: '28px',
-              height: '28px',
+              width: '32px',
+              height: '32px',
               borderRadius: '50%',
               background: `linear-gradient(135deg, ${groupColor}, ${groupColor}99)`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '12px',
+              fontSize: '13px',
               color: 'white',
-              fontWeight: '600',
-              border: '2px solid white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              fontWeight: '700',
+              border: '3px solid white',
+              boxShadow: '0 3px 10px rgba(0,0,0,0.12)'
             }}>
               {subitem.person.avatar || '👤'}
             </div>
           ) : (
             <div style={{
-              width: '28px',
-              height: '28px',
+              width: '32px',
+              height: '32px',
               borderRadius: '50%',
-              border: `2px dashed ${lineColor}`,
+              border: `2px dashed ${THEME.lightGray}60`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: lineColor,
-              fontSize: '14px',
-              cursor: 'pointer'
+              color: THEME.lightGray,
+              fontSize: '16px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
             }}>+</div>
           )}
         </div>
 
         {/* Status */}
-        <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
           <div
             onClick={() => setShowStatusMenu(!showStatusMenu)}
             style={{
-              background: status.color,
+              background: `linear-gradient(135deg, ${status.color}, ${status.color}DD)`,
               color: 'white',
-              padding: '5px 12px',
-              borderRadius: '15px',
+              padding: '7px 14px',
+              borderRadius: '16px',
               fontSize: '11px',
-              fontWeight: '600',
+              fontWeight: '700',
               cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              transition: 'transform 0.1s'
+              boxShadow: `0 3px 10px ${status.color}40`,
+              transition: 'transform 0.1s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px'
             }}
           >
+            <span style={{ fontSize: '12px' }}>{status.icon}</span>
             {status.label}
           </div>
           {showStatusMenu && (
@@ -1983,11 +2483,11 @@ const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onA
               left: '50%',
               transform: 'translateX(-50%)',
               background: 'white',
-              borderRadius: '10px',
-              boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+              borderRadius: '12px',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
               zIndex: 100,
-              padding: '8px',
-              minWidth: '130px',
+              padding: '10px',
+              minWidth: '150px',
               border: '1px solid #E5E7EB'
             }}>
               {STATUS_OPTIONS.map(opt => (
@@ -1995,25 +2495,25 @@ const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onA
                   key={opt.id}
                   onClick={() => handleStatusChange(opt.id)}
                   style={{
-                    padding: '8px 12px',
-                    borderRadius: '6px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
+                    gap: '10px',
                     fontSize: '12px',
-                    fontWeight: '500',
+                    fontWeight: '600',
                     transition: 'background 0.1s'
                   }}
                   onMouseOver={(e) => e.currentTarget.style.background = `${opt.color}15`}
                   onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
                 >
                   <span style={{
-                    width: '12px',
-                    height: '12px',
+                    width: '14px',
+                    height: '14px',
                     borderRadius: '50%',
-                    background: opt.color,
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                    background: `linear-gradient(135deg, ${opt.color}, ${opt.color}CC)`,
+                    boxShadow: `0 2px 4px ${opt.color}40`
                   }}></span>
                   {opt.label}
                 </div>
@@ -2023,14 +2523,20 @@ const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onA
         </div>
 
         {/* Date */}
-        <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ color: THEME.lightGray, fontSize: '12px' }}>-</span>
+        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{
+            color: THEME.lightGray,
+            fontSize: '12px',
+            background: '#F8FAFC',
+            padding: '4px 8px',
+            borderRadius: '6px'
+          }}>-</span>
         </div>
       </div>
 
       {/* Render nested subitems recursively */}
       {expanded && hasSubitems && (
-        <>
+        <div style={{ borderRight: `3px solid ${groupColor}20`, marginRight: `${totalIndent + 20}px` }}>
           {subitem.subitems.map((nestedSubitem, index) => (
             <SubitemRow
               key={nestedSubitem.id}
@@ -2046,7 +2552,7 @@ const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onA
               parentPath={path}
             />
           ))}
-        </>
+        </div>
       )}
     </>
   );
