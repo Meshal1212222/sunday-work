@@ -554,54 +554,73 @@ const SundayBoardPro = () => {
           console.log('✅ Firebase initialized');
         }
 
-        // Always try to get fresh data from external source
-        console.log('🔄 Loading data...');
-        const importedData = await importExternalData();
+        // First try to load from Firebase (saved data)
+        console.log('🔄 Checking Firebase for saved data...');
+        let savedData = null;
+        if (window.loadFromFirebase) {
+          savedData = await window.loadFromFirebase('sunday/board_data');
+        }
 
-        if (importedData) {
-          // Set workspaces (sidebar)
-          if (importedData.workspaces) {
-            setWorkspaces(importedData.workspaces);
-          }
-
-          // Set groups (main content)
-          if (importedData.groups) {
-            setGroups(importedData.groups);
-          }
-
-          // Store all boards data for board switching
-          if (importedData.boards) {
+        if (savedData && savedData.groups && savedData.groups.length > 0) {
+          // Data exists in Firebase - use it
+          console.log('✅ Loading saved data from Firebase');
+          if (savedData.workspaces) setWorkspaces(savedData.workspaces);
+          if (savedData.groups) setGroups(savedData.groups);
+          if (savedData.boards) {
             const boardsMap = {};
-            importedData.boards.forEach(board => {
+            savedData.boards.forEach(board => {
               boardsMap[`board_${board.id}`] = board;
             });
             setAllBoardsData(boardsMap);
-
-            // Select first board
-            if (importedData.boards.length > 0) {
-              setSelectedBoard(`board_${importedData.boards[0].id}`);
+            if (savedData.boards.length > 0) {
+              setSelectedBoard(`board_${savedData.boards[0].id}`);
             }
           }
-
-          // Save to Firebase
-          if (window.SundayBoardDB && importedData.groups) {
-            await window.saveToFirebase('sunday/imported_data', importedData);
-          }
-
-          console.log('✅ Data loaded successfully');
+          console.log('✅ Data loaded from Firebase');
         } else {
-          // Fallback: try loading from Firebase
-          if (window.SundayBoardDB) {
-            const savedData = await window.loadFromFirebase('sunday/imported_data');
-            if (savedData) {
-              if (savedData.workspaces) setWorkspaces(savedData.workspaces);
-              if (savedData.groups) setGroups(savedData.groups);
-              console.log('✅ Loaded from Firebase cache');
+          // No data in Firebase - import once from external source
+          console.log('🔄 No saved data found, importing...');
+          const importedData = await importExternalData();
+
+          if (importedData) {
+            // Set workspaces (sidebar)
+            if (importedData.workspaces) {
+              setWorkspaces(importedData.workspaces);
             }
+
+            // Set groups (main content)
+            if (importedData.groups) {
+              setGroups(importedData.groups);
+            }
+
+            // Store all boards data for board switching
+            if (importedData.boards) {
+              const boardsMap = {};
+              importedData.boards.forEach(board => {
+                boardsMap[`board_${board.id}`] = board;
+              });
+              setAllBoardsData(boardsMap);
+
+              // Select first board
+              if (importedData.boards.length > 0) {
+                setSelectedBoard(`board_${importedData.boards[0].id}`);
+              }
+            }
+
+            // Save to Firebase for future use
+            if (window.saveToFirebase) {
+              await window.saveToFirebase('sunday/board_data', importedData);
+              console.log('✅ Data saved to Firebase');
+            }
+
+            console.log('✅ Data imported and saved');
+          } else {
+            // No external data - use default data
+            console.log('ℹ️ Using default data');
           }
         }
       } catch (error) {
-        console.error('❌ Error initializing:', error);
+        console.error('❌ Error loading data:', error);
       } finally {
         setIsLoading(false);
       }
