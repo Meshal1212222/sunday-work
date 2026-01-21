@@ -40,13 +40,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"⚠️ Scheduler warning: {e}")
 
-    # Start Crash Monitoring (Real-time)
-    try:
-        automation_scheduler = AutomationScheduler()
-        asyncio.create_task(automation_scheduler.start())
-        print("✅ Crash monitoring started (Real-time)")
-    except Exception as e:
-        print(f"⚠️ Crash monitoring warning: {e}")
+    # Start Crash Monitoring (Real-time) - DISABLED
+    # try:
+    #     automation_scheduler = AutomationScheduler()
+    #     asyncio.create_task(automation_scheduler.start())
+    #     print("✅ Crash monitoring started (Real-time)")
+    # except Exception as e:
+    #     print(f"⚠️ Crash monitoring warning: {e}")
+    print("⏸️ Crash monitoring DISABLED")
 
     print("✅ Botng is ready!")
 
@@ -151,11 +152,91 @@ async def golden_host_library():
 
 # ==================== Sunday Board Routes ====================
 
-@app.get("/sunday-board")
+@app.get("/sunday-board", response_class=HTMLResponse)
 async def sunday_board():
     """Sunday Board - إدارة المشاريع"""
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/src/sunday-board/index.html")
+    html = '''<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunday Board - إدارة المشاريع</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F8F9FA; min-height: 100vh; }
+        .app { display: flex; height: 100vh; }
+        .sidebar { width: 260px; background: linear-gradient(180deg, #292F4C 0%, #1E2235 100%); color: white; padding: 20px; display: flex; flex-direction: column; }
+        .logo { font-size: 24px; font-weight: 800; margin-bottom: 30px; background: linear-gradient(135deg, #6C5CE7, #A855F7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; transition: all 0.2s; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); }
+        .nav-item.active { background: rgba(108, 92, 231, 0.3); }
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .header { background: white; padding: 20px 30px; border-bottom: 1px solid #E5E7EB; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 24px; font-weight: 700; color: #1F2937; }
+        .search-box { display: flex; align-items: center; background: #F3F4F6; border-radius: 8px; padding: 8px 16px; gap: 8px; }
+        .search-box input { border: none; background: none; outline: none; font-size: 14px; width: 200px; }
+        .board { flex: 1; padding: 30px; overflow-y: auto; }
+        .group { background: white; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+        .group-header { background: #6C5CE7; color: white; padding: 14px 20px; font-weight: 600; display: flex; justify-content: space-between; }
+        .columns { display: grid; grid-template-columns: 1fr 120px 120px 120px 100px; background: #F9FAFB; border-bottom: 1px solid #E5E7EB; font-size: 12px; font-weight: 600; color: #6B7280; }
+        .columns > div { padding: 12px 16px; }
+        .task-row { display: grid; grid-template-columns: 1fr 120px 120px 120px 100px; border-bottom: 1px solid #F3F4F6; }
+        .task-row:hover { background: #F9FAFB; }
+        .task-row > div { padding: 14px 16px; display: flex; align-items: center; }
+        .task-name { font-weight: 500; color: #1F2937; }
+        .person { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 600; }
+        .status { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: white; }
+        .status.done { background: #10B981; }
+        .status.working { background: #F59E0B; }
+        .status.stuck { background: #EF4444; }
+        .status.pending { background: #6B7280; }
+        .priority { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .priority.high { background: #FEE2E2; color: #DC2626; }
+        .priority.medium { background: #FEF3C7; color: #D97706; }
+        .priority.low { background: #D1FAE5; color: #059669; }
+        .add-task { padding: 12px 16px; color: #9CA3AF; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        .add-task:hover { color: #6C5CE7; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="sidebar">
+            <div class="logo">☀️ Sunday</div>
+            <div class="nav-item active"><span>🏠</span><span>الرئيسية</span></div>
+            <div class="nav-item"><span>📋</span><span>مهامي</span></div>
+            <div class="nav-item"><span>📊</span><span>اللوحات</span></div>
+            <div class="nav-item"><span>📁</span><span>المشاريع</span></div>
+            <div class="nav-item"><span>⚙️</span><span>الإعدادات</span></div>
+        </div>
+        <div class="main">
+            <div class="header">
+                <h1>📋 مشروع التطوير</h1>
+                <div class="search-box"><span>🔍</span><input type="text" placeholder="بحث..."></div>
+            </div>
+            <div class="board">
+                <div class="group">
+                    <div class="group-header"><span>🚀 Sprint الحالي</span><span>5 مهام</span></div>
+                    <div class="columns"><div>المهمة</div><div>المسؤول</div><div>الحالة</div><div>الأولوية</div><div>التاريخ</div></div>
+                    <div class="task-row"><div class="task-name">تصميم واجهة المستخدم</div><div><div class="person" style="background:#6C5CE7">أ</div></div><div><span class="status done">مكتمل ✓</span></div><div><span class="priority high">عالية</span></div><div>Jan 20</div></div>
+                    <div class="task-row"><div class="task-name">بناء API الخلفية</div><div><div class="person" style="background:#F59E0B">م</div></div><div><span class="status working">قيد العمل</span></div><div><span class="priority high">عالية</span></div><div>Jan 22</div></div>
+                    <div class="task-row"><div class="task-name">اختبارات الوحدة</div><div><div class="person" style="background:#10B981">س</div></div><div><span class="status pending">معلق</span></div><div><span class="priority medium">متوسطة</span></div><div>Jan 25</div></div>
+                    <div class="task-row"><div class="task-name">توثيق API</div><div><div class="person" style="background:#EF4444">خ</div></div><div><span class="status stuck">متوقف</span></div><div><span class="priority low">منخفضة</span></div><div>Jan 28</div></div>
+                    <div class="task-row"><div class="task-name">نشر النسخة التجريبية</div><div><div class="person" style="background:#8B5CF6">ن</div></div><div><span class="status pending">معلق</span></div><div><span class="priority high">عالية</span></div><div>Jan 30</div></div>
+                    <div class="add-task">+ إضافة مهمة</div>
+                </div>
+                <div class="group">
+                    <div class="group-header" style="background:#10B981"><span>✅ مكتمل</span><span>3 مهام</span></div>
+                    <div class="columns"><div>المهمة</div><div>المسؤول</div><div>الحالة</div><div>الأولوية</div><div>التاريخ</div></div>
+                    <div class="task-row"><div class="task-name">إعداد المشروع</div><div><div class="person" style="background:#6C5CE7">أ</div></div><div><span class="status done">مكتمل ✓</span></div><div><span class="priority medium">متوسطة</span></div><div>Jan 10</div></div>
+                    <div class="task-row"><div class="task-name">تصميم قاعدة البيانات</div><div><div class="person" style="background:#F59E0B">م</div></div><div><span class="status done">مكتمل ✓</span></div><div><span class="priority high">عالية</span></div><div>Jan 15</div></div>
+                    <div class="task-row"><div class="task-name">اختيار التقنيات</div><div><div class="person" style="background:#10B981">س</div></div><div><span class="status done">مكتمل ✓</span></div><div><span class="priority low">منخفضة</span></div><div>Jan 12</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>'''
+    return HTMLResponse(content=html)
 
 
 # ==================== Health Check ====================
