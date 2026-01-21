@@ -175,52 +175,34 @@ async def get_monday_boards():
     """Proxy for Monday.com API - All boards including archive"""
     import httpx
 
-    # Query for ALL boards (active + archived)
+    # Query for boards - simplified to avoid complexity limit
     query = """
     {
-        boards(limit: 100, state: all) {
+        boards(limit: 20, state: all) {
             id
             name
-            description
             state
-            board_kind
-            updated_at
             groups {
                 id
                 title
                 color
-                position
             }
-            items_page(limit: 500) {
+            items_page(limit: 100) {
                 items {
                     id
                     name
                     state
-                    updated_at
                     group {
                         id
-                        title
                     }
                     column_values {
                         id
                         text
-                        value
                         type
-                        column {
-                            title
-                        }
                     }
                     subitems {
                         id
                         name
-                        column_values {
-                            id
-                            text
-                            type
-                            column {
-                                title
-                            }
-                        }
                     }
                 }
             }
@@ -267,24 +249,19 @@ async def get_monday_analytics():
     # Get all boards and items for analytics
     query = """
     {
-        boards(limit: 100, state: all) {
+        boards(limit: 20, state: all) {
             id
             name
             state
-            items_page(limit: 500) {
+            items_page(limit: 100) {
                 items {
                     id
                     name
                     state
-                    updated_at
                     column_values {
                         id
                         text
-                        value
                         type
-                        column {
-                            title
-                        }
                     }
                 }
             }
@@ -293,7 +270,6 @@ async def get_monday_analytics():
             id
             name
             email
-            photo_thumb
         }
     }
     """
