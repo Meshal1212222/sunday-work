@@ -155,7 +155,7 @@ async def golden_host_library():
 async def sunday_board():
     """Sunday Board - إدارة المشاريع"""
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/src/sunday-board/board-pro.html")
+    return RedirectResponse(url="/src/sunday-board/index.html")
 
 
 # ==================== Health Check ====================
