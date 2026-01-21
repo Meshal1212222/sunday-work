@@ -168,31 +168,38 @@ async def sunday_board():
 
 # ==================== Monday.com Proxy (CORS Fix) ====================
 
+MONDAY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I"
+
 @app.get("/api/monday/boards")
 async def get_monday_boards():
-    """Proxy for Monday.com API - fixes CORS issues"""
+    """Proxy for Monday.com API - All boards including archive"""
     import httpx
 
-    MONDAY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ5ODI0MTQ1NywiYWFpIjoxMSwidWlkIjo2NjU3MTg3OCwiaWFkIjoiMjAyNS0wNC0xMFQxMjowMTowOS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjU0ODI1MzEsInJnbiI6ImV1YzEifQ.i9ZMOxFuUPb2XySVeUsZbE6p9vGy2REefTmwSekf24I"
-
+    # Query for ALL boards (active + archived)
     query = """
     {
-        boards(limit: 50, order_by: created_at) {
+        boards(limit: 100, order_by: created_at, state: all) {
             id
             name
             description
             state
+            board_kind
+            created_at
+            updated_at
             groups {
                 id
                 title
                 color
                 position
+                archived
             }
             items_page(limit: 500) {
                 items {
                     id
                     name
                     state
+                    created_at
+                    updated_at
                     group {
                         id
                         title
@@ -209,19 +216,34 @@ async def get_monday_boards():
                     subitems {
                         id
                         name
+                        state
+                        created_at
+                        updated_at
                         column_values {
                             id
                             text
+                            type
+                            column {
+                                title
+                            }
                         }
                     }
                 }
             }
         }
+        users {
+            id
+            name
+            email
+            photo_thumb
+            title
+            created_at
+        }
     }
     """
 
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 "https://api.monday.com/v2",
                 headers={
@@ -238,6 +260,165 @@ async def get_monday_boards():
                 return {"success": False, "errors": data["errors"]}
 
             return {"success": True, "data": data.get("data", {})}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/monday/analytics")
+async def get_monday_analytics():
+    """Get analytics data - activity logs for productivity analysis"""
+    import httpx
+    from datetime import datetime, timedelta
+
+    # Get activity from last 90 days
+    query = """
+    {
+        boards(limit: 100, state: all) {
+            id
+            name
+            state
+            activity_logs(limit: 1000) {
+                id
+                event
+                data
+                created_at
+                user_id
+            }
+            items_page(limit: 500) {
+                items {
+                    id
+                    name
+                    state
+                    created_at
+                    updated_at
+                    column_values {
+                        id
+                        text
+                        type
+                        column {
+                            title
+                        }
+                    }
+                }
+            }
+        }
+        users {
+            id
+            name
+            email
+            photo_thumb
+        }
+    }
+    """
+
+    try:
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            response = await client.post(
+                "https://api.monday.com/v2",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": MONDAY_TOKEN,
+                    "API-Version": "2024-01"
+                },
+                json={"query": query}
+            )
+
+            data = response.json()
+
+            if "errors" in data:
+                return {"success": False, "errors": data["errors"]}
+
+            # Process analytics
+            raw_data = data.get("data", {})
+            boards = raw_data.get("boards", [])
+            users = raw_data.get("users", [])
+
+            # Calculate productivity metrics
+            analytics = {
+                "total_boards": len(boards),
+                "active_boards": len([b for b in boards if b.get("state") == "active"]),
+                "archived_boards": len([b for b in boards if b.get("state") == "archived"]),
+                "total_tasks": 0,
+                "completed_tasks": 0,
+                "in_progress_tasks": 0,
+                "pending_tasks": 0,
+                "overdue_tasks": 0,
+                "users": [],
+                "boards_summary": [],
+                "productivity_by_user": {}
+            }
+
+            user_tasks = {u["id"]: {"name": u["name"], "email": u.get("email", ""), "photo": u.get("photo_thumb", ""), "total": 0, "completed": 0, "in_progress": 0} for u in users}
+
+            for board in boards:
+                board_stats = {
+                    "id": board["id"],
+                    "name": board["name"],
+                    "state": board.get("state", "active"),
+                    "total_tasks": 0,
+                    "completed": 0,
+                    "in_progress": 0,
+                    "pending": 0
+                }
+
+                items = board.get("items_page", {}).get("items", [])
+                for item in items:
+                    analytics["total_tasks"] += 1
+                    board_stats["total_tasks"] += 1
+
+                    # Check status
+                    status_col = next((c for c in item.get("column_values", []) if c.get("type") == "status" or "status" in c.get("id", "").lower()), None)
+                    status_text = (status_col.get("text", "") if status_col else "").lower()
+
+                    if "done" in status_text or "complete" in status_text or "منجز" in status_text:
+                        analytics["completed_tasks"] += 1
+                        board_stats["completed"] += 1
+                    elif "working" in status_text or "progress" in status_text or "جاري" in status_text:
+                        analytics["in_progress_tasks"] += 1
+                        board_stats["in_progress"] += 1
+                    else:
+                        analytics["pending_tasks"] += 1
+                        board_stats["pending"] += 1
+
+                    # Check person
+                    person_col = next((c for c in item.get("column_values", []) if c.get("type") == "people" or "person" in c.get("id", "").lower()), None)
+                    if person_col and person_col.get("value"):
+                        try:
+                            import json
+                            person_data = json.loads(person_col["value"]) if isinstance(person_col["value"], str) else person_col["value"]
+                            if person_data and "personsAndTeams" in person_data:
+                                for p in person_data["personsAndTeams"]:
+                                    uid = str(p.get("id", ""))
+                                    if uid in user_tasks:
+                                        user_tasks[uid]["total"] += 1
+                                        if "done" in status_text or "complete" in status_text:
+                                            user_tasks[uid]["completed"] += 1
+                                        elif "working" in status_text or "progress" in status_text:
+                                            user_tasks[uid]["in_progress"] += 1
+                        except:
+                            pass
+
+                analytics["boards_summary"].append(board_stats)
+
+            # Calculate productivity percentage for each user
+            for uid, udata in user_tasks.items():
+                if udata["total"] > 0:
+                    udata["productivity"] = round((udata["completed"] / udata["total"]) * 100, 1)
+                else:
+                    udata["productivity"] = 0
+                analytics["users"].append(udata)
+
+            # Sort users by productivity
+            analytics["users"].sort(key=lambda x: x["productivity"], reverse=True)
+
+            # Overall productivity
+            if analytics["total_tasks"] > 0:
+                analytics["overall_productivity"] = round((analytics["completed_tasks"] / analytics["total_tasks"]) * 100, 1)
+            else:
+                analytics["overall_productivity"] = 0
+
+            return {"success": True, "data": raw_data, "analytics": analytics}
 
     except Exception as e:
         return {"success": False, "error": str(e)}

@@ -379,6 +379,10 @@ const SundayBoardPro = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [allBoardsRaw, setAllBoardsRaw] = useState([]);
+  const [dataImported, setDataImported] = useState(false);
 
   // Internal data import function - fetches ALL data via backend proxy
   const importExternalData = async () => {
@@ -569,7 +573,7 @@ const SundayBoardPro = () => {
         }
 
         if (savedData && savedData.groups && savedData.groups.length > 0) {
-          // Data exists in Firebase - use it
+          // Data exists in Firebase - use it (Monday.com already disconnected)
           console.log('✅ Loading saved data from Firebase');
           if (savedData.workspaces) setWorkspaces(savedData.workspaces);
           if (savedData.groups) setGroups(savedData.groups);
@@ -583,7 +587,12 @@ const SundayBoardPro = () => {
               setSelectedBoard(`board_${savedData.boards[0].id}`);
             }
           }
-          console.log('✅ Data loaded from Firebase');
+          // Load analytics if exists
+          if (savedData.analytics) setAnalytics(savedData.analytics);
+          if (savedData.users) setUsers(savedData.users);
+          if (savedData.allBoardsRaw) setAllBoardsRaw(savedData.allBoardsRaw);
+          setDataImported(true);
+          console.log('✅ Data loaded from Firebase (offline mode)');
         } else {
           // No data in Firebase - import once from external source
           console.log('🔄 No saved data found, importing...');
@@ -614,11 +623,30 @@ const SundayBoardPro = () => {
               }
             }
 
-            // Save to Firebase for future use
+            // Fetch analytics data
+            console.log('🔄 Fetching analytics...');
+            try {
+              const analyticsRes = await fetch('/api/monday/analytics');
+              const analyticsResult = await analyticsRes.json();
+              if (analyticsResult.success && analyticsResult.analytics) {
+                setAnalytics(analyticsResult.analytics);
+                setUsers(analyticsResult.analytics.users || []);
+                setAllBoardsRaw(analyticsResult.data?.boards || []);
+                importedData.analytics = analyticsResult.analytics;
+                importedData.users = analyticsResult.analytics.users;
+                importedData.allBoardsRaw = analyticsResult.data?.boards || [];
+                console.log('✅ Analytics loaded');
+              }
+            } catch (e) {
+              console.log('⚠️ Analytics fetch optional:', e);
+            }
+
+            // Save to Firebase for future use (disconnects Monday.com)
             if (window.saveToFirebase) {
               await window.saveToFirebase('sunday/board_data_v2', importedData);
-              console.log('✅ Data saved to Firebase');
+              console.log('✅ Data saved to Firebase - Monday.com disconnected');
             }
+            setDataImported(true);
 
             console.log('✅ Data imported and saved');
           } else {
@@ -980,20 +1008,28 @@ const SundayBoardPro = () => {
         />
 
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          <MainContent
-            groups={groups}
-            currentView={currentView}
-            expandedSubitems={expandedSubitems}
-            toggleSubitems={toggleSubitems}
-            searchQuery={searchQuery}
-            onAddTask={addNewTask}
-            onAddGroup={addNewGroup}
-            onUpdateStatus={updateTaskStatus}
-            onDeleteTask={deleteTask}
-            onAddSubtask={addSubtask}
-            onDeleteSubtask={deleteSubtask}
-            onUpdateSubtaskStatus={updateSubtaskStatus}
-          />
+          {currentView === 'analytics' ? (
+            <AnalyticsDashboard
+              analytics={analytics}
+              users={users}
+              allBoardsRaw={allBoardsRaw}
+            />
+          ) : (
+            <MainContent
+              groups={groups}
+              currentView={currentView}
+              expandedSubitems={expandedSubitems}
+              toggleSubitems={toggleSubitems}
+              searchQuery={searchQuery}
+              onAddTask={addNewTask}
+              onAddGroup={addNewGroup}
+              onUpdateStatus={updateTaskStatus}
+              onDeleteTask={deleteTask}
+              onAddSubtask={addSubtask}
+              onDeleteSubtask={deleteSubtask}
+              onUpdateSubtaskStatus={updateSubtaskStatus}
+            />
+          )}
 
           {showDiscussion && <DiscussionPanel onClose={() => setShowDiscussion(false)} />}
         </div>
@@ -1031,9 +1067,10 @@ const Sidebar = ({ collapsed, onToggle, workspaces, selectedBoard, onSelectBoard
     {!collapsed && (
       <div style={{ padding: '16px' }}>
         <QuickAction icon="🏠" label="Home" active={currentView === 'home'} onClick={() => onChangeView('home')} />
-        <QuickAction icon="📋" label="My Work" active={currentView === 'mywork'} onClick={() => onChangeView('mywork')} badge="5" />
-        <QuickAction icon="🔔" label="Notifications" badge="3" />
-        <QuickAction icon="⭐" label="Favorites" />
+        <QuickAction icon="📋" label="المهام" active={currentView === 'board'} onClick={() => onChangeView('board')} />
+        <QuickAction icon="📊" label="التحليلات" active={currentView === 'analytics'} onClick={() => onChangeView('analytics')} />
+        <QuickAction icon="👥" label="الموظفين" active={currentView === 'employees'} onClick={() => onChangeView('analytics')} />
+        <QuickAction icon="🔔" label="الإشعارات" badge="3" />
       </div>
     )}
 
@@ -1281,6 +1318,282 @@ const FilterButton = ({ icon, label }) => (
     <span style={{ color: THEME.lightGray }}>▼</span>
   </button>
 );
+
+// ==================== 📊 ANALYTICS DASHBOARD ====================
+const AnalyticsDashboard = ({ analytics, users, allBoardsRaw }) => {
+  if (!analytics) {
+    return (
+      <div style={{ flex: 1, overflow: 'auto', padding: '24px', background: THEME.background, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', color: THEME.gray }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>📊</div>
+          <div style={{ fontSize: '18px', fontWeight: '600' }}>جاري تحميل التحليلات...</div>
+          <div style={{ fontSize: '14px', marginTop: '8px' }}>سيتم عرض البيانات بعد الاستيراد</div>
+        </div>
+      </div>
+    );
+  }
+
+  const KPICard = ({ title, value, subtitle, icon, color, trend }) => (
+    <div style={{
+      background: 'white',
+      borderRadius: '16px',
+      padding: '24px',
+      boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+      border: `1px solid ${THEME.lightGray}20`,
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: '-20px',
+        left: '-20px',
+        width: '80px',
+        height: '80px',
+        borderRadius: '50%',
+        background: `${color}15`,
+        opacity: 0.5
+      }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+        <div style={{ fontSize: '14px', color: THEME.gray, fontWeight: '500' }}>{title}</div>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '12px',
+          background: `linear-gradient(135deg, ${color}, ${color}99)`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '18px'
+        }}>{icon}</div>
+      </div>
+      <div style={{ fontSize: '32px', fontWeight: '700', color: THEME.dark, marginBottom: '4px' }}>{value}</div>
+      <div style={{ fontSize: '13px', color: trend > 0 ? THEME.success : trend < 0 ? THEME.danger : THEME.gray }}>
+        {trend !== undefined && (trend > 0 ? '↑' : trend < 0 ? '↓' : '→')} {subtitle}
+      </div>
+    </div>
+  );
+
+  const ProgressBar = ({ value, color, height = 8 }) => (
+    <div style={{ width: '100%', height: `${height}px`, background: `${THEME.lightGray}30`, borderRadius: `${height}px`, overflow: 'hidden' }}>
+      <div style={{
+        width: `${Math.min(value, 100)}%`,
+        height: '100%',
+        background: `linear-gradient(90deg, ${color}, ${color}CC)`,
+        borderRadius: `${height}px`,
+        transition: 'width 0.5s ease'
+      }} />
+    </div>
+  );
+
+  return (
+    <div style={{ flex: 1, overflow: 'auto', padding: '24px', background: THEME.background }}>
+      {/* Executive Summary Header */}
+      <div style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '20px',
+        padding: '32px',
+        marginBottom: '24px',
+        color: 'white'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div>
+            <h1 style={{ fontSize: '28px', fontWeight: '700', margin: 0 }}>📊 الملخص التنفيذي</h1>
+            <p style={{ fontSize: '14px', opacity: 0.9, marginTop: '8px' }}>تحليل شامل للإنتاجية ومؤشرات الأداء</p>
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: '48px', fontWeight: '800' }}>{analytics.overall_productivity || 0}%</div>
+            <div style={{ fontSize: '14px', opacity: 0.9 }}>الإنتاجية الكلية</div>
+          </div>
+        </div>
+        <ProgressBar value={analytics.overall_productivity || 0} color="rgba(255,255,255,0.9)" height={10} />
+      </div>
+
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+        <KPICard
+          title="إجمالي المهام"
+          value={analytics.total_tasks || 0}
+          subtitle="مهمة في النظام"
+          icon="📋"
+          color={THEME.primary}
+        />
+        <KPICard
+          title="المهام المكتملة"
+          value={analytics.completed_tasks || 0}
+          subtitle={`${analytics.total_tasks ? Math.round((analytics.completed_tasks / analytics.total_tasks) * 100) : 0}% من الإجمالي`}
+          icon="✅"
+          color={THEME.success}
+          trend={1}
+        />
+        <KPICard
+          title="قيد التنفيذ"
+          value={analytics.in_progress_tasks || 0}
+          subtitle="مهمة جارية الآن"
+          icon="⚡"
+          color="#F59E0B"
+        />
+        <KPICard
+          title="في الانتظار"
+          value={analytics.pending_tasks || 0}
+          subtitle="مهمة لم تبدأ"
+          icon="⏳"
+          color={THEME.gray}
+        />
+        <KPICard
+          title="البوردات النشطة"
+          value={analytics.active_boards || 0}
+          subtitle={`من ${analytics.total_boards || 0} بورد`}
+          icon="📁"
+          color="#8B5CF6"
+        />
+        <KPICard
+          title="الأرشيف"
+          value={analytics.archived_boards || 0}
+          subtitle="بورد مؤرشف"
+          icon="🗄️"
+          color="#6B7280"
+        />
+      </div>
+
+      {/* Employee Productivity Section */}
+      <div style={{
+        background: 'white',
+        borderRadius: '20px',
+        padding: '24px',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+        marginBottom: '24px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '700', color: THEME.dark, margin: 0 }}>👥 إنتاجية الموظفين</h2>
+          <span style={{ fontSize: '13px', color: THEME.gray }}>{(users || []).length} موظف</span>
+        </div>
+
+        {(users || []).length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {users.map((user, idx) => (
+              <div key={user.name || idx} style={{
+                display: 'grid',
+                gridTemplateColumns: '60px 1fr 100px 150px 80px',
+                alignItems: 'center',
+                padding: '16px',
+                background: idx === 0 ? `${THEME.success}08` : '#FAFAFA',
+                borderRadius: '12px',
+                border: idx === 0 ? `2px solid ${THEME.success}30` : '1px solid #F0F0F0'
+              }}>
+                {/* Rank */}
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  background: idx === 0 ? THEME.success : idx === 1 ? '#F59E0B' : idx === 2 ? '#8B5CF6' : THEME.lightGray,
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: '700',
+                  fontSize: '14px'
+                }}>
+                  {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
+                </div>
+
+                {/* Name & Email */}
+                <div>
+                  <div style={{ fontWeight: '600', color: THEME.dark, fontSize: '15px' }}>{user.name || 'غير معروف'}</div>
+                  <div style={{ fontSize: '12px', color: THEME.gray }}>{user.email || '-'}</div>
+                </div>
+
+                {/* Tasks Count */}
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontWeight: '700', color: THEME.dark, fontSize: '18px' }}>{user.total || 0}</div>
+                  <div style={{ fontSize: '11px', color: THEME.gray }}>مهمة</div>
+                </div>
+
+                {/* Progress Bar */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '11px', color: THEME.success }}>{user.completed || 0} مكتملة</span>
+                    <span style={{ fontSize: '11px', color: '#F59E0B' }}>{user.in_progress || 0} جارية</span>
+                  </div>
+                  <ProgressBar
+                    value={user.productivity || 0}
+                    color={user.productivity >= 70 ? THEME.success : user.productivity >= 40 ? '#F59E0B' : THEME.danger}
+                  />
+                </div>
+
+                {/* Productivity Percentage */}
+                <div style={{
+                  fontWeight: '800',
+                  fontSize: '20px',
+                  color: user.productivity >= 70 ? THEME.success : user.productivity >= 40 ? '#F59E0B' : THEME.danger,
+                  textAlign: 'center'
+                }}>
+                  {user.productivity || 0}%
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px', color: THEME.gray }}>
+            <div style={{ fontSize: '32px', marginBottom: '12px' }}>👥</div>
+            <div>لا توجد بيانات موظفين متاحة</div>
+          </div>
+        )}
+      </div>
+
+      {/* Boards Summary */}
+      <div style={{
+        background: 'white',
+        borderRadius: '20px',
+        padding: '24px',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.05)'
+      }}>
+        <h2 style={{ fontSize: '20px', fontWeight: '700', color: THEME.dark, margin: '0 0 20px 0' }}>📁 ملخص البوردات</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+          {(analytics.boards_summary || []).slice(0, 8).map((board, idx) => (
+            <div key={board.id || idx} style={{
+              padding: '20px',
+              background: '#FAFAFA',
+              borderRadius: '12px',
+              border: '1px solid #F0F0F0'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ fontWeight: '600', color: THEME.dark, fontSize: '14px' }}>{board.name || 'بدون اسم'}</div>
+                <span style={{
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  background: board.state === 'active' ? `${THEME.success}20` : `${THEME.gray}20`,
+                  color: board.state === 'active' ? THEME.success : THEME.gray
+                }}>
+                  {board.state === 'active' ? 'نشط' : 'مؤرشف'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+                <div style={{ fontSize: '12px' }}>
+                  <span style={{ color: THEME.success, fontWeight: '600' }}>{board.completed || 0}</span>
+                  <span style={{ color: THEME.gray }}> مكتملة</span>
+                </div>
+                <div style={{ fontSize: '12px' }}>
+                  <span style={{ color: '#F59E0B', fontWeight: '600' }}>{board.in_progress || 0}</span>
+                  <span style={{ color: THEME.gray }}> جارية</span>
+                </div>
+                <div style={{ fontSize: '12px' }}>
+                  <span style={{ color: THEME.gray, fontWeight: '600' }}>{board.pending || 0}</span>
+                  <span style={{ color: THEME.gray }}> انتظار</span>
+                </div>
+              </div>
+              <ProgressBar
+                value={board.total_tasks ? (board.completed / board.total_tasks) * 100 : 0}
+                color={THEME.primary}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ==================== 📦 GROUP CARD ====================
 const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery, onAddTask, onUpdateStatus, onDeleteTask, onAddSubtask, onDeleteSubtask, onUpdateSubtaskStatus }) => {
