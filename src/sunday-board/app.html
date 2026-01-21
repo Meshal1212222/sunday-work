@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunday Board - إدارة المشاريع</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F6F7FB; height: 100vh; overflow: hidden; }
+
+        /* Layout */
+        .app { display: flex; height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 250px; background: #292F4C; color: #fff; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo { font-size: 20px; font-weight: 700; color: #fff; }
+        .sidebar-nav { padding: 12px 0; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; cursor: pointer; transition: background 0.2s; color: rgba(255,255,255,0.8); font-size: 14px; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); }
+        .nav-item.active { background: rgba(108,92,231,0.3); color: #fff; }
+        .nav-item i { width: 20px; text-align: center; }
+
+        .sidebar-section { padding: 12px 20px; }
+        .section-header { display: flex; align-items: center; justify-content: space-between; color: rgba(255,255,255,0.6); font-size: 12px; text-transform: uppercase; margin-bottom: 8px; }
+        .section-header button { background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 16px; }
+
+        .workspace-selector { background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 12px; }
+        .workspace-selector:hover { background: rgba(255,255,255,0.15); }
+        .ws-icon { width: 24px; height: 24px; background: #6C5CE7; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+
+        .folder { margin-bottom: 4px; }
+        .folder-header { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; color: rgba(255,255,255,0.8); font-size: 13px; }
+        .folder-header:hover { color: #fff; }
+        .folder-items { padding-right: 20px; }
+        .folder-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; color: rgba(255,255,255,0.7); font-size: 13px; border-radius: 4px; }
+        .folder-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .folder-item.active { background: rgba(108,92,231,0.3); color: #fff; }
+
+        /* Main Content */
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Header */
+        .main-header { background: #fff; padding: 16px 24px; border-bottom: 1px solid #E6E9EF; }
+        .board-title { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+        .board-title h1 { font-size: 20px; font-weight: 600; color: #323338; }
+        .board-title button { background: none; border: none; cursor: pointer; font-size: 14px; color: #676879; }
+
+        .header-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+        .tab { padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; color: #676879; }
+        .tab:hover { background: #F0F0F0; }
+        .tab.active { background: #E6E9EF; color: #323338; font-weight: 500; }
+
+        .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .btn { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; border: none; transition: all 0.2s; }
+        .btn-primary { background: #6C5CE7; color: #fff; }
+        .btn-primary:hover { background: #5B4ED1; }
+        .btn-secondary { background: #fff; color: #323338; border: 1px solid #C5C7D0; }
+        .btn-secondary:hover { background: #F6F7FB; }
+
+        .search-box { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #C5C7D0; border-radius: 4px; padding: 6px 12px; }
+        .search-box input { border: none; outline: none; font-size: 13px; width: 150px; }
+
+        /* Board Content */
+        .board-content { flex: 1; overflow-y: auto; padding: 24px; }
+
+        /* Group */
+        .group { background: #fff; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .group-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; }
+        .group-color { width: 6px; height: 36px; border-radius: 3px; }
+        .group-info { flex: 1; }
+        .group-title { font-size: 15px; font-weight: 600; color: #323338; }
+        .group-meta { font-size: 12px; color: #676879; margin-top: 2px; }
+        .group-toggle { font-size: 12px; color: #676879; cursor: pointer; padding: 4px; }
+
+        /* Table */
+        .table-header { display: grid; grid-template-columns: 40px 1fr 120px 100px 120px 100px 50px; background: #F6F7FB; border-bottom: 1px solid #E6E9EF; font-size: 12px; font-weight: 600; color: #676879; text-transform: uppercase; }
+        .table-header > div { padding: 10px 12px; }
+
+        .task-row { display: grid; grid-template-columns: 40px 1fr 120px 100px 120px 100px 50px; border-bottom: 1px solid #F0F0F0; align-items: center; }
+        .task-row:hover { background: #F6F7FB; }
+        .task-row > div { padding: 10px 12px; }
+
+        .checkbox { width: 16px; height: 16px; border: 2px solid #C5C7D0; border-radius: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .checkbox.checked { background: #6C5CE7; border-color: #6C5CE7; color: #fff; }
+
+        .task-name { display: flex; align-items: center; gap: 8px; }
+        .task-name span { cursor: pointer; }
+        .task-name span:hover { color: #6C5CE7; }
+        .expand-btn { background: none; border: none; cursor: pointer; font-size: 10px; color: #676879; width: 20px; height: 20px; border-radius: 3px; }
+        .expand-btn:hover { background: #E6E9EF; }
+
+        .person { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; cursor: pointer; }
+        .person.empty { background: none; border: 2px dashed #C5C7D0; color: #C5C7D0; }
+
+        .status { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; cursor: pointer; text-align: center; color: #fff; }
+        .status.working { background: #FDAB3D; }
+        .status.done { background: #00C875; }
+        .status.stuck { background: #E2445C; }
+        .status.pending { background: #C4C4C4; }
+
+        .date { font-size: 13px; color: #323338; }
+        .date.overdue { color: #E2445C; font-weight: 500; }
+
+        .row-menu { background: none; border: none; cursor: pointer; font-size: 16px; color: #676879; opacity: 0; }
+        .task-row:hover .row-menu { opacity: 1; }
+
+        /* Subitems */
+        .subitems { background: #FAFBFC; border-top: 1px solid #E6E9EF; }
+        .subitem-row { display: grid; grid-template-columns: 40px 40px 1fr 120px 100px 120px 100px 50px; border-bottom: 1px solid #F0F0F0; align-items: center; font-size: 13px; }
+        .subitem-row > div { padding: 8px 12px; }
+        .subitem-indicator { color: #C5C7D0; font-size: 11px; }
+
+        /* Add Task */
+        .add-task { display: flex; align-items: center; gap: 8px; padding: 12px 16px; color: #676879; cursor: pointer; font-size: 13px; }
+        .add-task:hover { background: #F6F7FB; color: #6C5CE7; }
+
+        .add-group { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1px dashed #C5C7D0; border-radius: 8px; color: #676879; cursor: pointer; font-size: 13px; margin-top: 8px; }
+        .add-group:hover { border-color: #6C5CE7; color: #6C5CE7; }
+
+        /* Detail Panel */
+        .detail-panel { width: 400px; background: #fff; border-right: 1px solid #E6E9EF; display: none; flex-direction: column; }
+        .detail-panel.open { display: flex; }
+        .panel-header { padding: 16px 20px; border-bottom: 1px solid #E6E9EF; display: flex; align-items: center; justify-content: space-between; }
+        .panel-title { font-size: 16px; font-weight: 600; color: #323338; }
+        .panel-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #676879; }
+
+        .panel-tabs { display: flex; border-bottom: 1px solid #E6E9EF; }
+        .panel-tab { padding: 12px 20px; cursor: pointer; font-size: 13px; color: #676879; border-bottom: 2px solid transparent; }
+        .panel-tab:hover { color: #323338; }
+        .panel-tab.active { color: #6C5CE7; border-bottom-color: #6C5CE7; }
+
+        .panel-content { flex: 1; overflow-y: auto; padding: 20px; }
+
+        .comment-box { border: 1px solid #C5C7D0; border-radius: 8px; margin-bottom: 20px; }
+        .comment-input { width: 100%; min-height: 80px; border: none; padding: 12px; font-size: 14px; resize: none; outline: none; }
+        .comment-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-top: 1px solid #E6E9EF; }
+        .comment-actions { display: flex; gap: 8px; }
+        .comment-actions button { background: none; border: none; cursor: pointer; font-size: 14px; color: #676879; }
+
+        .comment { padding: 16px; background: #F6F7FB; border-radius: 8px; margin-bottom: 12px; }
+        .comment-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .comment-author { font-weight: 600; font-size: 13px; }
+        .comment-time { font-size: 12px; color: #676879; }
+        .comment-text { font-size: 14px; color: #323338; line-height: 1.5; }
+        .comment-footer { display: flex; gap: 16px; margin-top: 12px; }
+        .comment-footer button { background: none; border: none; font-size: 12px; color: #676879; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+
+        /* Context Menu */
+        .context-menu { position: fixed; background: #fff; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); padding: 8px 0; min-width: 200px; z-index: 1000; display: none; }
+        .context-menu.show { display: block; }
+        .menu-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; cursor: pointer; font-size: 13px; color: #323338; }
+        .menu-item:hover { background: #F6F7FB; }
+        .menu-item.danger { color: #E2445C; }
+        .menu-divider { height: 1px; background: #E6E9EF; margin: 8px 0; }
+
+        /* Status Dropdown */
+        .status-dropdown { position: absolute; background: #fff; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); padding: 8px; z-index: 1000; display: none; }
+        .status-dropdown.show { display: block; }
+        .status-option { padding: 8px 16px; border-radius: 6px; cursor: pointer; margin-bottom: 4px; font-size: 13px; font-weight: 500; color: #fff; text-align: center; }
+        .status-option:hover { opacity: 0.9; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: #fff; border-radius: 12px; width: 400px; max-width: 90%; }
+        .modal-header { padding: 20px; border-bottom: 1px solid #E6E9EF; display: flex; align-items: center; justify-content: space-between; }
+        .modal-header h3 { font-size: 18px; font-weight: 600; }
+        .modal-body { padding: 20px; }
+        .modal-footer { padding: 16px 20px; border-top: 1px solid #E6E9EF; display: flex; justify-content: flex-end; gap: 12px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 500; color: #323338; margin-bottom: 6px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #C5C7D0; border-radius: 6px; font-size: 14px; outline: none; }
+        .form-group input:focus, .form-group select:focus { border-color: #6C5CE7; }
+
+        /* Animations */
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">☀️ Sunday</div>
+            </div>
+            <div class="sidebar-nav">
+                <div class="nav-item"><span>📊</span> Dashboard and reporting</div>
+                <div class="nav-item active"><span>✓</span> My work</div>
+                <div class="nav-item"><span>⭐</span> Favorites</div>
+            </div>
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <span>Workspaces</span>
+                    <button>+</button>
+                </div>
+                <div class="workspace-selector">
+                    <div class="ws-icon">W</div>
+                    <span>Workspaces</span>
+                    <span style="margin-right:auto">▼</span>
+                </div>
+                <div class="folders" id="folders">
+                    <!-- Folders will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main">
+            <div class="main-header">
+                <div class="board-title">
+                    <h1 id="boardTitle">Name board</h1>
+                    <button>▼</button>
+                </div>
+                <div class="header-tabs">
+                    <div class="tab active">Main table</div>
+                    <div class="tab">Doc</div>
+                    <div class="tab">+</div>
+                </div>
+                <div class="toolbar">
+                    <button class="btn btn-primary" onclick="openNewItemModal()">+ New item</button>
+                    <div class="search-box">
+                        <span>🔍</span>
+                        <input type="text" placeholder="Search" id="searchInput" oninput="filterTasks()">
+                    </div>
+                    <button class="btn btn-secondary">👤 People</button>
+                    <button class="btn btn-secondary">🔽 Filter</button>
+                    <button class="btn btn-secondary">↕️ Sort</button>
+                    <button class="btn btn-secondary">👁️ Hide</button>
+                    <button class="btn btn-secondary">📊 Group by</button>
+                </div>
+            </div>
+
+            <div class="board-content" id="boardContent">
+                <!-- Groups will be rendered here -->
+            </div>
+        </div>
+
+        <!-- Detail Panel -->
+        <div class="detail-panel" id="detailPanel">
+            <div class="panel-header">
+                <span class="panel-title" id="panelTitle">Item Name</span>
+                <button class="panel-close" onclick="closePanel()">×</button>
+            </div>
+            <div class="panel-tabs">
+                <div class="panel-tab active">Updates</div>
+                <div class="panel-tab">Files</div>
+                <div class="panel-tab">Activity Log</div>
+            </div>
+            <div class="panel-content">
+                <div class="comment-box">
+                    <textarea class="comment-input" placeholder="Write an update..." id="commentInput"></textarea>
+                    <div class="comment-toolbar">
+                        <div class="comment-actions">
+                            <button>@</button>
+                            <button>📎</button>
+                            <button>😀</button>
+                        </div>
+                        <button class="btn btn-primary" onclick="addComment()">Send</button>
+                    </div>
+                </div>
+                <div id="comments">
+                    <!-- Comments will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <div class="menu-item" onclick="openItem()">↗️ Open item</div>
+        <div class="menu-item" onclick="copyLink()">🔗 Copy item link</div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" onclick="duplicateItem()">📋 Duplicate</div>
+        <div class="menu-item" onclick="addSubitem()">➕ Add subitem</div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" onclick="archiveItem()">📦 Archive</div>
+        <div class="menu-item danger" onclick="deleteItem()">🗑️ Delete</div>
+    </div>
+
+    <!-- Status Dropdown -->
+    <div class="status-dropdown" id="statusDropdown">
+        <div class="status-option" style="background:#00C875" onclick="setStatus('done')">Done</div>
+        <div class="status-option" style="background:#FDAB3D" onclick="setStatus('working')">Working on it</div>
+        <div class="status-option" style="background:#E2445C" onclick="setStatus('stuck')">Stuck</div>
+        <div class="status-option" style="background:#C4C4C4" onclick="setStatus('pending')">Pending</div>
+    </div>
+
+    <!-- New Item Modal -->
+    <div class="modal-overlay" id="newItemModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>New Item</h3>
+                <button class="panel-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Task Name</label>
+                    <input type="text" id="newTaskName" placeholder="Enter task name">
+                </div>
+                <div class="form-group">
+                    <label>Group</label>
+                    <select id="newTaskGroup"></select>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="newTaskStatus">
+                        <option value="pending">Pending</option>
+                        <option value="working">Working on it</option>
+                        <option value="done">Done</option>
+                        <option value="stuck">Stuck</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createNewItem()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        let data = {
+            folders: [
+                {
+                    id: 1,
+                    name: 'Name Folder',
+                    expanded: true,
+                    items: [
+                        { id: 1, name: 'Name board', type: 'board', active: true },
+                        { id: 2, name: 'Name board', type: 'board' },
+                        { id: 3, name: 'Name document', type: 'doc' }
+                    ]
+                },
+                {
+                    id: 2,
+                    name: 'Name Folder',
+                    expanded: false,
+                    items: [
+                        { id: 4, name: 'Name board', type: 'board' },
+                        { id: 5, name: 'Name board', type: 'board' },
+                        { id: 6, name: 'Name document', type: 'doc' }
+                    ]
+                }
+            ],
+            groups: [
+                {
+                    id: 1,
+                    title: 'Group title',
+                    color: '#6C5CE7',
+                    expanded: true,
+                    items: [
+                        { id: 1, name: 'Design UI mockups', person: { name: 'أحمد', color: '#6C5CE7' }, status: 'done', date: '2025-01-19', subitems: [] },
+                        { id: 2, name: 'Build API endpoints', person: { name: 'محمد', color: '#FDAB3D' }, status: 'working', date: '2025-01-22', subitems: [
+                            { id: 21, name: 'User authentication', person: { name: 'سارة', color: '#00C875' }, status: 'done', date: '2025-01-20' },
+                            { id: 22, name: 'Database models', person: null, status: 'working', date: '2025-01-21' }
+                        ]},
+                        { id: 3, name: 'Write documentation', person: null, status: 'pending', date: '2025-01-25', subitems: [] }
+                    ]
+                },
+                {
+                    id: 2,
+                    title: 'Group title',
+                    color: '#00C875',
+                    expanded: true,
+                    items: [
+                        { id: 4, name: 'Setup project', person: { name: 'خالد', color: '#E2445C' }, status: 'done', date: '2025-01-10', subitems: [] },
+                        { id: 5, name: 'Configure CI/CD', person: { name: 'نورة', color: '#9B59B6' }, status: 'stuck', date: '2025-01-15', subitems: [] }
+                    ]
+                }
+            ],
+            comments: [
+                { id: 1, author: 'Person Name', time: '1d', text: 'Message content here', avatar: 'NP' }
+            ]
+        };
+
+        let selectedItem = null;
+        let selectedGroup = null;
+
+        // Render functions
+        function renderFolders() {
+            const container = document.getElementById('folders');
+            container.innerHTML = data.folders.map(folder => `
+                <div class="folder">
+                    <div class="folder-header" onclick="toggleFolder(${folder.id})">
+                        <span>${folder.expanded ? '▼' : '▶'}</span>
+                        <span>📁 ${folder.name}</span>
+                    </div>
+                    <div class="folder-items ${folder.expanded ? '' : 'hidden'}">
+                        ${folder.items.map(item => `
+                            <div class="folder-item ${item.active ? 'active' : ''}" onclick="selectBoard(${item.id})">
+                                <span>${item.type === 'board' ? '📋' : '📄'}</span>
+                                <span>${item.name}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderBoard() {
+            const container = document.getElementById('boardContent');
+            container.innerHTML = data.groups.map(group => `
+                <div class="group" data-group-id="${group.id}">
+                    <div class="group-header" onclick="toggleGroup(${group.id})">
+                        <span class="group-toggle">${group.expanded ? '▼' : '▶'}</span>
+                        <div class="group-color" style="background:${group.color}"></div>
+                        <div class="group-info">
+                            <div class="group-title">${group.title}</div>
+                            <div class="group-meta">${group.items.length} Items / ${group.items.reduce((acc, i) => acc + i.subitems.length, 0)} Subitems</div>
+                        </div>
+                    </div>
+                    <div class="${group.expanded ? '' : 'hidden'}">
+                        <div class="table-header">
+                            <div></div>
+                            <div>Task</div>
+                            <div>Creation</div>
+                            <div>Person</div>
+                            <div>Status</div>
+                            <div>Date</div>
+                            <div></div>
+                        </div>
+                        ${group.items.map(item => renderTask(item, group.id)).join('')}
+                        <div class="add-task" onclick="addTaskToGroup(${group.id})">+ Add task</div>
+                    </div>
+                </div>
+            `).join('') + '<div class="add-group" onclick="addNewGroup()">+ Add new group</div>';
+        }
+
+        function renderTask(item, groupId) {
+            const statusLabels = { done: 'Done', working: 'Working on it', stuck: 'Stuck', pending: 'Pending' };
+            const isOverdue = new Date(item.date) < new Date() && item.status !== 'done';
+
+            return `
+                <div class="task-row" data-item-id="${item.id}" data-group-id="${groupId}">
+                    <div><div class="checkbox ${item.status === 'done' ? 'checked' : ''}" onclick="toggleCheck(${groupId}, ${item.id})">✓</div></div>
+                    <div class="task-name">
+                        ${item.subitems.length > 0 ? `<button class="expand-btn" onclick="toggleSubitems(${groupId}, ${item.id})">▶</button>` : '<span style="width:20px"></span>'}
+                        <span onclick="openItemPanel(${groupId}, ${item.id})">${item.name}</span>
+                    </div>
+                    <div><span class="date">${formatDate(item.date)}</span></div>
+                    <div>
+                        ${item.person
+                            ? `<div class="person" style="background:${item.person.color}">${item.person.name.charAt(0)}</div>`
+                            : `<div class="person empty">+</div>`
+                        }
+                    </div>
+                    <div><span class="status ${item.status}" onclick="openStatusDropdown(event, ${groupId}, ${item.id})">${statusLabels[item.status]}</span></div>
+                    <div><span class="date ${isOverdue ? 'overdue' : ''}">${formatDate(item.date)}</span></div>
+                    <div><button class="row-menu" onclick="openContextMenu(event, ${groupId}, ${item.id})">⋮</button></div>
+                </div>
+                ${item.subitems.length > 0 ? `
+                    <div class="subitems hidden" id="subitems-${groupId}-${item.id}">
+                        ${item.subitems.map(sub => renderSubitem(sub, groupId, item.id)).join('')}
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        function renderSubitem(sub, groupId, parentId) {
+            const statusLabels = { done: 'Done', working: 'Working on it', stuck: 'Stuck', pending: 'Pending' };
+            return `
+                <div class="subitem-row">
+                    <div></div>
+                    <div class="subitem-indicator">↳</div>
+                    <div>${sub.name}</div>
+                    <div>${formatDate(sub.date)}</div>
+                    <div>
+                        ${sub.person
+                            ? `<div class="person" style="background:${sub.person.color};width:24px;height:24px;font-size:10px">${sub.person.name.charAt(0)}</div>`
+                            : `<div class="person empty" style="width:24px;height:24px">+</div>`
+                        }
+                    </div>
+                    <div><span class="status ${sub.status}" style="font-size:11px;padding:2px 8px">${statusLabels[sub.status]}</span></div>
+                    <div>${formatDate(sub.date)}</div>
+                    <div></div>
+                </div>
+            `;
+        }
+
+        function renderComments() {
+            const container = document.getElementById('comments');
+            container.innerHTML = data.comments.map(c => `
+                <div class="comment">
+                    <div class="comment-header">
+                        <div class="person" style="background:#6C5CE7;width:32px;height:32px">${c.avatar}</div>
+                        <span class="comment-author">${c.author}</span>
+                        <span class="comment-time">${c.time}</span>
+                    </div>
+                    <div class="comment-text">${c.text}</div>
+                    <div class="comment-footer">
+                        <button>👍 Like</button>
+                        <button>↩️ Reply</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Helper functions
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+        }
+
+        // Event handlers
+        function toggleFolder(id) {
+            const folder = data.folders.find(f => f.id === id);
+            folder.expanded = !folder.expanded;
+            renderFolders();
+        }
+
+        function toggleGroup(id) {
+            const group = data.groups.find(g => g.id === id);
+            group.expanded = !group.expanded;
+            renderBoard();
+        }
+
+        function toggleSubitems(groupId, itemId) {
+            const el = document.getElementById(`subitems-${groupId}-${itemId}`);
+            el.classList.toggle('hidden');
+        }
+
+        function toggleCheck(groupId, itemId) {
+            const group = data.groups.find(g => g.id === groupId);
+            const item = group.items.find(i => i.id === itemId);
+            item.status = item.status === 'done' ? 'pending' : 'done';
+            renderBoard();
+        }
+
+        function openItemPanel(groupId, itemId) {
+            const group = data.groups.find(g => g.id === groupId);
+            const item = group.items.find(i => i.id === itemId);
+            selectedItem = item;
+            selectedGroup = group;
+
+            document.getElementById('panelTitle').textContent = item.name;
+            document.getElementById('detailPanel').classList.add('open');
+            renderComments();
+        }
+
+        function closePanel() {
+            document.getElementById('detailPanel').classList.remove('open');
+            selectedItem = null;
+        }
+
+        function openContextMenu(e, groupId, itemId) {
+            e.stopPropagation();
+            selectedGroup = data.groups.find(g => g.id === groupId);
+            selectedItem = selectedGroup.items.find(i => i.id === itemId);
+
+            const menu = document.getElementById('contextMenu');
+            menu.style.top = e.clientY + 'px';
+            menu.style.left = e.clientX + 'px';
+            menu.classList.add('show');
+        }
+
+        function openStatusDropdown(e, groupId, itemId) {
+            e.stopPropagation();
+            selectedGroup = data.groups.find(g => g.id === groupId);
+            selectedItem = selectedGroup.items.find(i => i.id === itemId);
+
+            const dropdown = document.getElementById('statusDropdown');
+            dropdown.style.top = e.clientY + 'px';
+            dropdown.style.left = e.clientX + 'px';
+            dropdown.classList.add('show');
+        }
+
+        function setStatus(status) {
+            if (selectedItem) {
+                selectedItem.status = status;
+                renderBoard();
+            }
+            document.getElementById('statusDropdown').classList.remove('show');
+        }
+
+        function deleteItem() {
+            if (selectedItem && selectedGroup) {
+                selectedGroup.items = selectedGroup.items.filter(i => i.id !== selectedItem.id);
+                renderBoard();
+            }
+            document.getElementById('contextMenu').classList.remove('show');
+        }
+
+        function duplicateItem() {
+            if (selectedItem && selectedGroup) {
+                const newItem = JSON.parse(JSON.stringify(selectedItem));
+                newItem.id = Date.now();
+                newItem.name = newItem.name + ' (copy)';
+                selectedGroup.items.push(newItem);
+                renderBoard();
+            }
+            document.getElementById('contextMenu').classList.remove('show');
+        }
+
+        function addSubitem() {
+            if (selectedItem) {
+                const newSubitem = {
+                    id: Date.now(),
+                    name: 'New subitem',
+                    person: null,
+                    status: 'pending',
+                    date: new Date().toISOString().split('T')[0]
+                };
+                selectedItem.subitems.push(newSubitem);
+                renderBoard();
+            }
+            document.getElementById('contextMenu').classList.remove('show');
+        }
+
+        function openItem() {
+            if (selectedItem && selectedGroup) {
+                openItemPanel(selectedGroup.id, selectedItem.id);
+            }
+            document.getElementById('contextMenu').classList.remove('show');
+        }
+
+        function copyLink() {
+            alert('Link copied!');
+            document.getElementById('contextMenu').classList.remove('show');
+        }
+
+        function archiveItem() {
+            alert('Item archived!');
+            document.getElementById('contextMenu').classList.remove('show');
+        }
+
+        function addTaskToGroup(groupId) {
+            const group = data.groups.find(g => g.id === groupId);
+            const newItem = {
+                id: Date.now(),
+                name: 'New item',
+                person: null,
+                status: 'pending',
+                date: new Date().toISOString().split('T')[0],
+                subitems: []
+            };
+            group.items.push(newItem);
+            renderBoard();
+        }
+
+        function addNewGroup() {
+            const newGroup = {
+                id: Date.now(),
+                title: 'New Group',
+                color: '#' + Math.floor(Math.random()*16777215).toString(16),
+                expanded: true,
+                items: []
+            };
+            data.groups.push(newGroup);
+            renderBoard();
+        }
+
+        function openNewItemModal() {
+            const select = document.getElementById('newTaskGroup');
+            select.innerHTML = data.groups.map(g => `<option value="${g.id}">${g.title}</option>`).join('');
+            document.getElementById('newItemModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('newItemModal').classList.remove('show');
+        }
+
+        function createNewItem() {
+            const name = document.getElementById('newTaskName').value;
+            const groupId = parseInt(document.getElementById('newTaskGroup').value);
+            const status = document.getElementById('newTaskStatus').value;
+
+            if (name) {
+                const group = data.groups.find(g => g.id === groupId);
+                group.items.push({
+                    id: Date.now(),
+                    name: name,
+                    person: null,
+                    status: status,
+                    date: new Date().toISOString().split('T')[0],
+                    subitems: []
+                });
+                renderBoard();
+                closeModal();
+                document.getElementById('newTaskName').value = '';
+            }
+        }
+
+        function addComment() {
+            const input = document.getElementById('commentInput');
+            if (input.value.trim()) {
+                data.comments.unshift({
+                    id: Date.now(),
+                    author: 'You',
+                    time: 'Just now',
+                    text: input.value,
+                    avatar: 'Y'
+                });
+                input.value = '';
+                renderComments();
+            }
+        }
+
+        function filterTasks() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            document.querySelectorAll('.task-row').forEach(row => {
+                const name = row.querySelector('.task-name span').textContent.toLowerCase();
+                row.style.display = name.includes(query) ? '' : 'none';
+            });
+        }
+
+        function selectBoard(id) {
+            // Just visual feedback for now
+            data.folders.forEach(f => f.items.forEach(i => i.active = i.id === id));
+            renderFolders();
+        }
+
+        // Close menus on click outside
+        document.addEventListener('click', () => {
+            document.getElementById('contextMenu').classList.remove('show');
+            document.getElementById('statusDropdown').classList.remove('show');
+        });
+
+        // Initialize
+        renderFolders();
+        renderBoard();
+    </script>
+</body>
+</html>
