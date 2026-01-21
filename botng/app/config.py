@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     debug: bool = True
 
     # Crash Alerts - أرقام خاصة لتنبيهات الـ Crashes (مفصولة بفاصلة)
-    crash_alert_recipients: str = "966532263391,966563652525"
+    crash_alert_recipients: str = ""
 
     # API Base URLs
     ultramsg_base_url: str = "https://api.ultramsg.com"
