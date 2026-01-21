@@ -422,9 +422,9 @@ const SundayBoardPro = () => {
     try {
       console.log('🔄 Fetching data via backend proxy...');
 
-      // Use backend proxy to avoid CORS issues - with 10 second timeout
+      // Use backend proxy to avoid CORS issues - with 60 second timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
 
       const response = await fetch('/api/monday/boards', { signal: controller.signal });
       clearTimeout(timeoutId);
