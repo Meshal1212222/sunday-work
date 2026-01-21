@@ -748,6 +748,120 @@ const SundayBoardPro = () => {
     }));
   };
 
+  // Add subtask (recursive - can add to any level)
+  const addSubtask = (groupId, parentPath) => {
+    const taskName = prompt('اسم المهمة الفرعية:');
+    if (!taskName) return;
+
+    const newSubtask = {
+      id: `sub_${Date.now()}`,
+      name: taskName,
+      status: 'pending',
+      person: null,
+      date: '-',
+      subitems: [] // Support nested subitems
+    };
+
+    // Helper function to add subtask recursively
+    const addToPath = (items, path) => {
+      if (path.length === 0) return items;
+
+      return items.map(item => {
+        if (item.id === path[0]) {
+          if (path.length === 1) {
+            // This is the parent - add the subtask here
+            return {
+              ...item,
+              subitems: [...(item.subitems || []), newSubtask]
+            };
+          } else {
+            // Go deeper
+            return {
+              ...item,
+              subitems: addToPath(item.subitems || [], path.slice(1))
+            };
+          }
+        }
+        return item;
+      });
+    };
+
+    setGroups(prev => prev.map(group => {
+      if (group.id === groupId) {
+        return {
+          ...group,
+          items: addToPath(group.items, parentPath)
+        };
+      }
+      return group;
+    }));
+  };
+
+  // Delete subtask (recursive)
+  const deleteSubtask = (groupId, parentPath, subtaskId) => {
+    const deleteFromPath = (items, path) => {
+      if (path.length === 0) {
+        return items.filter(item => item.id !== subtaskId);
+      }
+
+      return items.map(item => {
+        if (item.id === path[0]) {
+          if (path.length === 1) {
+            return {
+              ...item,
+              subitems: (item.subitems || []).filter(sub => sub.id !== subtaskId)
+            };
+          } else {
+            return {
+              ...item,
+              subitems: deleteFromPath(item.subitems || [], path.slice(1))
+            };
+          }
+        }
+        return item;
+      });
+    };
+
+    setGroups(prev => prev.map(group => {
+      if (group.id === groupId) {
+        return {
+          ...group,
+          items: deleteFromPath(group.items, parentPath)
+        };
+      }
+      return group;
+    }));
+  };
+
+  // Update subtask status (recursive)
+  const updateSubtaskStatus = (groupId, path, newStatus) => {
+    const updateInPath = (items, pathArray) => {
+      return items.map(item => {
+        if (item.id === pathArray[0]) {
+          if (pathArray.length === 1) {
+            return { ...item, status: newStatus };
+          } else {
+            return {
+              ...item,
+              subitems: updateInPath(item.subitems || [], pathArray.slice(1))
+            };
+          }
+        }
+        return item;
+      });
+    };
+
+    setGroups(prev => prev.map(group => {
+      if (group.id === groupId) {
+        return {
+          ...group,
+          items: updateInPath(group.items, path)
+        };
+      }
+      return group;
+    }));
+  };
+
   // Add new group
   const addNewGroup = () => {
     const groupName = prompt('اسم المجموعة الجديدة:');
@@ -855,6 +969,9 @@ const SundayBoardPro = () => {
             onAddGroup={addNewGroup}
             onUpdateStatus={updateTaskStatus}
             onDeleteTask={deleteTask}
+            onAddSubtask={addSubtask}
+            onDeleteSubtask={deleteSubtask}
+            onUpdateSubtaskStatus={updateSubtaskStatus}
           />
 
           {showDiscussion && <DiscussionPanel onClose={() => setShowDiscussion(false)} />}
@@ -1100,7 +1217,7 @@ const ViewTab = ({ icon, label, active, onClick }) => (
 );
 
 // ==================== 📋 MAIN CONTENT ====================
-const MainContent = ({ groups, currentView, expandedSubitems, toggleSubitems, searchQuery, onAddTask, onAddGroup, onUpdateStatus, onDeleteTask }) => (
+const MainContent = ({ groups, currentView, expandedSubitems, toggleSubitems, searchQuery, onAddTask, onAddGroup, onUpdateStatus, onDeleteTask, onAddSubtask, onDeleteSubtask, onUpdateSubtaskStatus }) => (
   <div style={{ flex: 1, overflow: 'auto', padding: '24px', background: THEME.background }}>
     <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
       <FilterButton icon="👤" label="Person" />
@@ -1119,6 +1236,9 @@ const MainContent = ({ groups, currentView, expandedSubitems, toggleSubitems, se
         onAddTask={onAddTask}
         onUpdateStatus={onUpdateStatus}
         onDeleteTask={onDeleteTask}
+        onAddSubtask={onAddSubtask}
+        onDeleteSubtask={onDeleteSubtask}
+        onUpdateSubtaskStatus={onUpdateSubtaskStatus}
       />
     ))}
 
@@ -1142,7 +1262,7 @@ const FilterButton = ({ icon, label }) => (
 );
 
 // ==================== 📦 GROUP CARD ====================
-const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery, onAddTask, onUpdateStatus, onDeleteTask }) => {
+const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery, onAddTask, onUpdateStatus, onDeleteTask, onAddSubtask, onDeleteSubtask, onUpdateSubtaskStatus }) => {
   const [collapsed, setCollapsed] = useState(group.collapsed);
 
   const filteredItems = searchQuery
@@ -1183,6 +1303,10 @@ const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery, onAdd
               groupColor={group.color}
               onUpdateStatus={onUpdateStatus}
               onDeleteTask={onDeleteTask}
+              onAddSubtask={onAddSubtask}
+              onDeleteSubtask={onDeleteSubtask}
+              onUpdateSubtaskStatus={onUpdateSubtaskStatus}
+              path={[item.id]}
             />
           ))}
 
@@ -1201,9 +1325,10 @@ const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery, onAdd
 };
 
 // ==================== 📝 TASK ROW ====================
-const TaskRow = ({ item, groupId, expanded, onToggle, groupColor, onUpdateStatus, onDeleteTask }) => {
+const TaskRow = ({ item, groupId, expanded, onToggle, groupColor, onUpdateStatus, onDeleteTask, onAddSubtask, onDeleteSubtask, onUpdateSubtaskStatus, path }) => {
   const [hovered, setHovered] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [showSubitems, setShowSubitems] = useState(expanded);
   const status = STATUS_OPTIONS.find(s => s.id === item.status) || STATUS_OPTIONS[3];
   const hasSubitems = item.subitems && item.subitems.length > 0;
 
@@ -1217,21 +1342,27 @@ const TaskRow = ({ item, groupId, expanded, onToggle, groupColor, onUpdateStatus
     setShowStatusMenu(false);
   };
 
+  const handleAddSubtask = (e) => {
+    e.stopPropagation();
+    if (onAddSubtask) onAddSubtask(groupId, path);
+  };
+
   return (
     <>
       <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 120px 120px 130px 120px', borderBottom: `1px solid ${THEME.lightGray}20`, background: hovered ? '#F8F9FA' : 'white', position: 'relative' }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
         <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><input type="checkbox" /></div>
 
         <div style={{ padding: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {hasSubitems && (
-            <button onClick={onToggle} style={{ width: '20px', height: '20px', borderRadius: '4px', background: expanded ? `${groupColor}20` : 'transparent', border: `1px solid ${THEME.lightGray}50`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: THEME.gray }}>
-              {expanded ? '▼' : '▶'}
-            </button>
-          )}
+          <button onClick={() => setShowSubitems(!showSubitems)} style={{ width: '20px', height: '20px', borderRadius: '4px', background: hasSubitems && showSubitems ? `${groupColor}20` : 'transparent', border: `1px solid ${THEME.lightGray}50`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: THEME.gray }}>
+            {hasSubitems ? (showSubitems ? '▼' : '▶') : '+'}
+          </button>
           <span style={{ fontSize: '14px', fontWeight: '500', color: THEME.dark }}>{item.name}</span>
           {hasSubitems && <span style={{ background: `${groupColor}20`, color: groupColor, padding: '2px 6px', borderRadius: '8px', fontSize: '11px', fontWeight: '500' }}>{item.subitems.length}</span>}
           {hovered && (
-            <button onClick={() => onDeleteTask && onDeleteTask(groupId, item.id)} style={{ marginRight: 'auto', background: 'transparent', border: 'none', color: THEME.danger, cursor: 'pointer', fontSize: '16px', opacity: 0.6 }} title="حذف">🗑️</button>
+            <>
+              <button onClick={handleAddSubtask} style={{ background: `${groupColor}15`, border: 'none', color: groupColor, cursor: 'pointer', fontSize: '12px', padding: '2px 8px', borderRadius: '4px' }} title="إضافة مهمة فرعية">+ فرعية</button>
+              <button onClick={() => onDeleteTask && onDeleteTask(groupId, item.id)} style={{ marginRight: 'auto', background: 'transparent', border: 'none', color: THEME.danger, cursor: 'pointer', fontSize: '16px', opacity: 0.6 }} title="حذف">🗑️</button>
+            </>
           )}
         </div>
 
@@ -1275,10 +1406,22 @@ const TaskRow = ({ item, groupId, expanded, onToggle, groupColor, onUpdateStatus
         </div>
       </div>
 
-      {expanded && hasSubitems && (
+      {showSubitems && hasSubitems && (
         <div style={{ background: '#FAFAFA' }}>
           {item.subitems.map((subitem, index) => (
-            <SubitemRow key={subitem.id} subitem={subitem} isLast={index === item.subitems.length - 1} />
+            <SubitemRow
+              key={subitem.id}
+              subitem={subitem}
+              isLast={index === item.subitems.length - 1}
+              depth={1}
+              groupId={groupId}
+              groupColor={groupColor}
+              path={[...path, subitem.id]}
+              onAddSubtask={onAddSubtask}
+              onDeleteSubtask={onDeleteSubtask}
+              onUpdateSubtaskStatus={onUpdateSubtaskStatus}
+              parentPath={path}
+            />
           ))}
         </div>
       )}
@@ -1286,29 +1429,102 @@ const TaskRow = ({ item, groupId, expanded, onToggle, groupColor, onUpdateStatus
   );
 };
 
-const SubitemRow = ({ subitem, isLast }) => {
+// Recursive SubitemRow - supports unlimited nesting levels
+const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onAddSubtask, onDeleteSubtask, onUpdateSubtaskStatus, parentPath }) => {
+  const [hovered, setHovered] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
   const status = STATUS_OPTIONS.find(s => s.id === subitem.status) || STATUS_OPTIONS[3];
+  const hasSubitems = subitem.subitems && subitem.subitems.length > 0;
+  const indentPx = 30 + (depth * 25); // Increase indent for each level
+
+  const handleAddSubtask = (e) => {
+    e.stopPropagation();
+    if (onAddSubtask) onAddSubtask(groupId, path);
+  };
+
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    if (onDeleteSubtask) onDeleteSubtask(groupId, parentPath, subitem.id);
+  };
+
+  const handleStatusChange = (newStatus) => {
+    if (onUpdateSubtaskStatus) onUpdateSubtaskStatus(groupId, path, newStatus);
+    setShowStatusMenu(false);
+  };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 120px 120px 130px 120px', borderBottom: isLast ? 'none' : `1px solid ${THEME.lightGray}15`, fontSize: '13px' }}>
-      <div style={{ padding: '10px' }}></div>
-      <div style={{ padding: '10px 10px 10px 50px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ color: THEME.lightGray }}>↳</span>
-        <span style={{ color: THEME.gray }}>{subitem.name}</span>
+    <>
+      <div
+        style={{ display: 'grid', gridTemplateColumns: '50px 1fr 120px 120px 130px 120px', borderBottom: isLast && !hasSubitems ? 'none' : `1px solid ${THEME.lightGray}15`, fontSize: '13px', background: hovered ? '#F5F5F5' : 'transparent' }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <div style={{ padding: '10px' }}></div>
+        <div style={{ padding: '10px', paddingRight: `${indentPx}px`, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            style={{ width: '18px', height: '18px', borderRadius: '3px', background: hasSubitems && expanded ? `${groupColor}15` : 'transparent', border: `1px solid ${THEME.lightGray}40`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: THEME.gray, flexShrink: 0 }}
+          >
+            {hasSubitems ? (expanded ? '▼' : '▶') : '·'}
+          </button>
+          <span style={{ color: THEME.gray }}>{subitem.name}</span>
+          {hasSubitems && <span style={{ background: `${groupColor}15`, color: groupColor, padding: '1px 5px', borderRadius: '6px', fontSize: '10px', fontWeight: '500' }}>{subitem.subitems.length}</span>}
+          {hovered && (
+            <>
+              <button onClick={handleAddSubtask} style={{ background: `${groupColor}10`, border: 'none', color: groupColor, cursor: 'pointer', fontSize: '10px', padding: '2px 6px', borderRadius: '3px' }} title="إضافة مهمة فرعية">+</button>
+              <button onClick={handleDelete} style={{ background: 'transparent', border: 'none', color: THEME.danger, cursor: 'pointer', fontSize: '12px', opacity: 0.6, marginRight: 'auto' }} title="حذف">🗑️</button>
+            </>
+          )}
+        </div>
+        <div style={{ padding: '10px' }}></div>
+        <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {subitem.person ? (
+            <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: THEME.lightGray, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px' }}>{subitem.person.avatar}</div>
+          ) : (
+            <span style={{ color: THEME.lightGray, fontSize: '12px' }}>-</span>
+          )}
+        </div>
+        <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <div onClick={() => setShowStatusMenu(!showStatusMenu)} style={{ background: `${status.color}30`, color: status.color, padding: '3px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: '600', cursor: 'pointer' }}>{status.label}</div>
+          {showStatusMenu && (
+            <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', background: 'white', borderRadius: '6px', boxShadow: '0 4px 15px rgba(0,0,0,0.15)', zIndex: 100, padding: '6px', minWidth: '120px' }}>
+              {STATUS_OPTIONS.map(opt => (
+                <div key={opt.id} onClick={() => handleStatusChange(opt.id)} style={{ padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px' }}
+                  onMouseOver={(e) => e.target.style.background = `${opt.color}20`}
+                  onMouseOut={(e) => e.target.style.background = 'transparent'}
+                >
+                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: opt.color }}></span>
+                  {opt.label}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ padding: '10px' }}></div>
       </div>
-      <div style={{ padding: '10px' }}></div>
-      <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {subitem.person ? (
-          <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: THEME.lightGray, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>{subitem.person.avatar}</div>
-        ) : (
-          <span style={{ color: THEME.lightGray }}>-</span>
-        )}
-      </div>
-      <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ background: `${status.color}30`, color: status.color, padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '600' }}>{status.label}</div>
-      </div>
-      <div style={{ padding: '10px' }}></div>
-    </div>
+
+      {/* Render nested subitems recursively */}
+      {expanded && hasSubitems && (
+        <>
+          {subitem.subitems.map((nestedSubitem, index) => (
+            <SubitemRow
+              key={nestedSubitem.id}
+              subitem={nestedSubitem}
+              isLast={index === subitem.subitems.length - 1}
+              depth={depth + 1}
+              groupId={groupId}
+              groupColor={groupColor}
+              path={[...path, nestedSubitem.id]}
+              onAddSubtask={onAddSubtask}
+              onDeleteSubtask={onDeleteSubtask}
+              onUpdateSubtaskStatus={onUpdateSubtaskStatus}
+              parentPath={path}
+            />
+          ))}
+        </>
+      )}
+    </>
   );
 };
 
