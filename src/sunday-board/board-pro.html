@@ -84,40 +84,51 @@ const INITIAL_FOLDERS = [
     { id: 'f3', name: 'Name Folder', expanded: false, items: [] },
 ];
 
+// Default columns configuration
+const DEFAULT_COLUMNS = [
+    { id: 'task', name: 'Task', width: 280, fixed: true },
+    { id: 'creation', name: 'Creation', width: 120 },
+    { id: 'person', name: 'Person', width: 120 },
+    { id: 'status', name: 'Status', width: 140 },
+    { id: 'date', name: 'Date', width: 120 },
+];
+
+const STATUS_OPTIONS = ['Working on it', 'Done', 'Stuck', 'Pending'];
+
 const INITIAL_GROUPS = [
     {
         id: 'g1', title: 'Group title', collapsed: true,
         items: [
-            { id: 'i1', name: 'Name item', creation: '19 May', subitems: [
-                { id: 's1', name: 'Subitem 1', creation: '19 May', subsubitems: [
-                    { id: 'ss1', name: 'Sub-subitem 1', creation: '19 May' },
-                    { id: 'ss2', name: 'Sub-subitem 2', creation: '19 May' },
+            { id: 'i1', name: 'Name item', creation: '19 May', person: 'NP', status: 'Working on it', date: '19 May', subitems: [
+                { id: 's1', name: 'Subitem 1', creation: '19 May', person: 'NP', status: 'Done', date: '19 May', subsubitems: [
+                    { id: 'ss1', name: 'Sub-subitem 1', creation: '19 May', person: 'NP', status: 'Pending', date: '19 May' },
+                    { id: 'ss2', name: 'Sub-subitem 2', creation: '19 May', person: 'NP', status: 'Working on it', date: '19 May' },
                 ]},
-                { id: 's2', name: 'Subitem 2', creation: '19 May', subsubitems: [] },
-                { id: 's3', name: 'Subitem 3', creation: '19 May', subsubitems: [] },
+                { id: 's2', name: 'Subitem 2', creation: '19 May', person: 'NP', status: 'Stuck', date: '20 May', subsubitems: [] },
+                { id: 's3', name: 'Subitem 3', creation: '19 May', person: 'NP', status: 'Working on it', date: '21 May', subsubitems: [] },
             ]},
-            { id: 'i2', name: 'Name item', creation: '20 May', subitems: [] },
+            { id: 'i2', name: 'Name item', creation: '20 May', person: 'NP', status: 'Done', date: '22 May', subitems: [] },
         ]
     },
     {
         id: 'g2', title: 'Group title', collapsed: true,
         items: [
-            { id: 'i3', name: 'Name item', creation: '19 May', subitems: [
-                { id: 's4', name: 'Subitem 1', creation: '19 May', subsubitems: [] },
-                { id: 's5', name: 'Subitem 2', creation: '19 May', subsubitems: [] },
-                { id: 's6', name: 'Subitem 3', creation: '19 May', subsubitems: [] },
+            { id: 'i3', name: 'Name item', creation: '19 May', person: 'NP', status: 'Working on it', date: '19 May', subitems: [
+                { id: 's4', name: 'Subitem 1', creation: '19 May', person: 'NP', status: 'Done', date: '19 May', subsubitems: [] },
+                { id: 's5', name: 'Subitem 2', creation: '19 May', person: 'NP', status: 'Pending', date: '20 May', subsubitems: [] },
+                { id: 's6', name: 'Subitem 3', creation: '19 May', person: 'NP', status: 'Working on it', date: '21 May', subsubitems: [] },
             ]},
-            { id: 'i4', name: 'Name item', creation: '20 May', subitems: [] },
+            { id: 'i4', name: 'Name item', creation: '20 May', person: 'NP', status: 'Stuck', date: '22 May', subitems: [] },
         ]
     },
     {
         id: 'g3', title: 'Group title', collapsed: false,
         items: [
-            { id: 'i5', name: 'Name item', creation: '19 May', subitems: [
-                { id: 's7', name: 'Subitem 1', creation: '19 May', subsubitems: [] },
-                { id: 's8', name: 'Subitem 2', creation: '19 May', subsubitems: [] },
+            { id: 'i5', name: 'Name item', creation: '19 May', person: 'NP', status: 'Working on it', date: '19 May', subitems: [
+                { id: 's7', name: 'Subitem 1', creation: '19 May', person: 'NP', status: 'Done', date: '19 May', subsubitems: [] },
+                { id: 's8', name: 'Subitem 2', creation: '19 May', person: 'NP', status: 'Pending', date: '20 May', subsubitems: [] },
             ]},
-            { id: 'i6', name: 'Name item', creation: '10 May', subitems: [] },
+            { id: 'i6', name: 'Name item', creation: '10 May', person: 'NP', status: 'Done', date: '15 May', subitems: [] },
         ]
     },
 ];
@@ -136,6 +147,8 @@ const App = () => {
     const [showUpdates, setShowUpdates] = useState(true);
     const [activeTab, setActiveTab] = useState('Updates');
     const [isLoading, setIsLoading] = useState(true);
+    const [columns, setColumns] = useState(DEFAULT_COLUMNS);
+    const [draggedCol, setDraggedCol] = useState(null);
 
     useEffect(() => {
         const init = async () => {
@@ -175,6 +188,33 @@ const App = () => {
 
     const countSubitems = (items) => items.reduce((a, i) => a + (i.subitems?.length || 0), 0);
     const countSubsubitems = (items) => items.reduce((a, i) => a + (i.subitems || []).reduce((b, s) => b + (s.subsubitems?.length || 0), 0), 0);
+
+    // Column drag handlers
+    const handleDragStart = (e, colId) => {
+        if (columns.find(c => c.id === colId)?.fixed) return;
+        setDraggedCol(colId);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+    const handleDragOver = (e, colId) => {
+        e.preventDefault();
+        if (!draggedCol || draggedCol === colId || columns.find(c => c.id === colId)?.fixed) return;
+    };
+    const handleDrop = (e, targetColId) => {
+        e.preventDefault();
+        if (!draggedCol || draggedCol === targetColId) return;
+        const dragIdx = columns.findIndex(c => c.id === draggedCol);
+        const targetIdx = columns.findIndex(c => c.id === targetColId);
+        if (dragIdx === -1 || targetIdx === -1) return;
+        const newCols = [...columns];
+        const [removed] = newCols.splice(dragIdx, 1);
+        newCols.splice(targetIdx, 0, removed);
+        setColumns(newCols);
+        setDraggedCol(null);
+    };
+    const handleDragEnd = () => setDraggedCol(null);
+
+    // Get grid template from columns
+    const getGridTemplate = () => '40px ' + columns.map(c => c.width + 'px').join(' ') + ' 40px';
 
     if (isLoading) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:THEME.bg}}>Loading...</div>;
 
@@ -292,19 +332,57 @@ const App = () => {
 
                                     {/* Table */}
                                     {!group.collapsed && (
-                                        <div style={{ background: THEME.white, border: `1px solid ${THEME.border}`, borderRadius: 4 }}>
+                                        <div style={{ background: THEME.white, border: `1px solid ${THEME.border}`, borderRadius: 4, overflowX: 'auto' }}>
                                             {/* Table Header */}
-                                            <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 120px', borderBottom: `1px solid ${THEME.border}`, fontSize: 12, color: THEME.gray }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: getGridTemplate(), borderBottom: `1px solid ${THEME.border}`, fontSize: 12, color: THEME.gray, minWidth: 'fit-content' }}>
                                                 <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                     <input type="checkbox" />
                                                 </div>
-                                                <div style={{ padding: '8px 12px' }}>Task</div>
-                                                <div style={{ padding: 8, textAlign: 'center' }}>Creation</div>
+                                                {columns.map(col => (
+                                                    <div
+                                                        key={col.id}
+                                                        draggable={!col.fixed}
+                                                        onDragStart={(e) => handleDragStart(e, col.id)}
+                                                        onDragOver={(e) => handleDragOver(e, col.id)}
+                                                        onDrop={(e) => handleDrop(e, col.id)}
+                                                        onDragEnd={handleDragEnd}
+                                                        style={{
+                                                            padding: '8px 12px',
+                                                            textAlign: col.id === 'task' ? 'left' : 'center',
+                                                            cursor: col.fixed ? 'default' : 'grab',
+                                                            background: draggedCol === col.id ? '#E6F4FF' : 'transparent',
+                                                            borderLeft: col.id !== 'task' ? `1px dashed ${THEME.border}` : 'none',
+                                                            borderRight: `1px dashed ${THEME.border}`,
+                                                            userSelect: 'none',
+                                                            position: 'relative'
+                                                        }}
+                                                    >
+                                                        {col.name}
+                                                        {!col.fixed && <span style={{ position: 'absolute', left: 4, top: '50%', transform: 'translateY(-50%)', opacity: 0.3 }}>⋮⋮</span>}
+                                                    </div>
+                                                ))}
+                                                <div style={{ padding: 8, textAlign: 'center', color: THEME.gray }}>+</div>
                                             </div>
 
                                             {/* Items */}
-                                            {group.items.map(item => (
-                                                <ItemRow key={item.id} item={item} />
+                                            {group.items.map((item, idx) => (
+                                                <ItemRow
+                                                    key={item.id}
+                                                    item={item}
+                                                    columns={columns}
+                                                    gridTemplate={getGridTemplate()}
+                                                    groupId={group.id}
+                                                    index={idx}
+                                                    onReorder={(fromIdx, toIdx) => {
+                                                        setGroups(gs => gs.map(g => {
+                                                            if (g.id !== group.id) return g;
+                                                            const items = [...g.items];
+                                                            const [moved] = items.splice(fromIdx, 1);
+                                                            items.splice(toIdx, 0, moved);
+                                                            return { ...g, items };
+                                                        }));
+                                                    }}
+                                                />
                                             ))}
 
                                             {/* Add Task */}
@@ -380,44 +458,118 @@ const ToolbarBtn = ({ icon, label }) => (
     </button>
 );
 
-const ItemRow = ({ item }) => {
+const ItemRow = ({ item, columns, gridTemplate, groupId, index, onReorder }) => {
     const [expanded, setExpanded] = useState(false);
     const [hovered, setHovered] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const hasSubitems = item.subitems && item.subitems.length > 0;
+
+    const handleRowDragStart = (e) => {
+        setIsDragging(true);
+        e.dataTransfer.setData('rowIndex', index.toString());
+        e.dataTransfer.setData('groupId', groupId);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+    const handleRowDragOver = (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+    const handleRowDrop = (e) => {
+        e.preventDefault();
+        const fromIdx = parseInt(e.dataTransfer.getData('rowIndex'));
+        const fromGroup = e.dataTransfer.getData('groupId');
+        if (fromGroup === groupId && fromIdx !== index) {
+            onReorder(fromIdx, index);
+        }
+    };
+    const handleRowDragEnd = () => setIsDragging(false);
+
+    const renderCell = (col) => {
+        switch (col.id) {
+            case 'task':
+                return (
+                    <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span onClick={() => hasSubitems && setExpanded(!expanded)} style={{ color: THEME.gray, fontSize: 10, cursor: hasSubitems ? 'pointer' : 'default' }}>
+                            {hasSubitems ? (expanded ? '▽' : '▷') : '▷'}
+                        </span>
+                        <span style={{ fontSize: 14 }}>{item.name}</span>
+                        {hovered && (
+                            <>
+                                <span style={{ color: THEME.gray, cursor: 'pointer' }}>⋮</span>
+                                <span style={{ color: THEME.gray, cursor: 'pointer', border: `1px solid ${THEME.border}`, borderRadius: 2, padding: '0 4px', fontSize: 12 }}>⊕</span>
+                            </>
+                        )}
+                    </div>
+                );
+            case 'creation':
+                return (
+                    <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <span style={{ background: THEME.purple, color: 'white', padding: '2px 6px', borderRadius: 10, fontSize: 10, fontWeight: 500 }}>NP</span>
+                        <span style={{ fontSize: 13 }}>{item.creation}</span>
+                    </div>
+                );
+            case 'person':
+                return (
+                    <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ background: THEME.purple, color: 'white', padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 500 }}>{item.person || 'NP'}</span>
+                    </div>
+                );
+            case 'status':
+                return (
+                    <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: 13, color: THEME.dark }}>{item.status || 'Working on it'}</span>
+                    </div>
+                );
+            case 'date':
+                return (
+                    <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                        <span style={{ fontSize: 12 }}>⏱</span>
+                        <span style={{ fontSize: 13 }}>{item.date}</span>
+                    </div>
+                );
+            default:
+                return <div style={{ padding: 8 }}></div>;
+        }
+    };
 
     return (
         <>
             <div
-                style={{ display: 'grid', gridTemplateColumns: '40px 1fr 120px', borderBottom: `1px solid ${THEME.border}`, background: hovered ? '#F5F6F8' : 'white' }}
+                draggable
+                onDragStart={handleRowDragStart}
+                onDragOver={handleRowDragOver}
+                onDrop={handleRowDrop}
+                onDragEnd={handleRowDragEnd}
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: gridTemplate,
+                    borderBottom: `1px solid ${THEME.border}`,
+                    background: isDragging ? '#E6F4FF' : hovered ? '#F5F6F8' : 'white',
+                    cursor: 'grab',
+                    opacity: isDragging ? 0.5 : 1,
+                    minWidth: 'fit-content'
+                }}
                 onMouseEnter={() => setHovered(true)}
                 onMouseLeave={() => setHovered(false)}
             >
                 <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <input type="checkbox" />
+                    <input type="checkbox" onClick={(e) => e.stopPropagation()} />
                 </div>
-                <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span onClick={() => hasSubitems && setExpanded(!expanded)} style={{ color: THEME.gray, fontSize: 10, cursor: hasSubitems ? 'pointer' : 'default' }}>
-                        {hasSubitems ? (expanded ? '▽' : '▷') : '▷'}
-                    </span>
-                    <span style={{ fontSize: 14 }}>{item.name}</span>
-                    {hovered && (
-                        <>
-                            <span style={{ color: THEME.gray, cursor: 'pointer' }}>⋮</span>
-                            <span style={{ color: THEME.gray, cursor: 'pointer', border: `1px solid ${THEME.border}`, borderRadius: 2, padding: '0 4px', fontSize: 12 }}>⊕</span>
-                        </>
-                    )}
-                </div>
-                <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    <span style={{ background: THEME.purple, color: 'white', padding: '2px 6px', borderRadius: 10, fontSize: 10, fontWeight: 500 }}>NP</span>
-                    <span style={{ fontSize: 13 }}>{item.creation}</span>
-                </div>
+                {columns.map(col => (
+                    <div key={col.id} style={{ borderLeft: col.id !== 'task' ? `1px dashed ${THEME.border}` : 'none' }}>
+                        {renderCell(col)}
+                    </div>
+                ))}
+                <div style={{ padding: 8 }}></div>
             </div>
 
             {/* Subitems */}
             {expanded && hasSubitems && (
-                <div style={{ background: '#F5F6F8' }}>
-                    {item.subitems.map(sub => (
-                        <SubitemRow key={sub.id} subitem={sub} />
+                <div style={{ background: '#F5F6F8', position: 'relative' }}>
+                    {/* Main tree line */}
+                    <div style={{ position: 'absolute', left: 60, top: 0, bottom: 40, width: 2, background: '#C5C7D0' }}></div>
+                    {item.subitems.map((sub, idx) => (
+                        <SubitemRow key={sub.id} subitem={sub} columns={columns} gridTemplate={gridTemplate} isLast={idx === item.subitems.length - 1} />
                     ))}
                     <div style={{ padding: '8px 12px 8px 72px' }}>
                         <span style={{ color: THEME.gray, fontSize: 12, cursor: 'pointer' }}>+ Add task</span>
@@ -428,50 +580,94 @@ const ItemRow = ({ item }) => {
     );
 };
 
-const SubitemRow = ({ subitem }) => {
+const SubitemRow = ({ subitem, columns, gridTemplate, isLast = false }) => {
     const [expanded, setExpanded] = useState(false);
     const [hovered, setHovered] = useState(false);
     const hasSubs = subitem.subsubitems && subitem.subsubitems.length > 0;
 
+    const renderCell = (col, item, depth = 1, isLastItem = false) => {
+        const fontSize = depth > 1 ? 11 : 12;
+        const indent = depth * 24;
+
+        switch (col.id) {
+            case 'task':
+                return (
+                    <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
+                        {/* Tree Lines */}
+                        <div style={{ position: 'absolute', left: indent - 16, top: 0, bottom: isLastItem ? '50%' : 0, width: 2, background: '#C5C7D0' }}></div>
+                        <div style={{ position: 'absolute', left: indent - 16, top: '50%', width: 12, height: 2, background: '#C5C7D0' }}></div>
+                        <div style={{ width: indent }}></div>
+                        {depth === 1 && <span onClick={() => hasSubs && setExpanded(!expanded)} style={{ color: THEME.gray, fontSize: 10, cursor: hasSubs ? 'pointer' : 'default' }}>
+                            {hasSubs ? (expanded ? '▽' : '▷') : '▷'}
+                        </span>}
+                        {depth > 1 && <span style={{ color: THEME.gray, fontSize: 10 }}>▷</span>}
+                        <span style={{ fontSize: fontSize + 1 }}>{item.name}</span>
+                        {hovered && depth === 1 && <span style={{ color: THEME.gray, cursor: 'pointer' }}>⋮</span>}
+                    </div>
+                );
+            case 'creation':
+                return (
+                    <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                        <span style={{ background: THEME.purple, color: 'white', padding: '2px 6px', borderRadius: 10, fontSize: 10, fontWeight: 500 }}>NP</span>
+                        <span style={{ fontSize }}>{item.creation}</span>
+                    </div>
+                );
+            case 'person':
+                return (
+                    <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ background: THEME.purple, color: 'white', padding: '2px 6px', borderRadius: 10, fontSize: 10 }}>{item.person || 'NP'}</span>
+                    </div>
+                );
+            case 'status':
+                return (
+                    <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize }}>{item.status || 'Pending'}</span>
+                    </div>
+                );
+            case 'date':
+                return (
+                    <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                        <span style={{ fontSize: 10 }}>⏱</span>
+                        <span style={{ fontSize }}>{item.date}</span>
+                    </div>
+                );
+            default:
+                return <div style={{ padding: 8 }}></div>;
+        }
+    };
+
     return (
         <>
             <div
-                style={{ display: 'grid', gridTemplateColumns: '40px 1fr 120px', borderBottom: `1px solid ${THEME.border}`, background: hovered ? '#ECEDF0' : '#F5F6F8', paddingLeft: 20 }}
+                style={{ display: 'grid', gridTemplateColumns: gridTemplate, borderBottom: `1px solid ${THEME.border}`, background: hovered ? '#ECEDF0' : '#F5F6F8', minWidth: 'fit-content' }}
                 onMouseEnter={() => setHovered(true)}
                 onMouseLeave={() => setHovered(false)}
             >
                 <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <input type="checkbox" />
                 </div>
-                <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span onClick={() => hasSubs && setExpanded(!expanded)} style={{ color: THEME.gray, fontSize: 10, cursor: hasSubs ? 'pointer' : 'default' }}>
-                        {hasSubs ? (expanded ? '▽' : '▷') : '▷'}
-                    </span>
-                    <span style={{ fontSize: 13 }}>{subitem.name}</span>
-                    {hovered && <span style={{ color: THEME.gray, cursor: 'pointer' }}>⋮</span>}
-                </div>
-                <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    <span style={{ background: THEME.purple, color: 'white', padding: '2px 6px', borderRadius: 10, fontSize: 10, fontWeight: 500 }}>NP</span>
-                    <span style={{ fontSize: 12 }}>{subitem.creation}</span>
-                </div>
+                {columns.map(col => (
+                    <div key={col.id} style={{ borderLeft: col.id !== 'task' ? `1px dashed ${THEME.border}` : 'none' }}>
+                        {renderCell(col, subitem, 1, isLast)}
+                    </div>
+                ))}
+                <div style={{ padding: 8 }}></div>
             </div>
 
             {/* Sub-subitems */}
             {expanded && hasSubs && (
                 <div style={{ background: '#EAEBEE' }}>
-                    {subitem.subsubitems.map(ss => (
-                        <div key={ss.id} style={{ display: 'grid', gridTemplateColumns: '40px 1fr 120px', borderBottom: `1px solid ${THEME.border}`, paddingLeft: 40 }}>
+                    {subitem.subsubitems.map((ss, idx) => (
+                        <div key={ss.id} style={{ display: 'grid', gridTemplateColumns: gridTemplate, borderBottom: `1px solid ${THEME.border}`, minWidth: 'fit-content' }}>
                             <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <input type="checkbox" />
                             </div>
-                            <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ color: THEME.gray, fontSize: 10 }}>▷</span>
-                                <span style={{ fontSize: 12 }}>{ss.name}</span>
-                            </div>
-                            <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                <span style={{ background: THEME.purple, color: 'white', padding: '2px 6px', borderRadius: 10, fontSize: 10, fontWeight: 500 }}>NP</span>
-                                <span style={{ fontSize: 11 }}>{ss.creation}</span>
-                            </div>
+                            {columns.map(col => (
+                                <div key={col.id} style={{ borderLeft: col.id !== 'task' ? `1px dashed ${THEME.border}` : 'none' }}>
+                                    {renderCell(col, ss, 2, idx === subitem.subsubitems.length - 1)}
+                                </div>
+                            ))}
+                            <div style={{ padding: 8 }}></div>
                         </div>
                     ))}
                 </div>
