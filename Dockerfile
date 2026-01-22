@@ -1,9 +1,9 @@
 FROM python:3.11-slim
 
 # ========================================
-# Build version: 5.0 - UI/UX MAJOR UPGRADE
-# Date: 2026-01-21 - Professional Design with Arabic Fonts
-# Features: Cairo Arabic Font, Better Spacing, Tree Design
+# Build version: 6.0 - MONDAY.COM STYLE DESIGN
+# Date: 2026-01-22 - Clean Monday.com inspired design
+# Features: Simple rows, colored status pills, clean table
 # ========================================
 WORKDIR /app
 
