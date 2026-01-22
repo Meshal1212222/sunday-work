@@ -5,10 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sunday Board Pro - نظام إدارة المشاريع المتقدم</title>
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts - Clean Style -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
     <!-- React & Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -76,9 +79,13 @@
         }
 
         body {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Figtree', 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             overflow-x: hidden;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #F6F7FB;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            color: #323338;
         }
 
         #root {
@@ -92,9 +99,33 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-size: 18px;
-            color: white;
+            background: #F6F7FB;
+            font-size: 16px;
+            color: #323338;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        /* Better text rendering */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Cairo', 'Inter', sans-serif;
+            font-weight: 700;
+        }
+
+        /* Button reset */
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        /* Input reset */
+        input, textarea, select {
+            font-family: inherit;
+            font-size: 14px;
         }
 
         /* Animations */
@@ -118,9 +149,15 @@
             50% { transform: translateY(-5px); }
         }
 
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .animate-fade { animation: fadeIn 0.3s ease-out; }
         .animate-pulse:hover { animation: pulse 0.3s ease-in-out; }
         .animate-float { animation: float 3s ease-in-out infinite; }
+        .animate-spin { animation: spin 1s linear infinite; }
 
         /* Glass Effect */
         .glass {
@@ -168,36 +205,35 @@
 const { useState, useEffect, useRef } = React;
 
 // ==================== 🎨 THEME & COLORS ====================
+// Sunday Board Theme - Figma Design
 const THEME = {
-  primary: '#6C5CE7',
-  primaryLight: '#A29BFE',
-  primaryDark: '#5B4D8C',
-  success: '#00B894',
-  warning: '#FDCB6E',
-  danger: '#E74C3C',
-  info: '#0984E3',
-  dark: '#2D3436',
-  gray: '#636E72',
-  lightGray: '#B2BEC3',
-  background: '#F8F9FA',
+  primary: '#323338',
+  primaryLight: '#F5F6F8',
+  success: '#00C875',
+  warning: '#FDAB3D',
+  danger: '#E2445C',
+  dark: '#323338',
+  gray: '#676879',
+  lightGray: '#E6E9EF',
+  border: '#E6E9EF',
+  background: '#F5F6F8',
   white: '#FFFFFF',
   sidebarBg: '#F5F6F8',
+  hoverBg: '#F5F6F8',
+  tableBg: '#FFFFFF',
+  subitemBg: '#F5F6F8',
   gradients: {
-    primary: 'linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%)',
-    pink: 'linear-gradient(135deg, #FD79A8 0%, #FDCB6E 100%)',
-    green: 'linear-gradient(135deg, #00B894 0%, #55EFC4 100%)',
-    blue: 'linear-gradient(135deg, #0984E3 0%, #74B9FF 100%)',
-    orange: 'linear-gradient(135deg, #E17055 0%, #FDCB6E 100%)',
+    primary: 'linear-gradient(135deg, #6C5CE7, #A29BFE)',
+    success: 'linear-gradient(135deg, #00C875, #00D68F)',
   }
 };
 
-// ==================== 📊 STATUS OPTIONS ====================
+// Status Options - Text only (no background colors)
 const STATUS_OPTIONS = [
-  { id: 'working', label: 'Working on it', color: '#FDCB6E', icon: '🔄' },
-  { id: 'stuck', label: 'Stuck', color: '#E74C3C', icon: '🚫' },
-  { id: 'done', label: 'Done', color: '#00B894', icon: '✅' },
-  { id: 'pending', label: 'Pending', color: '#B2BEC3', icon: '⏳' },
-  { id: 'review', label: 'In Review', color: '#0984E3', icon: '👀' },
+  { id: 'working', label: 'Working on it' },
+  { id: 'done', label: 'Done' },
+  { id: 'stuck', label: 'Stuck' },
+  { id: 'pending', label: 'Pending' },
 ];
 
 // ==================== 🎨 SUNDAY LOGO ====================
@@ -233,21 +269,23 @@ const SundayLogo = ({ size = 'medium', collapsed = false }) => {
         <path d="M 50,38 L 53,47 L 62,50 L 53,53 L 50,62 L 47,53 L 38,50 L 47,47 Z" fill="white" />
       </svg>
       {!collapsed && (
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
           <span style={{
-            fontFamily: 'Poppins, sans-serif',
+            fontFamily: "'Inter', 'Cairo', sans-serif",
             fontSize: `${iconSize * 0.55}px`,
-            fontWeight: '700',
-            color: THEME.primaryDark
+            fontWeight: '800',
+            color: THEME.primaryDark,
+            letterSpacing: '-0.5px'
           }}>
             Sunday
           </span>
           <span style={{
-            fontFamily: 'Poppins, sans-serif',
+            fontFamily: "'Cairo', 'Inter', sans-serif",
             fontSize: `${iconSize * 0.28}px`,
-            color: THEME.gray
+            color: THEME.gray,
+            fontWeight: '500'
           }}>
-            Work Management
+            إدارة المشاريع
           </span>
         </div>
       )}
@@ -953,17 +991,46 @@ const SundayBoardPro = () => {
         minHeight: '100vh',
         background: THEME.background,
         flexDirection: 'column',
-        gap: '20px'
+        gap: '24px',
+        fontFamily: "'Cairo', 'Inter', sans-serif"
       }}>
         <SundayLogo size="large" />
         {isLoading ? (
-          <div style={{ fontSize: '18px', color: THEME.primary, fontWeight: '500' }}>جاري التحميل...</div>
+          <div style={{
+            fontSize: '18px',
+            color: THEME.primary,
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <span style={{
+              width: '24px',
+              height: '24px',
+              border: `3px solid ${THEME.primary}30`,
+              borderTop: `3px solid ${THEME.primary}`,
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }}></span>
+            جاري التحميل...
+          </div>
         ) : loadError ? (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '16px', color: THEME.danger, fontWeight: '500', marginBottom: '15px' }}>{loadError}</div>
+            <div style={{ fontSize: '16px', color: THEME.danger, fontWeight: '600', marginBottom: '20px' }}>{loadError}</div>
             <button
               onClick={() => { setLoadError(null); setIsLoading(true); setRetryCount(c => c + 1); }}
-              style={{ padding: '10px 25px', background: THEME.primary, color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: '500' }}
+              style={{
+                padding: '12px 32px',
+                background: THEME.gradients.primary,
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '15px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                boxShadow: `0 4px 15px ${THEME.primary}40`,
+                transition: 'transform 0.2s ease'
+              }}
             >
               إعادة المحاولة
             </button>
@@ -977,9 +1044,10 @@ const SundayBoardPro = () => {
     <div style={{
       display: 'flex',
       minHeight: '100vh',
-      fontFamily: 'Poppins, -apple-system, BlinkMacSystemFont, sans-serif',
+      fontFamily: "'Cairo', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       background: THEME.background,
-      direction: 'rtl'
+      direction: 'rtl',
+      fontSize: '14px'
     }}>
       {/* Sidebar */}
       <Sidebar
@@ -1039,235 +1107,312 @@ const SundayBoardPro = () => {
 };
 
 // ==================== 📂 SIDEBAR ====================
+// Figma Design Sidebar - Clean Light Gray
 const Sidebar = ({ collapsed, onToggle, workspaces, selectedBoard, onSelectBoard, onToggleFolder, currentView, onChangeView }) => (
   <div style={{
-    width: collapsed ? '60px' : '280px',
-    background: THEME.white,
-    borderLeft: `1px solid ${THEME.lightGray}30`,
+    width: collapsed ? '48px' : '260px',
+    background: '#F5F6F8',
+    borderLeft: `1px solid ${THEME.border}`,
     display: 'flex',
     flexDirection: 'column',
-    transition: 'width 0.3s ease',
     overflow: 'hidden'
   }}>
+    {/* Logo Header - Dark */}
     <div style={{
-      padding: collapsed ? '16px 12px' : '20px',
-      borderBottom: `1px solid ${THEME.lightGray}30`,
+      padding: '16px 20px',
+      background: '#292F4C',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: collapsed ? 'center' : 'space-between'
+      gap: '12px'
     }}>
-      <SundayLogo size="medium" collapsed={collapsed} />
-      {!collapsed && (
-        <button onClick={onToggle} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: THEME.gray }}>
-          ◀
-        </button>
-      )}
+      <div style={{
+        width: '32px',
+        height: '32px',
+        background: 'linear-gradient(135deg, #FF6B9D, #5DD4D4)',
+        borderRadius: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <span style={{ color: 'white', fontSize: '16px', fontWeight: 'bold' }}>S</span>
+      </div>
+      {!collapsed && <span style={{ fontSize: '18px', fontWeight: '700', color: 'white' }}>Sunday</span>}
     </div>
 
+    {/* Navigation Items */}
     {!collapsed && (
-      <div style={{ padding: '16px' }}>
-        <QuickAction icon="🏠" label="Home" active={currentView === 'home'} onClick={() => onChangeView('home')} />
-        <QuickAction icon="📋" label="المهام" active={currentView === 'board'} onClick={() => onChangeView('board')} />
-        <QuickAction icon="📊" label="التحليلات" active={currentView === 'analytics'} onClick={() => onChangeView('analytics')} />
-        <QuickAction icon="👥" label="الموظفين" active={currentView === 'employees'} onClick={() => onChangeView('analytics')} />
-        <QuickAction icon="🔔" label="الإشعارات" badge="3" />
+      <div style={{ padding: '12px 16px' }}>
+        <SidebarNavItem icon="📊" label="Dashboard and reporting" />
+        <SidebarNavItem icon="☑️" label="My work" />
+        <SidebarNavItem icon="⭐" label="Favorites" expandable />
       </div>
     )}
 
-    <div style={{ flex: 1, overflow: 'auto', padding: collapsed ? '8px' : '0 16px 16px' }}>
-      {!collapsed && (
-        <div style={{ fontSize: '11px', fontWeight: '600', color: THEME.gray, textTransform: 'uppercase', letterSpacing: '0.5px', padding: '8px 0', marginTop: '8px' }}>
-          Workspaces
+    {/* Workspaces Section */}
+    {!collapsed && (
+      <div style={{ padding: '8px 16px', borderTop: `1px solid ${THEME.border}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <span style={{ fontSize: '11px', color: THEME.gray, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>⊞</span> Workspaces
+          </span>
+          <span style={{ color: THEME.gray, cursor: 'pointer', fontSize: '14px' }}>⋯</span>
         </div>
-      )}
 
+        {/* Workspace Dropdown */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 14px',
+          background: THEME.white,
+          borderRadius: '6px',
+          border: `1px solid ${THEME.border}`,
+          marginBottom: '12px',
+          cursor: 'pointer'
+        }}>
+          <span style={{
+            background: '#7B68EE',
+            color: 'white',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontSize: '11px',
+            fontWeight: '600'
+          }}>W</span>
+          <span style={{ flex: 1, fontSize: '14px', fontWeight: '500', color: THEME.dark }}>Workspaces</span>
+          <span style={{ color: THEME.gray, fontSize: '10px' }}>▾</span>
+          <button style={{
+            background: THEME.dark,
+            color: THEME.white,
+            border: 'none',
+            borderRadius: '4px',
+            width: '24px',
+            height: '24px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '600'
+          }}>+</button>
+        </div>
+      </div>
+    )}
+
+    {/* Folders & Boards Tree */}
+    <div style={{ flex: 1, overflow: 'auto', padding: collapsed ? '8px' : '0 16px 16px' }}>
       {workspaces.map(workspace => (
-        <WorkspaceItem
-          key={workspace.id}
-          workspace={workspace}
-          collapsed={collapsed}
-          selectedBoard={selectedBoard}
-          onSelectBoard={onSelectBoard}
-          onToggleFolder={onToggleFolder}
-        />
+        <div key={workspace.id}>
+          {workspace.folders.map(folder => (
+            <FolderTreeSection
+              key={folder.id}
+              folder={folder}
+              selectedBoard={selectedBoard}
+              onSelectBoard={onSelectBoard}
+              onToggle={() => onToggleFolder(folder.id)}
+            />
+          ))}
+        </div>
       ))}
     </div>
 
-    <div style={{
-      padding: collapsed ? '12px' : '16px',
-      borderTop: `1px solid ${THEME.lightGray}30`,
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      justifyContent: collapsed ? 'center' : 'flex-start'
-    }}>
+    {/* User Profile */}
+    {!collapsed && (
       <div style={{
-        width: '36px',
-        height: '36px',
-        borderRadius: '50%',
-        background: THEME.gradients.primary,
+        padding: '16px',
+        borderTop: `1px solid ${THEME.border}`,
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '16px',
-        color: 'white'
+        gap: '12px'
       }}>
-        👤
-      </div>
-      {!collapsed && (
+        <div style={{
+          width: '36px',
+          height: '36px',
+          borderRadius: '50%',
+          background: '#7B68EE',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '14px',
+          color: 'white',
+          fontWeight: '600'
+        }}>M</div>
         <div>
           <div style={{ fontSize: '14px', fontWeight: '600', color: THEME.dark }}>Meshal</div>
           <div style={{ fontSize: '12px', color: THEME.gray }}>Admin</div>
         </div>
-      )}
-    </div>
-  </div>
-);
-
-const QuickAction = ({ icon, label, active, onClick, badge }) => (
-  <button onClick={onClick} style={{
-    width: '100%',
-    padding: '10px 12px',
-    background: active ? `${THEME.primary}15` : 'transparent',
-    border: 'none',
-    borderRadius: '8px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    cursor: 'pointer',
-    marginBottom: '4px'
-  }}>
-    <span style={{ fontSize: '18px' }}>{icon}</span>
-    <span style={{ flex: 1, textAlign: 'right', fontSize: '14px', fontWeight: active ? '600' : '500', color: active ? THEME.primary : THEME.dark }}>{label}</span>
-    {badge && <span style={{ background: THEME.danger, color: 'white', fontSize: '11px', fontWeight: '600', padding: '2px 6px', borderRadius: '10px' }}>{badge}</span>}
-  </button>
-);
-
-const WorkspaceItem = ({ workspace, collapsed, selectedBoard, onSelectBoard, onToggleFolder }) => {
-  const [expanded, setExpanded] = useState(true);
-
-  if (collapsed) {
-    return (
-      <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: `${workspace.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', margin: '8px auto', cursor: 'pointer' }}>
-        {workspace.icon}
       </div>
-    );
-  }
-
-  return (
-    <div style={{ marginBottom: '8px' }}>
-      <button onClick={() => setExpanded(!expanded)} style={{ width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-        <span style={{ width: '28px', height: '28px', borderRadius: '6px', background: `${workspace.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>{workspace.icon}</span>
-        <span style={{ flex: 1, textAlign: 'right', fontSize: '14px', fontWeight: '600', color: THEME.dark }}>{workspace.name}</span>
-        <span style={{ color: THEME.gray, fontSize: '12px', transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s ease' }}>▼</span>
-      </button>
-
-      {expanded && workspace.folders.map(folder => (
-        <FolderItem key={folder.id} folder={folder} selectedBoard={selectedBoard} onSelectBoard={onSelectBoard} onToggle={() => onToggleFolder(folder.id)} />
-      ))}
-    </div>
-  );
-};
-
-const FolderItem = ({ folder, selectedBoard, onSelectBoard, onToggle }) => (
-  <div style={{ marginRight: '16px' }}>
-    <button onClick={onToggle} style={{ width: '100%', padding: '6px 12px', background: 'transparent', border: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '2px' }}>
-      <span style={{ color: THEME.gray, fontSize: '10px', transform: folder.expanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s ease' }}>▼</span>
-      <span style={{ fontSize: '14px' }}>{folder.icon}</span>
-      <span style={{ flex: 1, textAlign: 'right', fontSize: '13px', fontWeight: '500', color: THEME.gray }}>{folder.name}</span>
-    </button>
-
-    {folder.expanded && folder.boards.map(board => (
-      <BoardItem key={board.id} board={board} selected={selectedBoard === board.id} onSelect={() => onSelectBoard(board.id)} />
-    ))}
+    )}
   </div>
 );
 
-const BoardItem = ({ board, selected, onSelect }) => (
-  <button onClick={onSelect} style={{
-    width: 'calc(100% - 24px)',
-    marginRight: '24px',
-    padding: '8px 12px',
-    background: selected ? `${board.color}15` : 'transparent',
-    border: selected ? `1px solid ${board.color}40` : '1px solid transparent',
-    borderRadius: '6px',
+// Sidebar Navigation Item
+const SidebarNavItem = ({ icon, label, expandable, active }) => (
+  <div style={{
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '10px',
+    padding: '8px 10px',
+    borderRadius: '6px',
     cursor: 'pointer',
-    marginBottom: '2px'
-  }}>
-    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: board.color }}></span>
-    <span style={{ fontSize: '14px' }}>{board.icon}</span>
-    <span style={{ flex: 1, textAlign: 'right', fontSize: '13px', fontWeight: selected ? '600' : '500', color: selected ? board.color : THEME.dark }}>{board.name}</span>
-  </button>
+    color: THEME.dark,
+    fontSize: '14px',
+    transition: 'background 0.15s'
+  }}
+  onMouseOver={(e) => e.currentTarget.style.background = '#ECEDF0'}
+  onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+  >
+    <span style={{ fontSize: '16px', opacity: 0.8 }}>{icon}</span>
+    <span style={{ flex: 1, fontWeight: '500' }}>{label}</span>
+    {expandable && <span style={{ color: THEME.gray, fontSize: '10px' }}>▾</span>}
+  </div>
 );
+
+// Folder Tree Section
+const FolderTreeSection = ({ folder, selectedBoard, onSelectBoard, onToggle }) => (
+  <div style={{ marginBottom: '8px' }}>
+    {/* Folder Header */}
+    <div
+      onClick={onToggle}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '6px 8px',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        marginBottom: '4px'
+      }}
+      onMouseOver={(e) => e.currentTarget.style.background = '#ECEDF0'}
+      onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+    >
+      <span style={{
+        color: THEME.gray,
+        fontSize: '8px',
+        transform: folder.expanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+        transition: 'transform 0.2s'
+      }}>▼</span>
+      <span style={{ fontSize: '14px' }}>{folder.icon}</span>
+      <span style={{ flex: 1, fontSize: '13px', fontWeight: '500', color: THEME.dark }}>{folder.name}</span>
+      <span style={{ color: THEME.gray, cursor: 'pointer', fontSize: '14px' }}>⋮</span>
+    </div>
+
+    {/* Boards List */}
+    {folder.expanded && (
+      <div style={{ marginRight: '16px' }}>
+        {folder.boards.map(board => (
+          <div
+            key={board.id}
+            onClick={() => onSelectBoard(board.id)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '6px 12px',
+              marginRight: '8px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              background: selectedBoard === board.id ? THEME.white : 'transparent',
+              border: selectedBoard === board.id ? `1px solid ${THEME.border}` : '1px solid transparent'
+            }}
+            onMouseOver={(e) => {
+              if (selectedBoard !== board.id) e.currentTarget.style.background = '#ECEDF0';
+            }}
+            onMouseOut={(e) => {
+              if (selectedBoard !== board.id) e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <span style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: board.color
+            }}></span>
+            <span style={{ fontSize: '14px' }}>{board.icon}</span>
+            <span style={{
+              fontSize: '13px',
+              fontWeight: selectedBoard === board.id ? '600' : '400',
+              color: selectedBoard === board.id ? board.color : THEME.dark
+            }}>{board.name}</span>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
 
 // ==================== 🔝 HEADER ====================
+// Figma Design Header
 const Header = ({ boardName, onToggleDiscussion, showDiscussion, searchQuery, onSearch, currentView, onChangeView, isSaving, lastSaved }) => (
-  <div style={{ background: THEME.white, borderBottom: `1px solid ${THEME.lightGray}30` }}>
-    <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '700', color: THEME.dark, margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ width: '36px', height: '36px', borderRadius: '8px', background: THEME.gradients.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🏠</span>
-          {boardName}
-        </h1>
-        <span style={{ background: `${THEME.success}20`, color: THEME.success, padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' }}>● Active</span>
-        {isSaving && (
-          <span style={{ background: `${THEME.warning}20`, color: THEME.warning, padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' }}>💾 Saving...</span>
-        )}
-        {!isSaving && lastSaved && (
-          <span style={{ background: `${THEME.info}15`, color: THEME.info, padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '500' }}>☁️ Synced</span>
-        )}
-      </div>
-
+  <div style={{ background: THEME.white }}>
+    {/* Top bar - Board name and invite */}
+    <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${THEME.border}` }}>
+      <h1 style={{ fontSize: '20px', fontWeight: '600', color: THEME.dark, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {boardName}
+        <span style={{ color: THEME.lightGray, cursor: 'pointer', fontSize: '14px' }}>▾</span>
+      </h1>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{ position: 'relative' }}>
-          <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => onSearch(e.target.value)} style={{ padding: '8px 16px 8px 40px', border: `1px solid ${THEME.lightGray}50`, borderRadius: '8px', fontSize: '14px', width: '200px', outline: 'none', direction: 'rtl' }} />
-          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: THEME.gray }}>🔍</span>
-        </div>
-
-        <button onClick={onToggleDiscussion} style={{
-          padding: '8px 16px',
-          background: showDiscussion ? THEME.primary : 'transparent',
-          border: `1px solid ${showDiscussion ? THEME.primary : THEME.lightGray}50`,
-          borderRadius: '8px',
-          color: showDiscussion ? 'white' : THEME.dark,
-          fontSize: '14px',
-          fontWeight: '500',
-          cursor: 'pointer'
-        }}>
-          💬 Discussion
+        <span style={{ width: '32px', height: '32px', borderRadius: '50%', background: THEME.lightGray }}></span>
+        <button style={{ padding: '6px 12px', background: THEME.white, border: `1px solid ${THEME.border}`, borderRadius: '4px', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          👤 Invite
         </button>
-
-        <button style={{ padding: '8px 20px', background: THEME.gradients.primary, border: 'none', borderRadius: '8px', color: 'white', fontSize: '14px', fontWeight: '600', cursor: 'pointer', boxShadow: `0 4px 12px ${THEME.primary}40` }}>
-          ✨ New Task
-        </button>
+        <span style={{ cursor: 'pointer', color: THEME.gray }}>🔗</span>
+        <span style={{ cursor: 'pointer', color: THEME.gray }}>⋮</span>
       </div>
     </div>
 
-    <div style={{ display: 'flex', gap: '4px', padding: '0 24px', borderTop: `1px solid ${THEME.lightGray}20` }}>
-      <ViewTab icon="📊" label="Board" active={currentView === 'board'} onClick={() => onChangeView('board')} />
-      <ViewTab icon="📅" label="Date" active={currentView === 'date'} onClick={() => onChangeView('date')} />
-      <ViewTab icon="🏷️" label="Status" active={currentView === 'status'} onClick={() => onChangeView('status')} />
-      <ViewTab icon="🔥" label="Priority" active={currentView === 'priority'} onClick={() => onChangeView('priority')} />
+    {/* Tabs row */}
+    <div style={{ display: 'flex', alignItems: 'center', padding: '0 24px', borderBottom: `1px solid ${THEME.border}` }}>
+      <ViewTab label="Main table" active={currentView === 'board'} onClick={() => onChangeView('board')} />
+      <ViewTab label="Doc" active={currentView === 'doc'} onClick={() => onChangeView('doc')} />
+      <span style={{ padding: '12px 16px', fontSize: '14px', color: THEME.lightGray, cursor: 'pointer' }}>+</span>
+    </div>
+
+    {/* Toolbar row */}
+    <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: `1px solid ${THEME.border}` }}>
+      <button style={{ padding: '8px 16px', background: THEME.dark, border: 'none', borderRadius: '4px', fontSize: '14px', color: 'white', cursor: 'pointer', fontWeight: '500' }}>
+        + New item
+      </button>
+      <div style={{ display: 'flex', alignItems: 'center', background: THEME.white, border: `1px solid ${THEME.border}`, borderRadius: '4px', padding: '6px 12px', gap: '8px' }}>
+        <span style={{ color: THEME.gray }}>🔍</span>
+        <input type="text" placeholder="Search" value={searchQuery} onChange={(e) => onSearch(e.target.value)} style={{ border: 'none', outline: 'none', fontSize: '14px', width: '120px' }} />
+      </div>
+      <FilterBtn icon="👤" label="People" />
+      <FilterBtn icon="▽" label="Filter" />
+      <FilterBtn icon="↕" label="Sort" />
+      <FilterBtn icon="👁" label="Hide" />
+      <FilterBtn icon="▦" label="Group by" />
+      <span style={{ color: THEME.gray, cursor: 'pointer' }}>◇</span>
     </div>
   </div>
 );
 
-const ViewTab = ({ icon, label, active, onClick }) => (
+// Tab Button
+const ViewTab = ({ label, active, onClick }) => (
   <button onClick={onClick} style={{
     padding: '12px 16px',
     background: 'transparent',
     border: 'none',
-    borderBottom: active ? `2px solid ${THEME.primary}` : '2px solid transparent',
-    color: active ? THEME.primary : THEME.gray,
+    borderBottom: active ? '2px solid #323338' : '2px solid transparent',
+    color: active ? THEME.dark : THEME.gray,
+    fontSize: '14px',
+    fontWeight: active ? '500' : '400',
+    cursor: 'pointer',
+    marginBottom: '-1px'
+  }}>
+    {label}
+  </button>
+);
+
+// Filter Button
+const FilterBtn = ({ icon, label }) => (
+  <button style={{
+    padding: '6px 10px',
+    background: 'transparent',
+    border: 'none',
     fontSize: '13px',
-    fontWeight: active ? '600' : '500',
+    color: THEME.gray,
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    gap: '6px'
+    gap: '4px'
   }}>
     <span>{icon}</span>
     <span>{label}</span>
@@ -1596,6 +1741,7 @@ const AnalyticsDashboard = ({ analytics, users, allBoardsRaw }) => {
 };
 
 // ==================== 📦 GROUP CARD ====================
+// Figma Design Group Card
 const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery, onAddTask, onUpdateStatus, onDeleteTask, onAddSubtask, onDeleteSubtask, onUpdateSubtaskStatus }) => {
   const [collapsed, setCollapsed] = useState(group.collapsed);
 
@@ -1603,28 +1749,65 @@ const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery, onAdd
     ? group.items.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : group.items;
 
-  const stats = { total: filteredItems.length, done: filteredItems.filter(i => i.status === 'done').length };
+  // Count subitems
+  const subitemCount = filteredItems.reduce((acc, item) => acc + (item.subitems?.length || 0), 0);
 
   return (
-    <div style={{ background: THEME.white, borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', animation: 'fadeIn 0.3s ease' }}>
-      <div onClick={() => setCollapsed(!collapsed)} style={{ background: group.color, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ color: 'white', fontSize: '14px', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}>▼</span>
-          <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '600', margin: 0 }}>{group.title}</h3>
-          <span style={{ background: 'rgba(255,255,255,0.2)', color: 'white', padding: '2px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: '500' }}>{stats.done}/{stats.total}</span>
-        </div>
-        <button onClick={(e) => e.stopPropagation()} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '6px', padding: '6px 10px', color: 'white', fontSize: '14px', cursor: 'pointer' }}>⋯</button>
+    <div style={{ marginBottom: '24px' }}>
+      {/* Group Header */}
+      <div
+        onClick={() => setCollapsed(!collapsed)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '8px 0',
+          cursor: 'pointer'
+        }}
+      >
+        <span style={{ color: THEME.gray }}>⋮</span>
+        <span style={{
+          color: group.color || THEME.dark,
+          fontSize: '10px',
+          transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+          transition: 'transform 0.2s'
+        }}>▼</span>
+        <h3 style={{
+          color: group.color || THEME.dark,
+          fontSize: '14px',
+          fontWeight: '600',
+          margin: 0
+        }}>{group.title}</h3>
+        <span style={{ fontSize: '12px', color: THEME.gray }}>
+          {filteredItems.length} Items / {subitemCount} subitems
+        </span>
       </div>
 
       {!collapsed && (
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 120px 120px 130px 120px', background: '#F8F9FA', borderBottom: `1px solid ${THEME.lightGray}30`, fontSize: '12px', fontWeight: '600', color: THEME.gray }}>
-            <div style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><input type="checkbox" /></div>
-            <div style={{ padding: '12px' }}>المهمة</div>
-            <div style={{ padding: '12px', textAlign: 'center' }}>الإنشاء</div>
-            <div style={{ padding: '12px', textAlign: 'center' }}>المسؤول</div>
-            <div style={{ padding: '12px', textAlign: 'center' }}>الحالة</div>
-            <div style={{ padding: '12px', textAlign: 'center' }}>التاريخ</div>
+        <div style={{
+          background: THEME.white,
+          border: `1px solid ${THEME.border}`,
+          borderRight: `4px solid ${group.color || THEME.gray}`
+        }}>
+          {/* Table Header */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '32px 1fr 80px 80px 120px 80px 32px',
+            background: THEME.white,
+            borderBottom: `1px solid ${THEME.border}`,
+            fontSize: '12px',
+            fontWeight: '500',
+            color: THEME.gray
+          }}>
+            <div style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <input type="checkbox" style={{ width: '14px', height: '14px', cursor: 'pointer' }} />
+            </div>
+            <div style={{ padding: '8px 12px' }}>Task</div>
+            <div style={{ padding: '8px', textAlign: 'center' }}>Creation</div>
+            <div style={{ padding: '8px', textAlign: 'center' }}>Person</div>
+            <div style={{ padding: '8px', textAlign: 'center' }}>Status</div>
+            <div style={{ padding: '8px', textAlign: 'center' }}>Date</div>
+            <div style={{ padding: '8px', textAlign: 'center' }}>+</div>
           </div>
 
           {filteredItems.map(item => (
@@ -1659,73 +1842,88 @@ const GroupCard = ({ group, expandedSubitems, toggleSubitems, searchQuery, onAdd
 };
 
 // ==================== 📝 TASK ROW ====================
+// Figma Design Task Row
 const TaskRow = ({ item, groupId, expanded, onToggle, groupColor, onUpdateStatus, onDeleteTask, onAddSubtask, onDeleteSubtask, onUpdateSubtaskStatus, path }) => {
   const [hovered, setHovered] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [showSubitems, setShowSubitems] = useState(expanded);
-  const status = STATUS_OPTIONS.find(s => s.id === item.status) || STATUS_OPTIONS[3];
+  const status = STATUS_OPTIONS.find(s => s.id === item.status) || STATUS_OPTIONS[0];
   const hasSubitems = item.subitems && item.subitems.length > 0;
-
-  const handleStatusClick = (e) => {
-    e.stopPropagation();
-    setShowStatusMenu(!showStatusMenu);
-  };
 
   const handleStatusChange = (newStatus) => {
     if (onUpdateStatus) onUpdateStatus(groupId, item.id, newStatus);
     setShowStatusMenu(false);
   };
 
-  const handleAddSubtask = (e) => {
-    e.stopPropagation();
-    if (onAddSubtask) onAddSubtask(groupId, path);
-  };
-
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 120px 120px 130px 120px', borderBottom: `1px solid ${THEME.lightGray}20`, background: hovered ? '#F8F9FA' : 'white', position: 'relative' }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><input type="checkbox" /></div>
-
-        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button onClick={() => setShowSubitems(!showSubitems)} style={{ width: '20px', height: '20px', borderRadius: '4px', background: hasSubitems && showSubitems ? `${groupColor}20` : 'transparent', border: `1px solid ${THEME.lightGray}50`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: THEME.gray }}>
-            {hasSubitems ? (showSubitems ? '▼' : '▶') : '+'}
-          </button>
-          <span style={{ fontSize: '14px', fontWeight: '500', color: THEME.dark }}>{item.name}</span>
-          {hasSubitems && <span style={{ background: `${groupColor}20`, color: groupColor, padding: '2px 6px', borderRadius: '8px', fontSize: '11px', fontWeight: '500' }}>{item.subitems.length}</span>}
-          {hovered && (
-            <>
-              <button onClick={handleAddSubtask} style={{ background: `${groupColor}15`, border: 'none', color: groupColor, cursor: 'pointer', fontSize: '12px', padding: '2px 8px', borderRadius: '4px' }} title="إضافة مهمة فرعية">+ فرعية</button>
-              <button onClick={() => onDeleteTask && onDeleteTask(groupId, item.id)} style={{ marginRight: 'auto', background: 'transparent', border: 'none', color: THEME.danger, cursor: 'pointer', fontSize: '16px', opacity: 0.6 }} title="حذف">🗑️</button>
-            </>
-          )}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '32px 1fr 80px 80px 120px 80px 32px',
+          borderBottom: `1px solid ${THEME.border}`,
+          background: hovered ? '#F5F6F8' : THEME.white,
+          minHeight: '36px'
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => { setHovered(false); setShowStatusMenu(false); }}
+      >
+        {/* Checkbox */}
+        <div style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <input type="checkbox" style={{ width: '14px', height: '14px', cursor: 'pointer' }} />
         </div>
 
-        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: '13px', color: THEME.gray }}>{item.creation ? new Date(item.creation).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-'}</span>
+        {/* Task Name */}
+        <div style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span
+            onClick={() => hasSubitems && setShowSubitems(!showSubitems)}
+            style={{ color: THEME.gray, fontSize: '10px', cursor: hasSubitems ? 'pointer' : 'default' }}
+          >
+            {hasSubitems ? (showSubitems ? '▽' : '▷') : '▷'}
+          </span>
+          <span style={{ fontSize: '13px', color: THEME.dark }}>{item.name}</span>
+          <span style={{ color: THEME.gray, cursor: 'pointer', fontSize: '12px' }}>⋮</span>
+          <span style={{ color: THEME.gray, cursor: 'pointer', fontSize: '12px', border: `1px solid ${THEME.border}`, borderRadius: '2px', padding: '0 4px' }}>⊕</span>
         </div>
 
-        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {item.person && item.person.name !== '-' ? (
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: item.person.color || THEME.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: 'white', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} title={item.person.name}>
-              {item.person.avatar}
-            </div>
-          ) : (
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: `2px dashed ${THEME.lightGray}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: THEME.lightGray, fontSize: '14px', cursor: 'pointer' }}>+</div>
-          )}
+        {/* Creation - NP badge + date */}
+        <div style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+          <span style={{ background: '#7B68EE', color: 'white', padding: '2px 6px', borderRadius: '50%', fontSize: '10px', fontWeight: '500' }}>NP</span>
+          <span style={{ fontSize: '12px', color: THEME.dark }}>
+            {item.creation ? new Date(item.creation).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '19 May'}
+          </span>
         </div>
 
-        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-          <div onClick={handleStatusClick} style={{ background: status.color, color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', minWidth: '90px', textAlign: 'center', transition: 'transform 0.1s' }}>
-            {status.icon} {status.label}
-          </div>
+        {/* Person - NP badge */}
+        <div style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ background: '#7B68EE', color: 'white', padding: '2px 6px', borderRadius: '50%', fontSize: '10px', fontWeight: '500' }}>NP</span>
+        </div>
+
+        {/* Status - Text only */}
+        <div style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <span
+            onClick={() => setShowStatusMenu(!showStatusMenu)}
+            style={{ fontSize: '12px', color: THEME.dark, cursor: 'pointer' }}
+          >
+            {status.label}
+          </span>
           {showStatusMenu && (
-            <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', background: 'white', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', zIndex: 100, padding: '8px', minWidth: '140px' }}>
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: '0',
+              right: '0',
+              background: THEME.white,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              zIndex: 100,
+              border: `1px solid ${THEME.border}`
+            }}>
               {STATUS_OPTIONS.map(opt => (
-                <div key={opt.id} onClick={() => handleStatusChange(opt.id)} style={{ padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', background: item.status === opt.id ? `${opt.color}20` : 'transparent' }}
-                  onMouseOver={(e) => e.target.style.background = `${opt.color}20`}
-                  onMouseOut={(e) => e.target.style.background = item.status === opt.id ? `${opt.color}20` : 'transparent'}
+                <div
+                  key={opt.id}
+                  onClick={() => handleStatusChange(opt.id)}
+                  style={{ padding: '8px 12px', fontSize: '12px', cursor: 'pointer', borderBottom: `1px solid ${THEME.border}` }}
                 >
-                  <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: opt.color }}></span>
                   {opt.label}
                 </div>
               ))}
@@ -1733,15 +1931,38 @@ const TaskRow = ({ item, groupId, expanded, onToggle, groupColor, onUpdateStatus
           )}
         </div>
 
-        <div style={{ padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: '13px', color: item.date && item.date !== '-' && new Date(item.date) < new Date() && item.status !== 'done' ? THEME.danger : THEME.gray, fontWeight: item.date && item.date !== '-' && new Date(item.date) < new Date() && item.status !== 'done' ? '600' : '400' }}>
-            {item.date && item.date !== '-' ? new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-'}
+        {/* Date */}
+        <div style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+          <span style={{ fontSize: '11px', color: THEME.gray }}>⏱</span>
+          <span style={{ fontSize: '12px', color: THEME.dark }}>
+            {item.date && item.date !== '-' ? new Date(item.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '19 May'}
           </span>
         </div>
+
+        {/* Plus */}
+        <div style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}></div>
       </div>
 
+      {/* Subitems */}
       {showSubitems && hasSubitems && (
-        <div style={{ background: '#FAFAFA' }}>
+        <div style={{ background: THEME.subitemBg }}>
+          {/* Subitems header */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '32px 1fr 80px 80px 120px 80px 32px',
+            borderBottom: `1px solid ${THEME.border}`,
+            fontSize: '11px',
+            color: THEME.gray,
+            paddingRight: '24px'
+          }}>
+            <div style={{ padding: '6px' }}></div>
+            <div style={{ padding: '6px 8px' }}>Subitems</div>
+            <div style={{ padding: '6px', textAlign: 'center' }}>Creation</div>
+            <div style={{ padding: '6px', textAlign: 'center' }}>Person</div>
+            <div style={{ padding: '6px', textAlign: 'center' }}>Status</div>
+            <div style={{ padding: '6px', textAlign: 'center' }}>Date</div>
+            <div style={{ padding: '6px', textAlign: 'center' }}>+</div>
+          </div>
           {item.subitems.map((subitem, index) => (
             <SubitemRow
               key={subitem.id}
@@ -1757,25 +1978,24 @@ const TaskRow = ({ item, groupId, expanded, onToggle, groupColor, onUpdateStatus
               parentPath={path}
             />
           ))}
+          {/* Add task button */}
+          <div style={{ padding: '8px 8px 8px 48px', borderBottom: `1px solid ${THEME.border}` }}>
+            <span style={{ fontSize: '12px', color: THEME.gray, cursor: 'pointer' }}>+ Add task</span>
+          </div>
         </div>
       )}
     </>
   );
 };
 
-// Recursive SubitemRow - Tree Design with connecting lines
+// Figma Design SubitemRow - Clean & Simple
 const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onAddSubtask, onDeleteSubtask, onUpdateSubtaskStatus, parentPath }) => {
   const [hovered, setHovered] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
-  const status = STATUS_OPTIONS.find(s => s.id === subitem.status) || STATUS_OPTIONS[3];
+  const status = STATUS_OPTIONS.find(s => s.id === subitem.status) || STATUS_OPTIONS[0];
   const hasSubitems = subitem.subitems && subitem.subitems.length > 0;
-
-  // Tree line colors
-  const lineColor = '#D0D5DD';
-  const indentBase = 50;
-  const indentStep = 28;
-  const totalIndent = indentBase + (depth * indentStep);
+  const indent = depth * 24;
 
   const handleAddSubtask = (e) => {
     e.stopPropagation();
@@ -1797,224 +2017,80 @@ const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onA
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '50px 1fr 120px 120px 130px 120px',
-          fontSize: '13px',
-          background: hovered ? '#F8FAFC' : '#FAFBFC',
-          borderBottom: `1px solid #F0F0F0`,
-          position: 'relative',
-          minHeight: '44px'
+          gridTemplateColumns: '32px 1fr 80px 80px 120px 80px 32px',
+          borderBottom: `1px solid ${THEME.border}`,
+          background: hovered ? '#ECEDF0' : THEME.subitemBg,
+          minHeight: '36px',
+          paddingRight: `${indent}px`
         }}
         onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseLeave={() => { setHovered(false); setShowStatusMenu(false); }}
       >
-        {/* Tree Lines Column */}
-        <div style={{ padding: '0', position: 'relative' }}>
-          {/* Vertical line from parent */}
-          <div style={{
-            position: 'absolute',
-            right: `${25 - (depth * 2)}px`,
-            top: 0,
-            bottom: isLast ? '50%' : 0,
-            width: '2px',
-            background: lineColor
-          }} />
-          {/* Horizontal line to item */}
-          <div style={{
-            position: 'absolute',
-            right: `${25 - (depth * 2)}px`,
-            top: '50%',
-            width: '15px',
-            height: '2px',
-            background: lineColor
-          }} />
+        {/* Checkbox */}
+        <div style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <input type="checkbox" style={{ width: '14px', height: '14px', cursor: 'pointer' }} />
         </div>
 
-        {/* Task Name with Tree Structure */}
-        <div style={{
-          padding: '10px 12px',
-          paddingRight: `${totalIndent}px`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          position: 'relative'
-        }}>
-          {/* Expand/Collapse or Node Icon */}
-          <div style={{
-            width: '22px',
-            height: '22px',
-            borderRadius: '6px',
-            background: hasSubitems ? (expanded ? `${groupColor}15` : 'white') : 'white',
-            border: `2px solid ${hasSubitems ? groupColor : lineColor}`,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '10px',
-            color: hasSubitems ? groupColor : lineColor,
-            fontWeight: 'bold',
-            flexShrink: 0,
-            transition: 'all 0.2s ease'
-          }} onClick={() => hasSubitems && setExpanded(!expanded)}>
-            {hasSubitems ? (expanded ? '−' : '+') : '○'}
-          </div>
-
-          {/* Task Name */}
-          <span style={{
-            color: THEME.dark,
-            fontWeight: '500',
-            fontSize: '13px'
-          }}>{subitem.name}</span>
-
-          {/* Subtasks Count Badge */}
-          {hasSubitems && (
-            <span style={{
-              background: groupColor,
-              color: 'white',
-              padding: '2px 8px',
-              borderRadius: '10px',
-              fontSize: '10px',
-              fontWeight: '600'
-            }}>
-              {subitem.subitems.length}
-            </span>
-          )}
-
-          {/* Action Buttons */}
+        {/* Task Name */}
+        <div style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span
+            onClick={() => hasSubitems && setExpanded(!expanded)}
+            style={{ color: THEME.gray, fontSize: '10px', cursor: hasSubitems ? 'pointer' : 'default' }}
+          >
+            {hasSubitems ? (expanded ? '▽' : '▷') : '▷'}
+          </span>
+          <span style={{ fontSize: '13px', color: THEME.dark }}>{subitem.name}</span>
           {hovered && (
-            <div style={{ display: 'flex', gap: '6px', marginRight: 'auto' }}>
-              <button
+            <>
+              <span style={{ color: THEME.gray, cursor: 'pointer', fontSize: '12px' }}>⋮</span>
+              <span
                 onClick={handleAddSubtask}
-                style={{
-                  background: groupColor,
-                  border: 'none',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontSize: '11px',
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s'
-                }}
-                title="إضافة مهمة فرعية"
-              >
-                + فرعية
-              </button>
-              <button
+                style={{ color: THEME.gray, cursor: 'pointer', fontSize: '12px', border: `1px solid ${THEME.border}`, borderRadius: '2px', padding: '0 4px' }}
+              >⊕</span>
+              <span
                 onClick={handleDelete}
-                style={{
-                  background: '#FEE2E2',
-                  border: 'none',
-                  color: '#DC2626',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  padding: '4px 8px',
-                  borderRadius: '6px'
-                }}
-                title="حذف"
-              >
-                🗑
-              </button>
-            </div>
+                style={{ color: '#DC2626', cursor: 'pointer', fontSize: '12px' }}
+              >🗑</span>
+            </>
           )}
         </div>
 
-        {/* Creation Date */}
-        <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ color: THEME.lightGray, fontSize: '12px' }}>-</span>
+        {/* Creation - NP badge + date */}
+        <div style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+          <span style={{ background: '#7B68EE', color: 'white', padding: '2px 6px', borderRadius: '50%', fontSize: '10px', fontWeight: '500' }}>NP</span>
+          <span style={{ fontSize: '11px', color: THEME.dark }}>19 May</span>
         </div>
 
-        {/* Person */}
-        <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {subitem.person ? (
-            <div style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '50%',
-              background: `linear-gradient(135deg, ${groupColor}, ${groupColor}99)`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '12px',
-              color: 'white',
-              fontWeight: '600',
-              border: '2px solid white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}>
-              {subitem.person.avatar || '👤'}
-            </div>
-          ) : (
-            <div style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '50%',
-              border: `2px dashed ${lineColor}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: lineColor,
-              fontSize: '14px',
-              cursor: 'pointer'
-            }}>+</div>
-          )}
+        {/* Person - NP badge */}
+        <div style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ background: '#7B68EE', color: 'white', padding: '2px 6px', borderRadius: '50%', fontSize: '10px', fontWeight: '500' }}>NP</span>
         </div>
 
-        {/* Status */}
-        <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-          <div
+        {/* Status - Text only */}
+        <div style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <span
             onClick={() => setShowStatusMenu(!showStatusMenu)}
-            style={{
-              background: status.color,
-              color: 'white',
-              padding: '5px 12px',
-              borderRadius: '15px',
-              fontSize: '11px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              transition: 'transform 0.1s'
-            }}
+            style={{ fontSize: '12px', color: THEME.dark, cursor: 'pointer' }}
           >
             {status.label}
-          </div>
+          </span>
           {showStatusMenu && (
             <div style={{
               position: 'absolute',
               top: '100%',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: 'white',
-              borderRadius: '10px',
-              boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+              left: '0',
+              right: '0',
+              background: THEME.white,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
               zIndex: 100,
-              padding: '8px',
-              minWidth: '130px',
-              border: '1px solid #E5E7EB'
+              border: `1px solid ${THEME.border}`
             }}>
               {STATUS_OPTIONS.map(opt => (
                 <div
                   key={opt.id}
                   onClick={() => handleStatusChange(opt.id)}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    transition: 'background 0.1s'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.background = `${opt.color}15`}
-                  onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                  style={{ padding: '8px 12px', fontSize: '12px', cursor: 'pointer', borderBottom: `1px solid ${THEME.border}` }}
                 >
-                  <span style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    background: opt.color,
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                  }}></span>
                   {opt.label}
                 </div>
               ))}
@@ -2023,14 +2099,36 @@ const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onA
         </div>
 
         {/* Date */}
-        <div style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ color: THEME.lightGray, fontSize: '12px' }}>-</span>
+        <div style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+          <span style={{ fontSize: '11px', color: THEME.gray }}>⏱</span>
+          <span style={{ fontSize: '11px', color: THEME.dark }}>19 May</span>
         </div>
+
+        {/* Plus */}
+        <div style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}></div>
       </div>
 
-      {/* Render nested subitems recursively */}
+      {/* Render nested sub-subitems recursively */}
       {expanded && hasSubitems && (
         <>
+          {/* Sub-subitems header */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '32px 1fr 80px 80px 120px 80px 32px',
+            borderBottom: `1px solid ${THEME.border}`,
+            fontSize: '11px',
+            color: THEME.gray,
+            background: '#EAEBEE',
+            paddingRight: `${indent + 24}px`
+          }}>
+            <div style={{ padding: '4px' }}></div>
+            <div style={{ padding: '4px 8px' }}>Sub-subitems</div>
+            <div style={{ padding: '4px', textAlign: 'center' }}>Creation</div>
+            <div style={{ padding: '4px', textAlign: 'center' }}>Person</div>
+            <div style={{ padding: '4px', textAlign: 'center' }}>Status</div>
+            <div style={{ padding: '4px', textAlign: 'center' }}>Date</div>
+            <div style={{ padding: '4px', textAlign: 'center' }}>+</div>
+          </div>
           {subitem.subitems.map((nestedSubitem, index) => (
             <SubitemRow
               key={nestedSubitem.id}
@@ -2046,6 +2144,18 @@ const SubitemRow = ({ subitem, isLast, depth = 1, groupId, groupColor, path, onA
               parentPath={path}
             />
           ))}
+          {/* Add sub-subitem button */}
+          <div style={{
+            padding: '8px 8px 8px 48px',
+            borderBottom: `1px solid ${THEME.border}`,
+            background: '#EAEBEE',
+            paddingRight: `${indent + 48}px`
+          }}>
+            <span
+              onClick={handleAddSubtask}
+              style={{ fontSize: '12px', color: THEME.gray, cursor: 'pointer' }}
+            >+ Add task</span>
+          </div>
         </>
       )}
     </>

@@ -1,8 +1,9 @@
 FROM python:3.11-slim
 
 # ========================================
-# Build version: 4.0 - FORCE REBUILD
-# Date: 2026-01-21 - Fixed Monday.com API query
+# Build version: 6.0 - MONDAY.COM STYLE DESIGN
+# Date: 2026-01-22 - Clean Monday.com inspired design
+# Features: Simple rows, colored status pills, clean table
 # ========================================
 WORKDIR /app
 
