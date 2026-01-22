@@ -61,6 +61,346 @@ const THEME = {
     white: '#FFFFFF',
     primary: '#0073EA',
     purple: '#7B68EE',
+    green: '#00C875',
+    red: '#E2445C',
+    yellow: '#FDAB3D',
+};
+
+// ========== AUTH PAGES ==========
+const SignUpPage = ({ onSwitch, onSuccess }) => {
+    const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
+    return (
+        <div style={{ display: 'flex', minHeight: '100vh' }}>
+            <div style={{ flex: 1, background: '#B8B8B8' }}></div>
+            <div style={{ width: 500, background: THEME.white, padding: '60px 80px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ position: 'absolute', top: 20, right: 20 }}>
+                    <span style={{ background: '#1B4D3E', color: 'white', padding: '4px 8px', borderRadius: 4, fontSize: 11 }}>EN</span>
+                </div>
+                <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Sign up</h1>
+                <p style={{ color: THEME.gray, marginBottom: 32, fontSize: 14 }}>Enter your information to create your account and get started.</p>
+
+                <input type="text" placeholder="Full Name" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
+                    style={{ width: '100%', padding: '14px 16px', border: `1px solid ${THEME.border}`, borderRadius: 4, marginBottom: 16, fontSize: 14, outline: 'none' }} />
+                <input type="email" placeholder="Email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
+                    style={{ width: '100%', padding: '14px 16px', border: `1px solid ${THEME.border}`, borderRadius: 4, marginBottom: 16, fontSize: 14, outline: 'none' }} />
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px', border: `1px solid ${THEME.border}`, borderRadius: 4, gap: 4 }}>
+                        <span style={{ background: '#1B4D3E', color: 'white', padding: '2px 4px', borderRadius: 2, fontSize: 10 }}>SA</span>
+                        <span style={{ color: THEME.gray }}>▾</span>
+                    </div>
+                    <input type="tel" placeholder="+966 123 4567 894" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})}
+                        style={{ flex: 1, padding: '14px 16px', border: `1px solid ${THEME.border}`, borderRadius: 4, fontSize: 14, outline: 'none' }} />
+                </div>
+                <div style={{ position: 'relative', marginBottom: 16 }}>
+                    <input type="password" placeholder="********" value={form.password} onChange={e => setForm({...form, password: e.target.value})}
+                        style={{ width: '100%', padding: '14px 16px', border: `1px solid ${THEME.border}`, borderRadius: 4, fontSize: 14, outline: 'none' }} />
+                    <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: THEME.gray, cursor: 'pointer' }}>👁</span>
+                </div>
+                <div style={{ position: 'relative', marginBottom: 32 }}>
+                    <input type="password" placeholder="********" value={form.confirm} onChange={e => setForm({...form, confirm: e.target.value})}
+                        style={{ width: '100%', padding: '14px 16px', border: `1px solid ${THEME.border}`, borderRadius: 4, fontSize: 14, outline: 'none' }} />
+                    <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: THEME.gray, cursor: 'pointer' }}>👁</span>
+                </div>
+
+                <button onClick={onSuccess} style={{ width: '100%', padding: '14px', background: THEME.dark, color: 'white', border: 'none', borderRadius: 4, fontSize: 15, fontWeight: 500, marginBottom: 24 }}>
+                    Sign up
+                </button>
+                <p style={{ textAlign: 'center', fontSize: 14, color: THEME.gray }}>
+                    Already have an account? <span onClick={onSwitch} style={{ color: THEME.dark, fontWeight: 600, cursor: 'pointer' }}>Login</span>
+                </p>
+            </div>
+        </div>
+    );
+};
+
+const LoginPage = ({ onSwitch, onSuccess }) => {
+    const [form, setForm] = useState({ email: '', password: '', remember: false });
+    return (
+        <div style={{ display: 'flex', minHeight: '100vh' }}>
+            <div style={{ flex: 1, background: '#B8B8B8' }}></div>
+            <div style={{ width: 500, background: THEME.white, padding: '60px 80px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ position: 'absolute', top: 20, right: 20 }}>
+                    <span style={{ background: '#1B4D3E', color: 'white', padding: '4px 8px', borderRadius: 4, fontSize: 11 }}>EN</span>
+                </div>
+                <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Login</h1>
+                <p style={{ color: THEME.gray, marginBottom: 32, fontSize: 14 }}>Enter your information to Login in your account.</p>
+
+                <input type="email" placeholder="Email or phone" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
+                    style={{ width: '100%', padding: '14px 16px', border: `1px solid ${THEME.border}`, borderRadius: 4, marginBottom: 16, fontSize: 14, outline: 'none' }} />
+                <div style={{ position: 'relative', marginBottom: 16 }}>
+                    <input type="password" placeholder="********" value={form.password} onChange={e => setForm({...form, password: e.target.value})}
+                        style={{ width: '100%', padding: '14px 16px', border: `1px solid ${THEME.border}`, borderRadius: 4, fontSize: 14, outline: 'none' }} />
+                    <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: THEME.gray, cursor: 'pointer' }}>👁</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: THEME.gray, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={form.remember} onChange={e => setForm({...form, remember: e.target.checked})} />
+                        Remember
+                    </label>
+                    <span style={{ fontSize: 14, color: THEME.gray, cursor: 'pointer' }}>Forget Password?</span>
+                </div>
+
+                <button onClick={onSuccess} style={{ width: '100%', padding: '14px', background: THEME.dark, color: 'white', border: 'none', borderRadius: 4, fontSize: 15, fontWeight: 500, marginBottom: 24 }}>
+                    Login
+                </button>
+                <p style={{ textAlign: 'center', fontSize: 14, color: THEME.gray }}>
+                    Don't have an account? <span onClick={onSwitch} style={{ color: THEME.dark, fontWeight: 600, cursor: 'pointer' }}>Sign up</span>
+                </p>
+            </div>
+        </div>
+    );
+};
+
+// ========== DASHBOARD ==========
+const DashboardPage = ({ onBack, folders }) => {
+    const stats = { all: 50, inProgress: 10, stuck: 4, done: 36 };
+    const statusData = [
+        { label: 'Working on it', value: 40, color: THEME.yellow },
+        { label: 'Done', value: 40, color: THEME.green },
+        { label: 'Stuck', value: 20, color: THEME.red },
+    ];
+
+    return (
+        <div style={{ display: 'flex', minHeight: '100vh', background: THEME.bg }}>
+            {/* Sidebar */}
+            <div style={{ width: 240, background: THEME.white, borderRight: `1px solid ${THEME.border}`, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ padding: '16px 20px', background: '#292F4C' }}>
+                    <span style={{ color: THEME.white, fontSize: 18, fontWeight: 600 }}>Logo</span>
+                </div>
+                <div style={{ padding: '12px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#E6F4FF', borderRadius: 4, marginBottom: 4 }}>
+                        <span>📊</span><span style={{ fontWeight: 500, color: THEME.primary }}>Dashboard and reporting</span>
+                    </div>
+                    <div onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 4, cursor: 'pointer' }}>
+                        <span>☑️</span><span>My work</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 4 }}>
+                        <span>☆</span><span>Favorites</span><span style={{ marginLeft: 'auto', color: THEME.gray }}>▾</span>
+                    </div>
+                </div>
+                <div style={{ padding: '8px 16px', borderTop: `1px solid ${THEME.border}` }}>
+                    <div style={{ fontSize: 12, color: THEME.gray, marginBottom: 8 }}>⊞ Workspaces ···</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: THEME.white, border: `1px solid ${THEME.border}`, borderRadius: 4 }}>
+                        <span style={{ background: THEME.purple, color: 'white', padding: '2px 8px', borderRadius: 4, fontSize: 12 }}>W</span>
+                        <span style={{ flex: 1 }}>Workspace</span>
+                        <span style={{ color: THEME.gray }}>▾</span>
+                        <button style={{ background: THEME.dark, color: 'white', border: 'none', borderRadius: 4, width: 24, height: 24 }}>+</button>
+                    </div>
+                </div>
+                <div style={{ flex: 1, overflow: 'auto', padding: '8px 16px' }}>
+                    {folders.map(f => (
+                        <div key={f.id}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px' }}>
+                                <span style={{ fontSize: 8, color: THEME.gray }}>▼</span>
+                                <span>📁</span><span style={{ fontSize: 14 }}>{f.name}</span>
+                            </div>
+                            {f.expanded && f.items.map(item => (
+                                <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px 6px 28px' }}>
+                                    <span>{item.type === 'board' ? '📋' : '📄'}</span>
+                                    <span style={{ fontSize: 14 }}>{item.name}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                {/* Top Bar */}
+                <div style={{ background: THEME.white, padding: '0 24px', height: 48, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16, borderBottom: `1px solid ${THEME.border}` }}>
+                    <span>🔔</span><span>👥</span><span>🔍</span>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: THEME.lightGray }}></div>
+                </div>
+
+                {/* Dashboard Header */}
+                <div style={{ background: THEME.white, padding: '16px 24px', borderBottom: `1px solid ${THEME.border}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                        <h1 style={{ fontSize: 20, fontWeight: 600 }}>Dashboard and reporting</h1>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span>👤 Invite</span><span>⋮</span>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 12 }}>
+                        <button style={{ padding: '8px 16px', background: THEME.primary, color: 'white', border: 'none', borderRadius: 4 }}>+ Add widget</button>
+                        <button style={{ padding: '8px 16px', background: THEME.white, border: `1px solid ${THEME.border}`, borderRadius: 4 }}>1 Connected board</button>
+                        <input placeholder="Type to search" style={{ padding: '8px 16px', border: `1px solid ${THEME.border}`, borderRadius: 4, width: 180 }} />
+                        <button style={{ padding: '8px 16px', background: THEME.white, border: `1px solid ${THEME.border}`, borderRadius: 4 }}>👥 People</button>
+                        <button style={{ padding: '8px 16px', background: THEME.white, border: `1px solid ${THEME.border}`, borderRadius: 4 }}>▽ Filter / All boarders</button>
+                    </div>
+                </div>
+
+                {/* Dashboard Content */}
+                <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+                    {/* Stats Cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+                        <StatCard label="All Tasks" value={stats.all} color={THEME.primary} />
+                        <StatCard label="In progress" value={stats.inProgress} color={THEME.yellow} />
+                        <StatCard label="Stuck" value={stats.stuck} color={THEME.red} />
+                        <StatCard label="Done" value={stats.done} color={THEME.green} />
+                    </div>
+
+                    {/* Charts Row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+                        {/* Pie Chart - Tasks by status */}
+                        <div style={{ background: THEME.white, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 20 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <span style={{ fontWeight: 600 }}>📊 Tasks by status</span>
+                                <span style={{ color: THEME.gray }}>⋮</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                                <PieChart data={statusData} />
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {statusData.map(d => (
+                                        <div key={d.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <div style={{ width: 12, height: 12, borderRadius: 2, background: d.color }}></div>
+                                            <span style={{ fontSize: 13 }}>{d.label} {d.value}%</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Bar Chart - Tasks by owner */}
+                        <div style={{ background: THEME.white, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 20 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <span style={{ fontWeight: 600 }}>📊 Tasks by owner</span>
+                                <span style={{ color: THEME.gray }}>⋮</span>
+                            </div>
+                            <BarChart data={[
+                                { label: 'NC', value: 15 },
+                                { label: 'NC', value: 12 },
+                                { label: 'NC', value: 18 },
+                                { label: 'NC', value: 8 },
+                                { label: 'NC', value: 10 },
+                            ]} />
+                        </div>
+                    </div>
+
+                    {/* Second Row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        {/* Overdue tasks */}
+                        <div style={{ background: THEME.white, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 20 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <span style={{ fontWeight: 600 }}>⚠️ Overdue tasks</span>
+                                <span style={{ color: THEME.gray }}>⋮</span>
+                            </div>
+                            <BarChart data={[
+                                { label: 'Working on it', value: 25, color: THEME.yellow },
+                                { label: 'Stuck', value: 8, color: THEME.red },
+                            ]} horizontal />
+                        </div>
+
+                        {/* Tasks by due date */}
+                        <div style={{ background: THEME.white, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 20 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <span style={{ fontWeight: 600 }}>📅 Tasks by due date</span>
+                                <span style={{ color: THEME.gray }}>⋮</span>
+                            </div>
+                            <BarChart data={[
+                                { label: 'May 19, 25', values: [{ v: 12, c: THEME.yellow }, { v: 6, c: THEME.red }] },
+                                { label: 'May 21, 25', values: [{ v: 10, c: THEME.yellow }, { v: 8, c: THEME.red }] },
+                            ]} stacked />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Stat Card Component
+const StatCard = ({ label, value, color }) => (
+    <div style={{ background: THEME.white, border: `1px solid ${THEME.border}`, borderRadius: 8, padding: 20, borderTop: `3px solid ${color}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 13, color: THEME.gray }}>{label}</span>
+            <div style={{ display: 'flex', gap: 4 }}>
+                <span style={{ fontSize: 10, padding: '2px 6px', background: '#F5F6F8', borderRadius: 4 }}>Sum ▾</span>
+                <span style={{ color: THEME.gray }}>⋮</span>
+            </div>
+        </div>
+        <div style={{ fontSize: 32, fontWeight: 700 }}>{value}</div>
+    </div>
+);
+
+// Pie Chart Component
+const PieChart = ({ data }) => {
+    const total = data.reduce((a, d) => a + d.value, 0);
+    let angle = 0;
+    const segments = data.map(d => {
+        const start = angle;
+        angle += (d.value / total) * 360;
+        return { ...d, start, end: angle };
+    });
+
+    return (
+        <svg width="150" height="150" viewBox="0 0 100 100">
+            {segments.map((s, i) => {
+                const startRad = (s.start - 90) * Math.PI / 180;
+                const endRad = (s.end - 90) * Math.PI / 180;
+                const x1 = 50 + 40 * Math.cos(startRad);
+                const y1 = 50 + 40 * Math.sin(startRad);
+                const x2 = 50 + 40 * Math.cos(endRad);
+                const y2 = 50 + 40 * Math.sin(endRad);
+                const large = s.end - s.start > 180 ? 1 : 0;
+                return (
+                    <path key={i} d={`M50,50 L${x1},${y1} A40,40 0 ${large},1 ${x2},${y2} Z`} fill={s.color} />
+                );
+            })}
+            <circle cx="50" cy="50" r="25" fill="white" />
+        </svg>
+    );
+};
+
+// Bar Chart Component
+const BarChart = ({ data, horizontal, stacked }) => {
+    const max = stacked
+        ? Math.max(...data.map(d => d.values.reduce((a, v) => a + v.v, 0)))
+        : Math.max(...data.map(d => d.value || 0));
+
+    if (stacked) {
+        return (
+            <div style={{ display: 'flex', gap: 24, alignItems: 'flex-end', height: 120 }}>
+                {data.map((d, i) => (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', height: 100 }}>
+                            {d.values.map((v, j) => (
+                                <div key={j} style={{ width: 40, height: (v.v / max) * 80, background: v.c }}></div>
+                            ))}
+                        </div>
+                        <span style={{ fontSize: 11, color: THEME.gray }}>{d.label}</span>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    if (horizontal) {
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {data.map((d, i) => (
+                    <div key={i}>
+                        <div style={{ fontSize: 12, marginBottom: 4 }}>{d.label}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ height: 24, width: `${(d.value / max) * 100}%`, background: d.color || THEME.primary, borderRadius: 4 }}></div>
+                            <span style={{ fontSize: 13 }}>{d.value}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', height: 120 }}>
+            {data.map((d, i) => (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                    <div style={{ width: 40, height: (d.value / max) * 80, background: THEME.primary, borderRadius: '4px 4px 0 0' }}></div>
+                    <span style={{ fontSize: 10, color: THEME.gray }}>{d.label}</span>
+                </div>
+            ))}
+        </div>
+    );
 };
 
 // ========== INITIAL DATA ==========
@@ -140,6 +480,7 @@ const INITIAL_UPDATES = [
 
 // ========== MAIN APP ==========
 const App = () => {
+    const [currentPage, setCurrentPage] = useState('login'); // 'login', 'signup', 'board', 'dashboard'
     const [folders, setFolders] = useState(INITIAL_FOLDERS);
     const [groups, setGroups] = useState(INITIAL_GROUPS);
     const [updates, setUpdates] = useState(INITIAL_UPDATES);
@@ -149,6 +490,17 @@ const App = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [columns, setColumns] = useState(DEFAULT_COLUMNS);
     const [draggedCol, setDraggedCol] = useState(null);
+
+    // Auth pages
+    if (currentPage === 'login') {
+        return <LoginPage onSwitch={() => setCurrentPage('signup')} onSuccess={() => setCurrentPage('board')} />;
+    }
+    if (currentPage === 'signup') {
+        return <SignUpPage onSwitch={() => setCurrentPage('login')} onSuccess={() => setCurrentPage('board')} />;
+    }
+    if (currentPage === 'dashboard') {
+        return <DashboardPage onBack={() => setCurrentPage('board')} folders={folders} />;
+    }
 
     useEffect(() => {
         const init = async () => {
@@ -229,7 +581,9 @@ const App = () => {
 
                 {/* Nav Items */}
                 <div style={{ padding: '12px 16px' }}>
-                    <NavItem icon="📊" label="Dashboard and reporting" />
+                    <div onClick={() => setCurrentPage('dashboard')} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 14 }}>
+                        <span>📊</span><span>Dashboard and reporting</span>
+                    </div>
                     <NavItem icon="☑️" label="My work" />
                     <NavItem icon="☆" label="Favorites" expandable />
                 </div>
