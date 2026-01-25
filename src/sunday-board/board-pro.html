@@ -433,7 +433,101 @@ const DEFAULT_COLUMNS = [
     { id: 'date', name: 'Date', width: 120 },
 ];
 
-const STATUS_OPTIONS = ['Working on it', 'Done', 'Stuck', 'Pending'];
+const STATUS_OPTIONS = [
+    { id: 'stuck', label: 'Stuck', color: '#E2445C' },
+    { id: 'working', label: 'Working on it', color: '#FDAB3D' },
+    { id: 'done', label: 'Done', color: '#00C875' },
+    { id: 'default', label: 'Default', color: '#C4C4C4' },
+];
+
+// Status Dropdown Component
+const StatusDropdown = ({ value, onChange, onClose }) => {
+    return (
+        <div style={{
+            position: 'absolute',
+            top: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: THEME.white,
+            border: `1px solid ${THEME.border}`,
+            borderRadius: 8,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+            zIndex: 100,
+            minWidth: 140,
+            overflow: 'hidden'
+        }}>
+            {STATUS_OPTIONS.map(opt => (
+                <div
+                    key={opt.id}
+                    onClick={() => { onChange(opt.label); onClose(); }}
+                    style={{
+                        padding: '10px 16px',
+                        background: opt.color,
+                        color: opt.id === 'default' ? THEME.dark : 'white',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        transition: 'opacity 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.opacity = '0.85'}
+                    onMouseLeave={(e) => e.target.style.opacity = '1'}
+                >
+                    {opt.label}
+                </div>
+            ))}
+            <div
+                onClick={onClose}
+                style={{
+                    padding: '10px 16px',
+                    background: THEME.white,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    borderTop: `1px solid ${THEME.border}`
+                }}
+            >
+                <span style={{ fontSize: 12 }}>✏️</span> Edit Labels
+            </div>
+        </div>
+    );
+};
+
+// Status Cell Component
+const StatusCell = ({ value, onChange }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const statusOpt = STATUS_OPTIONS.find(s => s.label === value) || STATUS_OPTIONS.find(s => s.id === 'working');
+
+    return (
+        <div style={{ padding: 4, position: 'relative' }}>
+            <div
+                onClick={() => setIsOpen(!isOpen)}
+                style={{
+                    padding: '6px 12px',
+                    background: statusOpt.color,
+                    color: statusOpt.id === 'default' ? THEME.dark : 'white',
+                    borderRadius: 4,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap'
+                }}
+            >
+                {value || 'Working on it'}
+            </div>
+            {isOpen && (
+                <>
+                    <div onClick={() => setIsOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99 }} />
+                    <StatusDropdown value={value} onChange={onChange} onClose={() => setIsOpen(false)} />
+                </>
+            )}
+        </div>
+    );
+};
 
 const INITIAL_GROUPS = [
     {
@@ -736,6 +830,29 @@ const App = () => {
                                                             return { ...g, items };
                                                         }));
                                                     }}
+                                                    onStatusChange={(itemId, newStatus) => {
+                                                        setGroups(gs => gs.map(g => ({
+                                                            ...g,
+                                                            items: g.items.map(i => {
+                                                                // Check if it's the main item
+                                                                if (i.id === itemId) return { ...i, status: newStatus };
+                                                                // Check subitems
+                                                                return {
+                                                                    ...i,
+                                                                    subitems: (i.subitems || []).map(s => {
+                                                                        if (s.id === itemId) return { ...s, status: newStatus };
+                                                                        // Check sub-subitems
+                                                                        return {
+                                                                            ...s,
+                                                                            subsubitems: (s.subsubitems || []).map(ss =>
+                                                                                ss.id === itemId ? { ...ss, status: newStatus } : ss
+                                                                            )
+                                                                        };
+                                                                    })
+                                                                };
+                                                            })
+                                                        })));
+                                                    }}
                                                 />
                                             ))}
 
@@ -812,7 +929,7 @@ const ToolbarBtn = ({ icon, label }) => (
     </button>
 );
 
-const ItemRow = ({ item, columns, gridTemplate, groupId, index, onReorder }) => {
+const ItemRow = ({ item, columns, gridTemplate, groupId, index, onReorder, onStatusChange }) => {
     const [expanded, setExpanded] = useState(false);
     const [hovered, setHovered] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -870,8 +987,8 @@ const ItemRow = ({ item, columns, gridTemplate, groupId, index, onReorder }) => 
                 );
             case 'status':
                 return (
-                    <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 13, color: THEME.dark }}>{item.status || 'Working on it'}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <StatusCell value={item.status || 'Working on it'} onChange={(newStatus) => onStatusChange && onStatusChange(item.id, newStatus)} />
                     </div>
                 );
             case 'date':
@@ -923,7 +1040,14 @@ const ItemRow = ({ item, columns, gridTemplate, groupId, index, onReorder }) => 
                     {/* Main tree line */}
                     <div style={{ position: 'absolute', left: 60, top: 0, bottom: 40, width: 2, background: '#C5C7D0' }}></div>
                     {item.subitems.map((sub, idx) => (
-                        <SubitemRow key={sub.id} subitem={sub} columns={columns} gridTemplate={gridTemplate} isLast={idx === item.subitems.length - 1} />
+                        <SubitemRow
+                            key={sub.id}
+                            subitem={sub}
+                            columns={columns}
+                            gridTemplate={gridTemplate}
+                            isLast={idx === item.subitems.length - 1}
+                            onStatusChange={onStatusChange}
+                        />
                     ))}
                     <div style={{ padding: '8px 12px 8px 72px' }}>
                         <span style={{ color: THEME.gray, fontSize: 12, cursor: 'pointer' }}>+ Add task</span>
@@ -934,7 +1058,7 @@ const ItemRow = ({ item, columns, gridTemplate, groupId, index, onReorder }) => 
     );
 };
 
-const SubitemRow = ({ subitem, columns, gridTemplate, isLast = false }) => {
+const SubitemRow = ({ subitem, columns, gridTemplate, isLast = false, onStatusChange }) => {
     const [expanded, setExpanded] = useState(false);
     const [hovered, setHovered] = useState(false);
     const hasSubs = subitem.subsubitems && subitem.subsubitems.length > 0;
@@ -974,8 +1098,8 @@ const SubitemRow = ({ subitem, columns, gridTemplate, isLast = false }) => {
                 );
             case 'status':
                 return (
-                    <div style={{ padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize }}>{item.status || 'Pending'}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <StatusCell value={item.status || 'Working on it'} onChange={(newStatus) => onStatusChange && onStatusChange(item.id, newStatus)} />
                     </div>
                 );
             case 'date':
