@@ -203,15 +203,14 @@ def start_scheduler():
     if utc_hour < 0:
         utc_hour += 24
 
-    # رسالة اختبار الساعة 11:12 مساءً (20:12 UTC) - للرقم الشخصي
-    # 23:12 Riyadh = 20:12 UTC
-    scheduler.add_job(
-        send_test_message,
-        CronTrigger(hour=20, minute=12),
-        id="test_message",
-        name="رسالة اختبار",
-        replace_existing=True
-    )
+    # رسالة اختبار الساعة 11:12 مساءً - معطلة
+    # scheduler.add_job(
+    #     send_test_message,
+    #     CronTrigger(hour=20, minute=12),
+    #     id="test_message",
+    #     name="رسالة اختبار",
+    #     replace_existing=True
+    # )
 
     scheduler.add_job(
         send_daily_report,
