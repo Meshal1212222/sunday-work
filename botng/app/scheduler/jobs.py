@@ -212,31 +212,32 @@ def start_scheduler():
     #     replace_existing=True
     # )
 
-    scheduler.add_job(
-        send_daily_report,
-        CronTrigger(hour=utc_hour, minute=int(report_minute)),
-        id="daily_report",
-        name="التقرير اليومي",
-        replace_existing=True
-    )
+    # التقرير اليومي - معطل
+    # scheduler.add_job(
+    #     send_daily_report,
+    #     CronTrigger(hour=utc_hour, minute=int(report_minute)),
+    #     id="daily_report",
+    #     name="التقرير اليومي",
+    #     replace_existing=True
+    # )
 
-    # التقرير الأسبوعي - كل أحد الساعة 9 صباحاً (06:00 UTC)
-    scheduler.add_job(
-        send_weekly_report,
-        CronTrigger(day_of_week="sun", hour=6, minute=0),
-        id="weekly_report",
-        name="التقرير الأسبوعي",
-        replace_existing=True
-    )
+    # التقرير الأسبوعي - معطل
+    # scheduler.add_job(
+    #     send_weekly_report,
+    #     CronTrigger(day_of_week="sun", hour=6, minute=0),
+    #     id="weekly_report",
+    #     name="التقرير الأسبوعي",
+    #     replace_existing=True
+    # )
 
-    # مزامنة البيانات - كل 6 ساعات
-    scheduler.add_job(
-        sync_data,
-        CronTrigger(hour="*/6"),
-        id="data_sync",
-        name="مزامنة البيانات",
-        replace_existing=True
-    )
+    # مزامنة البيانات - معطلة
+    # scheduler.add_job(
+    #     sync_data,
+    #     CronTrigger(hour="*/6"),
+    #     id="data_sync",
+    #     name="مزامنة البيانات",
+    #     replace_existing=True
+    # )
 
     # بدء الجدولة
     scheduler.start()
